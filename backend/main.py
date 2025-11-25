@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db import Base, engine
-from .routers import ai
+from backend.db import Base, engine
+from backend.routers import ai
+
 
 
 # Later komen hier tabellen bij, voor nu is dit oké
