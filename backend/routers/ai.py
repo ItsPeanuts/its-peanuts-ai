@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from services.ai_cv import rewrite_cv
-from services.ai_letter import generate_motivation_letter
-from services.ai_matcher import score_job_match
+from ..services.ai_cv import rewrite_cv
+from ..services.ai_letter import generate_motivation_letter
+from ..services.ai_matcher import score_job_match
 
 router = APIRouter()
 
