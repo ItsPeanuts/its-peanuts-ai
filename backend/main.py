@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from db import Base, engine
-from routers import ai
+from .db import Base, engine
+from .routers import ai
+
 
 # Later komen hier tabellen bij, voor nu is dit oké
 Base.metadata.create_all(bind=engine)
