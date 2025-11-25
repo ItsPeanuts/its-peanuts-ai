@@ -1,8 +1,7 @@
 from openai import OpenAI
 from backend.config import OPENAI_API_KEY
 
-
-
+# Maak één OpenAI client aan
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
@@ -31,13 +30,21 @@ RUWE CV:
 Gestructureerd CV:
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Je bent een expert CV-schrijver en recruitment specialist."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.4,
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "Je bent een expert CV-schrijver en recruitment specialist."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+        )
 
-    return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        # Dit logt de fout in de Render-logs
+        print("OpenAI fout in rewrite_cv:", repr(e))
+        # En dit sturen we terug naar de gebruiker zodat de API niet crasht
+        return f"ER GING IETS MIS BIJ OPENAI: {e}"
+
