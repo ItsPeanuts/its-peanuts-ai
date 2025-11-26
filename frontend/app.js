@@ -1,6 +1,7 @@
 // VUL HIER JOUW BACKEND-URL IN, ZONDER /docs ERACHTER
 // Bijvoorbeeld: const BACKEND_URL = "https://its-peanuts-ai-backend.onrender.com";
-const BACKEND_URL = "https://its-peanuts-ai-backend.onrender.com";
+const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
+
 
 
 const cvInput = document.getElementById("cvInput");
