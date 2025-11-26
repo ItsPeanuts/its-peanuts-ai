@@ -71,3 +71,4 @@ class CandidateProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     job = relationship("Job", back_populates="candidates")
+
