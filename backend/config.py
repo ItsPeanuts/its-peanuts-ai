@@ -1,12 +1,15 @@
 import os
 from dotenv import load_dotenv
 
-# Laad variabelen uit een .env bestand (lokaal) of van de server (Render)
+# Laad .env (alleen lokaal, niet op Render)
 load_dotenv()
 
-# Hier halen we je OpenAI API key op
+# DATABASE URL — Render geeft hem in ENV
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./its-peanuts-ai.db")
+
+# OPENAI API KEY
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not OPENAI_API_KEY:
-    # Dit is niet erg tijdens bouwen, maar op de server moet je deze key zetten.
-    print("WAARSCHUWING: OPENAI_API_KEY is niet ingesteld.")
+# APP ENV
+APP_ENV = os.getenv("APP_ENV", "production")
+
