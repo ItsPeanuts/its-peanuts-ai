@@ -2,14 +2,14 @@
 // Bijvoorbeeld: const BACKEND_URL = "https://its-peanuts-ai-backend.onrender.com";
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
-
-
+// Elementen voor CV herschrijven
 const cvInput = document.getElementById("cvInput");
 const targetRoleInput = document.getElementById("targetRole");
 const rewriteBtn = document.getElementById("rewriteBtn");
 const cvResultBox = document.getElementById("cvResultBox");
 const cvResult = document.getElementById("cvResult");
 const cvError = document.getElementById("cvError");
+
 // Elementen voor motivatiebrief
 const letterCvInput = document.getElementById("letterCvInput");
 const jobDescriptionInput = document.getElementById("jobDescriptionInput");
@@ -19,6 +19,15 @@ const letterResultBox = document.getElementById("letterResultBox");
 const letterResult = document.getElementById("letterResult");
 const letterError = document.getElementById("letterError");
 
+// Elementen voor matchscore
+const matchCvInput = document.getElementById("matchCvInput");
+const matchJobInput = document.getElementById("matchJobInput");
+const matchBtn = document.getElementById("matchBtn");
+const matchResultBox = document.getElementById("matchResultBox");
+const matchResult = document.getElementById("matchResult");
+const matchError = document.getElementById("matchError");
+
+// Event voor CV herschrijven
 rewriteBtn.addEventListener("click", async () => {
   const cvText = cvInput.value.trim();
   const targetRole = targetRoleInput.value.trim();
@@ -124,5 +133,60 @@ letterBtn.addEventListener("click", async () => {
   } finally {
     letterBtn.disabled = false;
     letterBtn.textContent = "Schrijf mijn motivatiebrief met AI";
+  }
+});
+
+// Event voor matchscore
+matchBtn.addEventListener("click", async () => {
+  const cvText = matchCvInput.value.trim();
+  const jobText = matchJobInput.value.trim();
+
+  matchError.classList.add("hidden");
+  matchResultBox.classList.add("hidden");
+  matchResult.textContent = "";
+
+  if (!cvText) {
+    matchError.textContent = "Vul eerst je CV-tekst in.";
+    matchError.classList.remove("hidden");
+    return;
+  }
+
+  if (!jobText) {
+    matchError.textContent = "Vul eerst de vacaturetekst in.";
+    matchError.classList.remove("hidden");
+    return;
+  }
+
+  matchBtn.disabled = true;
+  matchBtn.textContent = "AI berekent match...";
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/ai/match-job`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        candidate_profile_text: cvText,
+        job_description: jobText
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      matchError.textContent = `Er ging iets mis (${response.status}): ${errorText}`;
+      matchError.classList.remove("hidden");
+    } else {
+      const data = await response.json();
+      matchResult.textContent = `Score: ${data.match_score}/100\n\nUitleg:\n${data.explanation || "Geen uitleg ontvangen."}`;
+      matchResultBox.classList.remove("hidden");
+    }
+  } catch (err) {
+    matchError.textContent = "Kon geen contact maken met de server.";
+    matchError.classList.remove("hidden");
+    console.error(err);
+  } finally {
+    matchBtn.disabled = false;
+    matchBtn.textContent = "Bereken matchscore";
   }
 });
