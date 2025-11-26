@@ -57,8 +57,31 @@
 
         <div id="letterError" class="error hidden"></div>
       </section>
-    </main>
 
+      <!-- Matchscore berekenen -->
+      <section class="card" style="margin-top: 16px;">
+        <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
+        <p style="font-size: 14px; color: #9ca3af;">
+          Vul je CV in en plak de vacaturetekst. De AI geeft een matchscore (0–100) + uitleg.
+        </p>
+
+        <label for="matchCvInput">CV-tekst</label>
+        <textarea id="matchCvInput" placeholder="Plak je CV-tekst..."></textarea>
+
+        <label for="matchJobInput">Vacaturetekst</label>
+        <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
+
+        <button id="matchBtn">Bereken matchscore</button>
+
+        <div id="matchResultBox" class="result hidden">
+          <h3>Matchscore</h3>
+          <pre id="matchResult"></pre>
+        </div>
+
+        <div id="matchError" class="error hidden"></div>
+      </section>
+
+    </main>
 
     <footer>
       <small>Powered by It's Peanuts AI Recruiter Suite</small>
@@ -68,3 +91,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
