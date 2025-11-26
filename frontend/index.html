@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>It's Peanuts AI – Slim Solliciteren</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>It's Peanuts AI</h1>
+      <p>Laat AI je CV netjes maken voor recruiters.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Stap 1 – Plak je CV</h2>
+        <label for="cvInput">Ruwe CV-tekst</label>
+        <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
+
+        <label for="targetRole">Functie waar je op wilt solliciteren (optioneel)</label>
+        <input id="targetRole" type="text" placeholder="Bijv. Business Development Manager" />
+
+        <button id="rewriteBtn">Herschrijf mijn CV met AI</button>
+
+        <div id="cvResultBox" class="result hidden">
+          <h3>Herschreven CV</h3>
+          <pre id="cvResult"></pre>
+        </div>
+
+        <div id="cvError" class="error hidden"></div>
+      </section>
+    </main>
+
+    <footer>
+      <small>Powered by It's Peanuts AI Recruiter Suite</small>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
