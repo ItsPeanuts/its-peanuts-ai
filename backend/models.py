@@ -72,3 +72,4 @@ class CandidateProfile(Base):
 
     job = relationship("Job", back_populates="candidates")
 
+
