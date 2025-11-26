@@ -1,33 +1,33 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.db import Base, engine
-from backend.routers import ai
+from backend.config import APP_ENV
+from backend.db import init_db
+from backend.routers import ai, ats
 
-
-
-# Later komen hier tabellen bij, voor nu is dit oké
-Base.metadata.create_all(bind=engine)
+# Maak database tabellen aan
+init_db()
 
 app = FastAPI(
     title="It's Peanuts AI Recruiter Suite",
     version="0.1.0"
 )
 
-# CORS: zodat je frontend later met de backend mag praten
+# CORS: frontend toegang geven tot API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later kun je dit strenger maken
+    allow_origins=["*"],   # later kun je dit beperken
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 @app.get("/")
 def root():
     return {"status": "ok", "product": "Its Peanuts AI Recruiter Suite"}
 
-
-# AI-routes
+# Routers toevoegen
 app.include_router(ai.router, prefix="/ai", tags=["AI"])
+app.include_router(ats.router, prefix="/ats", tags=["ATS"])
+
+
