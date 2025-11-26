@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from ..db import SessionLocal
-from .. import models
+from ..models import Company, Job  # <--- LET OP: directe import
 
 router = APIRouter()
 
@@ -71,13 +71,13 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
     Registreer een nieuw bedrijf.
     Eerste status = trial, eerste vacature wordt gratis.
     """
-    existing = db.query(models.Company).filter(
-        models.Company.contact_email == payload.contact_email
+    existing = db.query(Company).filter(
+        Company.contact_email == payload.contact_email
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Er bestaat al een bedrijf met dit e-mailadres.")
 
-    company = models.Company(
+    company = Company(
         name=payload.name,
         kvk_number=payload.kvk_number,
         vat_number=payload.vat_number,
@@ -103,7 +103,7 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     - Als bedrijf in 'trial' staat en nog geen trial job heeft gebruikt -> is_trial = True, trial_jobs_used + 1
     - Anders moet billing_plan 'active' zijn.
     """
-    company = db.query(models.Company).filter(models.Company.id == payload.company_id).first()
+    company = db.query(Company).filter(Company.id == payload.company_id).first()
     if not company:
         raise HTTPException(status_code=404, detail="Bedrijf niet gevonden.")
 
@@ -121,7 +121,7 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
                 detail="Abonnement vereist. Activeer een betaald plan om meer vacatures te plaatsen."
             )
 
-    job = models.Job(
+    job = Job(
         company_id=company.id,
         title=payload.title,
         description=payload.description,
