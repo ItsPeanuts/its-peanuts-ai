@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from backend.db import SessionLocal
-from backend import models
+from ..db import SessionLocal
+from .. import models
 
 router = APIRouter()
 
@@ -71,7 +71,6 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
     Registreer een nieuw bedrijf.
     Eerste status = trial, eerste vacature wordt gratis.
     """
-    # Bestaat er al een bedrijf met dit e-mailadres?
     existing = db.query(models.Company).filter(
         models.Company.contact_email == payload.contact_email
     ).first()
@@ -87,9 +86,9 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
         contact_phone=payload.contact_phone,
         iban=payload.iban,
         account_holder=payload.account_holder,
-        billing_plan="trial",           # trial: eerste vacature gratis
+        billing_plan="trial",
         trial_jobs_used=0,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     db.add(company)
     db.commit()
@@ -116,7 +115,6 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
         company.trial_jobs_used = 1
         db.add(company)
     else:
-        # Voor nu simpel: als geen actief abonnement, blokkeer nieuwe vacatures
         if company.billing_plan != "active":
             raise HTTPException(
                 status_code=402,  # Payment Required
@@ -138,3 +136,4 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(job)
     return job
+
