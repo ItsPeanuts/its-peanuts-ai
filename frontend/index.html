@@ -13,6 +13,7 @@
     </header>
 
     <main>
+      <!-- CV herschrijven -->
       <section class="card">
         <h2>Stap 1 – Plak je CV</h2>
         <label for="cvInput">Ruwe CV-tekst</label>
@@ -30,7 +31,34 @@
 
         <div id="cvError" class="error hidden"></div>
       </section>
+
+      <!-- Motivatiebrief genereren -->
+      <section class="card" style="margin-top: 16px;">
+        <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
+        <p style="font-size: 14px; color: #9ca3af;">
+          Tip: gebruik hier het herschreven CV uit stap 1 en plak de volledige vacaturetekst.
+        </p>
+
+        <label for="letterCvInput">CV-tekst (bij voorkeur de herschreven versie)</label>
+        <textarea id="letterCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+
+        <label for="jobDescriptionInput">Vacaturetekst</label>
+        <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
+
+        <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
+        <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
+
+        <button id="letterBtn">Schrijf mijn motivatiebrief met AI</button>
+
+        <div id="letterResultBox" class="result hidden">
+          <h3>Motivatiebrief</h3>
+          <pre id="letterResult"></pre>
+        </div>
+
+        <div id="letterError" class="error hidden"></div>
+      </section>
     </main>
+
 
     <footer>
       <small>Powered by It's Peanuts AI Recruiter Suite</small>
