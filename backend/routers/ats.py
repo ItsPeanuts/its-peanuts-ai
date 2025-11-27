@@ -1,8 +1,7 @@
-from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
@@ -18,7 +17,7 @@ class CompanyCreate(BaseModel):
     kvk_number: Optional[str] = None
     vat_number: Optional[str] = None
     contact_name: Optional[str] = None
-    contact_email: EmailStr
+    contact_email: str
     contact_phone: Optional[str] = None
     iban: Optional[str] = None
     account_holder: Optional[str] = None
@@ -27,7 +26,7 @@ class CompanyCreate(BaseModel):
 class CompanyResponse(BaseModel):
     id: int
     name: str
-    contact_email: EmailStr
+    contact_email: str
     billing_plan: str
     trial_jobs_used: int
 
@@ -56,7 +55,7 @@ class JobResponse(BaseModel):
 
 class CandidateApplyRequest(BaseModel):
     full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     cv_text: str
 
 
@@ -64,7 +63,7 @@ class CandidateResponse(BaseModel):
     id: int
     job_id: Optional[int]
     full_name: Optional[str]
-    email: Optional[EmailStr]
+    email: Optional[str]
     match_score: Optional[int]
 
     class Config:
@@ -126,7 +125,6 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     if company.billing_plan == "trial" and company.trial_jobs_used < 1:
         is_trial = True
         company.trial_jobs_used += 1
-        # eventueel first billing date instellen als je abonnement wil starten
         if company.subscription_started_at is None:
             company.subscription_started_at = None
             company.next_billing_date = None
@@ -144,7 +142,6 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     db.add(job)
     db.commit()
     db.refresh(job)
-    db.commit()
 
     return job
 
@@ -179,5 +176,6 @@ def apply_to_job(
     db.refresh(candidate)
 
     return candidate
+
 
 
