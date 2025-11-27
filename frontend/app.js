@@ -248,6 +248,16 @@ const jobResultBox = document.getElementById("jobResultBox");
 const jobResult = document.getElementById("jobResult");
 const jobError = document.getElementById("jobError");
 
+// Kandidaat solliciteren
+const applyJobIdInput = document.getElementById("applyJobIdInput");
+const applyNameInput = document.getElementById("applyNameInput");
+const applyEmailInput = document.getElementById("applyEmailInput");
+const applyCvInput = document.getElementById("applyCvInput");
+const applyBtn = document.getElementById("applyBtn");
+const applyResultBox = document.getElementById("applyResultBox");
+const applyResult = document.getElementById("applyResult");
+const applyError = document.getElementById("applyError");
+
 // Dit wordt gebruikt om company_id te bewaren in de browser
 const COMPANY_ID_STORAGE_KEY = "its_peanuts_company_id";
 
@@ -406,6 +416,78 @@ if (jobSubmitBtn) {
     } finally {
       jobSubmitBtn.disabled = false;
       jobSubmitBtn.textContent = "Plaats mijn eerste vacature";
+    }
+  });
+}
+
+// ---- KANDIDAAT: SOLLICITEREN OP VACATURE ----
+if (applyBtn) {
+  applyBtn.addEventListener("click", async () => {
+    const jobIdRaw = (applyJobIdInput?.value || "").trim();
+    const fullName = (applyNameInput?.value || "").trim();
+    const email = (applyEmailInput?.value || "").trim();
+    const cvText = (applyCvInput?.value || "").trim();
+
+    applyError.classList.add("hidden");
+    applyResultBox.classList.add("hidden");
+    applyResult.textContent = "";
+
+    if (!jobIdRaw) {
+      applyError.textContent = "Vul eerst een vacature-ID in.";
+      applyError.classList.remove("hidden");
+      return;
+    }
+
+    const jobId = Number(jobIdRaw);
+    if (Number.isNaN(jobId)) {
+      applyError.textContent = "Vacature-ID moet een getal zijn.";
+      applyError.classList.remove("hidden");
+      return;
+    }
+
+    if (!cvText) {
+      applyError.textContent = "Vul eerst je CV-tekst in.";
+      applyError.classList.remove("hidden");
+      return;
+    }
+
+    applyBtn.disabled = true;
+    applyBtn.textContent = "Sollicitatie wordt verstuurd...";
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/ats/jobs/${jobId}/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          full_name: fullName || null,
+          email: email || null,
+          cv_text: cvText
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        applyError.textContent = `Er ging iets mis (${response.status}): ${errorText}`;
+        applyError.classList.remove("hidden");
+      } else {
+        const data = await response.json();
+        applyResult.textContent =
+          `Sollicitatie-ID: ${data.id}\n` +
+          `Vacature-ID: ${data.job_id}\n` +
+          `Naam: ${data.full_name || "-"}\n` +
+          `E-mail: ${data.email || "-"}\n` +
+          `Matchscore (later): ${data.match_score ?? "nog niet berekend"}`;
+        applyResultBox.classList.remove("hidden");
+      }
+    } catch (err) {
+      applyError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      applyError.classList.remove("hidden");
+      console.error(err);
+    } finally {
+      applyBtn.disabled = false;
+      applyBtn.textContent = "Verstuur mijn sollicitatie";
     }
   });
 }
