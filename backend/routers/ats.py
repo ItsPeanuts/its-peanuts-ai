@@ -1,26 +1,17 @@
-from datetime import datetime
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from ..db import SessionLocal
-from ..models import Company, Job  # <--- LET OP: directe import
+from backend.db import get_db
+from backend import models
 
-router = APIRouter()
-
-
-# Dependency om een database sessie per request te krijgen
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(prefix="/ats", tags=["ATS"])
 
 
-# ---------- SCHEMAS ----------
+# ---------- Pydantic modellen ----------
 
 class CompanyCreate(BaseModel):
     name: str
@@ -33,7 +24,7 @@ class CompanyCreate(BaseModel):
     account_holder: Optional[str] = None
 
 
-class CompanyOut(BaseModel):
+class CompanyResponse(BaseModel):
     id: int
     name: str
     contact_email: EmailStr
@@ -41,7 +32,7 @@ class CompanyOut(BaseModel):
     trial_jobs_used: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class JobCreate(BaseModel):
@@ -52,32 +43,51 @@ class JobCreate(BaseModel):
     salary_range: Optional[str] = None
 
 
-class JobOut(BaseModel):
+class JobResponse(BaseModel):
     id: int
+    company_id: int
     title: str
     status: str
     is_trial: bool
-    company_id: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
-# ---------- ENDPOINTS ----------
+class CandidateApplyRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    cv_text: str
 
-@router.post("/companies", response_model=CompanyOut)
+
+class CandidateResponse(BaseModel):
+    id: int
+    job_id: Optional[int]
+    full_name: Optional[str]
+    email: Optional[EmailStr]
+    match_score: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+# ---------- Endpoints bedrijven ----------
+
+@router.post("/companies", response_model=CompanyResponse)
 def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
     """
-    Registreer een nieuw bedrijf.
-    Eerste status = trial, eerste vacature wordt gratis.
+    Maakt een nieuw bedrijf aan met trial-abonnement.
+    Als hetzelfde e-mailadres al bestaat, geven we gewoon dat bedrijf terug.
     """
-    existing = db.query(Company).filter(
-        Company.contact_email == payload.contact_email
-    ).first()
+    existing = (
+        db.query(models.Company)
+        .filter(models.Company.contact_email == payload.contact_email)
+        .first()
+    )
     if existing:
-        raise HTTPException(status_code=400, detail="Er bestaat al een bedrijf met dit e-mailadres.")
+        return existing
 
-    company = Company(
+    company = models.Company(
         name=payload.name,
         kvk_number=payload.kvk_number,
         vat_number=payload.vat_number,
@@ -86,54 +96,88 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
         contact_phone=payload.contact_phone,
         iban=payload.iban,
         account_holder=payload.account_holder,
-        billing_plan="trial",
+        billing_plan="trial",          # trial / active / cancelled / overdue
         trial_jobs_used=0,
-        created_at=datetime.utcnow(),
+        subscription_started_at=None,
+        next_billing_date=None,
     )
+
     db.add(company)
     db.commit()
     db.refresh(company)
     return company
 
 
-@router.post("/jobs", response_model=JobOut)
+# ---------- Endpoints vacatures ----------
+
+@router.post("/jobs", response_model=JobResponse)
 def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     """
-    Maak een vacature aan voor een bedrijf.
-    - Als bedrijf in 'trial' staat en nog geen trial job heeft gebruikt -> is_trial = True, trial_jobs_used + 1
-    - Anders moet billing_plan 'active' zijn.
+    Maakt een vacature aan voor een bedrijf.
+    Eerste vacature van een bedrijf = trial (gratis).
+    Daarna is_trial=False en kun je later billing/logica koppelen.
     """
-    company = db.query(Company).filter(Company.id == payload.company_id).first()
+    company = db.query(models.Company).filter(models.Company.id == payload.company_id).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Bedrijf niet gevonden.")
+        raise HTTPException(status_code=404, detail="Bedrijf niet gevonden")
 
+    # Check of dit een trial-vacature mag zijn
     is_trial = False
-
-    if company.billing_plan == "trial" and company.trial_jobs_used == 0:
-        # Eerste vacature gratis
+    if company.billing_plan == "trial" and company.trial_jobs_used < 1:
         is_trial = True
-        company.trial_jobs_used = 1
-        db.add(company)
-    else:
-        if company.billing_plan != "active":
-            raise HTTPException(
-                status_code=402,  # Payment Required
-                detail="Abonnement vereist. Activeer een betaald plan om meer vacatures te plaatsen."
-            )
+        company.trial_jobs_used += 1
+        # eventueel first billing date instellen als je abonnement wil starten
+        if company.subscription_started_at is None:
+            company.subscription_started_at = None
+            company.next_billing_date = None
 
-    job = Job(
-        company_id=company.id,
+    job = models.Job(
+        company_id=payload.company_id,
         title=payload.title,
-        description=payload.description,
         location=payload.location,
         salary_range=payload.salary_range,
+        description=payload.description,
         status="open",
         is_trial=is_trial,
-        created_at=datetime.utcnow(),
     )
 
     db.add(job)
     db.commit()
     db.refresh(job)
+    db.commit()
+
     return job
+
+
+# ---------- Endpoints sollicitaties ----------
+
+@router.post("/jobs/{job_id}/apply", response_model=CandidateResponse)
+def apply_to_job(
+    job_id: int,
+    payload: CandidateApplyRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Kandidaat solliciteert op een vacature.
+    We slaan de kandidaat op bij de juiste job.
+    match_score zetten we later met AI.
+    """
+    job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+
+    candidate = models.CandidateProfile(
+        job_id=job_id,
+        full_name=payload.full_name,
+        email=payload.email,
+        cv_text=payload.cv_text,
+        match_score=None,
+    )
+
+    db.add(candidate)
+    db.commit()
+    db.refresh(candidate)
+
+    return candidate
+
 
