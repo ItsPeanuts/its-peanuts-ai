@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -62,6 +62,27 @@ class CandidateApplyRequest(BaseModel):
 class CandidateResponse(BaseModel):
     id: int
     job_id: Optional[int]
+    full_name: Optional[str]
+    email: Optional[str]
+    match_score: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+
+# Lijst-modellen voor overzichten
+class JobListItem(BaseModel):
+    id: int
+    title: str
+    status: str
+    is_trial: bool
+
+    class Config:
+        orm_mode = True
+
+
+class CandidateListItem(BaseModel):
+    id: int
     full_name: Optional[str]
     email: Optional[str]
     match_score: Optional[int]
@@ -146,6 +167,25 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     return job
 
 
+@router.get("/companies/{company_id}/jobs", response_model=List[JobListItem])
+def list_company_jobs(company_id: int, db: Session = Depends(get_db)):
+    """
+    Geef alle vacatures terug die horen bij één bedrijf.
+    Handig voor het werkgevers-dashboard.
+    """
+    company = db.query(models.Company).filter(models.Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Bedrijf niet gevonden")
+
+    jobs = (
+        db.query(models.Job)
+        .filter(models.Job.company_id == company_id)
+        .order_by(models.Job.created_at.desc())
+        .all()
+    )
+    return jobs
+
+
 # ---------- Endpoints sollicitaties ----------
 
 @router.post("/jobs/{job_id}/apply", response_model=CandidateResponse)
@@ -176,6 +216,26 @@ def apply_to_job(
     db.refresh(candidate)
 
     return candidate
+
+
+@router.get("/jobs/{job_id}/candidates", response_model=List[CandidateListItem])
+def list_job_candidates(job_id: int, db: Session = Depends(get_db)):
+    """
+    Geeft alle kandidaten terug die op één vacature hebben gereageerd.
+    Dit kun je straks in de frontend tonen als 'kandidatenlijst'.
+    """
+    job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+
+    candidates = (
+        db.query(models.CandidateProfile)
+        .filter(models.CandidateProfile.job_id == job_id)
+        .order_by(models.CandidateProfile.created_at.desc())
+        .all()
+    )
+    return candidates
+
 
 
 
