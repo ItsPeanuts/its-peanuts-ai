@@ -1,111 +1,301 @@
-* {
+/* Basis styling */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
   margin: 0;
-  background: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #111827 0, #020617 40%, #020617 100%);
   color: #e5e7eb;
 }
 
+/* Pagina layout */
 .page {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 24px 16px 40px;
 }
 
-header {
-  text-align: center;
+/* Header */
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 28px;
+.logo-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-header p {
-  margin-top: 8px;
+.logo-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #22c55e, #14b8a6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #020617;
+  font-size: 18px;
+}
+
+.logo-block h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #f9fafb;
+}
+
+.logo-block p {
+  margin: 2px 0 0;
+  font-size: 13px;
   color: #9ca3af;
 }
 
-.card {
-  background: #020617;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  border: 1px solid #1f2937;
+/* Top navigation pills */
+.top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
+.nav-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #4b5563;
+  color: #e5e7eb;
+}
+
+.nav-pill-active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #022c22;
+  font-weight: 600;
+}
+
+.nav-pill-muted {
+  opacity: 0.6;
+}
+
+/* Grid layout main */
+.main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr);
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Intro kaart */
+.intro-card {
+  background: radial-gradient(circle at top left, #111827 0, #020617 40%);
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  padding: 16px 18px 18px;
+}
+
+.intro-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: #f9fafb;
+}
+
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.steps-list li {
+  margin-bottom: 10px;
+}
+
+.steps-list strong {
+  display: block;
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+.steps-list p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.info-box {
+  border-radius: 12px;
+  border: 1px dashed #4b5563;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.info-box h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f97316;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 13px;
+  color: #d1d5db;
+}
+
+/* Kolom met kaarten */
+.cards-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Kaarten (stap 1–3) */
+.card {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  padding: 16px 18px 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: #f9fafb;
+}
+
+.card-subtitle {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Labels & invoer */
 label {
   display: block;
-  margin-top: 12px;
-  margin-bottom: 4px;
-  font-size: 14px;
+  margin: 10px 0 4px;
+  font-size: 12px;
   color: #d1d5db;
 }
 
 textarea,
-input {
+input[type="text"] {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #374151;
-  padding: 8px;
   background: #020617;
   color: #e5e7eb;
+  padding: 8px 10px;
+  font-size: 13px;
   resize: vertical;
-  min-height: 120px;
 }
 
-input {
-  min-height: auto;
+textarea {
+  min-height: 80px;
 }
 
-button {
-  margin-top: 16px;
-  padding: 10px 16px;
+textarea:focus,
+input[type="text"]:focus {
+  outline: 2px solid #22c55e;
+  outline-offset: 0;
+  border-color: #22c55e;
+}
+
+/* Buttons */
+.primary-button {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
   border-radius: 999px;
   border: none;
-  background: #f97316;
-  color: white;
-  font-weight: 600;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #022c22;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
 }
 
-button:disabled {
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(34, 197, 94, 0.45);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.3);
+}
+
+.primary-button:disabled {
   opacity: 0.6;
   cursor: default;
+  box-shadow: none;
 }
 
+/* Result & errors */
 .result {
-  margin-top: 20px;
-  background: #020617;
-  border-radius: 8px;
+  margin-top: 10px;
+  border-radius: 10px;
   border: 1px solid #374151;
-  padding: 10px;
+  background: #020617;
+  padding: 10px 10px 12px;
+  font-size: 12px;
+  color: #e5e7eb;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.result h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #f9fafb;
 }
 
 .result pre {
   white-space: pre-wrap;
-  word-wrap: break-word;
   margin: 0;
-  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
 }
 
 .error {
-  margin-top: 12px;
-  color: #f97373;
-  font-size: 14px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid #b91c1c;
+  background: rgba(153, 27, 27, 0.1);
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #fecaca;
 }
 
+/* Hidden helper class (voor JS) */
 .hidden {
   display: none;
 }
 
-footer {
+/* Footer */
+.site-footer {
+  margin-top: 28px;
   text-align: center;
-  margin-top: 24px;
+  font-size: 11px;
   color: #6b7280;
-  font-size: 12px;
 }
+
