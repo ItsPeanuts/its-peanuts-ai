@@ -67,24 +67,35 @@ body {
   gap: 8px;
 }
 
+/* TAB KNOP BASIS */
 .nav-pill {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
   border: 1px solid #4b5563;
-  color: #e5e7eb;
-}
-
-.nav-pill-active {
-  background: #22c55e;
-  border-color: #22c55e;
-  color: #022c22;
+  transition: 0.2s;
   font-weight: 600;
 }
 
-.nav-pill-muted {
-  opacity: 0.6;
+/* ACTIEVE TAB → Groen + witte tekst */
+.nav-pill-active {
+  background: #10b981;
+  color: #ffffff !important;   /* ALTJD wit */
+  border-color: #10b981;
 }
+
+/* NIET-ACTIEVE TAB → Donker, maar tekst blijft LICHT */
+.nav-pill-muted {
+  background: #1f2937;
+  color: #d1d5db !important;   /* lichtgrijs zodat leesbaar */
+  border-color: #4b5563;
+}
+
+/* Hover effect voor duidelijkheid */
+.nav-pill:hover {
+  opacity: 0.85;
+}
+
 
 /* Grid layout main */
 .main-grid {
