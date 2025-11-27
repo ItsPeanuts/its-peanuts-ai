@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.db import get_db
 from backend import models
+from backend.services.ai_match import rank_candidates_for_job
 
 router = APIRouter(prefix="/ats", tags=["ATS"])
 
@@ -70,7 +71,6 @@ class CandidateResponse(BaseModel):
         orm_mode = True
 
 
-# Lijst-modellen voor overzichten
 class JobListItem(BaseModel):
     id: int
     title: str
@@ -89,6 +89,14 @@ class CandidateListItem(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AIRankedCandidate(BaseModel):
+    candidate_id: int
+    full_name: Optional[str]
+    email: Optional[str]
+    match_score: int
+    explanation: str
 
 
 # ---------- Endpoints bedrijven ----------
@@ -116,7 +124,7 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
         contact_phone=payload.contact_phone,
         iban=payload.iban,
         account_holder=payload.account_holder,
-        billing_plan="trial",          # trial / active / cancelled / overdue
+        billing_plan="trial",          # trial / basic / pro / cancelled / overdue
         trial_jobs_used=0,
         subscription_started_at=None,
         next_billing_date=None,
@@ -235,6 +243,38 @@ def list_job_candidates(job_id: int, db: Session = Depends(get_db)):
         .all()
     )
     return candidates
+
+
+# ---------- AI-ranking binnen eigen kandidaten ----------
+
+@router.post("/jobs/{job_id}/ai-rank-internal", response_model=List[AIRankedCandidate])
+def ai_rank_internal(job_id: int, db: Session = Depends(get_db)):
+    """
+    Laat AI alle kandidaten voor deze vacature beoordelen en rangschikken.
+    Dit is de interne matching (kandidaten in je eigen ATS).
+    """
+
+    job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+
+    candidates = (
+        db.query(models.CandidateProfile)
+        .filter(models.CandidateProfile.job_id == job_id)
+        .all()
+    )
+
+    if not candidates:
+        raise HTTPException(status_code=400, detail="Geen kandidaten gevonden voor deze vacature")
+
+    ranked = rank_candidates_for_job(db, job, candidates)
+
+    if not ranked:
+        # AI gaf geen bruikbaar antwoord terug
+        raise HTTPException(status_code=500, detail="AI kon geen ranking genereren")
+
+    return ranked
+
 
 
 
