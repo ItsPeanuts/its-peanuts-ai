@@ -30,7 +30,7 @@
     <main id="candidateView" class="main-grid">
       <!-- Linkerkolom met uitleg -->
       <section class="intro-card">
-        <h2>Solliciteren in 3 simpele stappen</h2>
+        <h2>Solliciteren in 4 simpele stappen</h2>
         <ol class="steps-list">
           <li>
             <strong>Stap 1 – Herschrijf je CV</strong>
@@ -43,6 +43,10 @@
           <li>
             <strong>Stap 3 – Check je matchscore</strong>
             <p>Zie direct hoe goed je aansluit op de vacature (0–100) met een korte uitleg.</p>
+          </li>
+          <li>
+            <strong>Stap 4 – Solliciteer op een vacature</strong>
+            <p>Heb je een vacature-ID van It's Peanuts AI? Solliciteer direct via het platform.</p>
           </li>
         </ol>
         <div class="info-box">
@@ -126,10 +130,41 @@
           <div id="matchError" class="error hidden"></div>
         </section>
 
+        <!-- Solliciteren op een vacature -->
+        <section class="card">
+          <h2>Stap 4 – Solliciteer op een vacature bij It's Peanuts</h2>
+          <p class="card-subtitle">
+            Heb je een vacature-ID van It's Peanuts AI? Vul je gegevens in en solliciteer direct.
+          </p>
+
+          <label for="applyJobIdInput">Vacature-ID</label>
+          <input id="applyJobIdInput" type="text" placeholder="Bijv. 1, 2, 3..." />
+
+          <label for="applyNameInput">Naam</label>
+          <input id="applyNameInput" type="text" placeholder="Je volledige naam" />
+
+          <label for="applyEmailInput">E-mailadres</label>
+          <input id="applyEmailInput" type="text" placeholder="jouwemail@example.com" />
+
+          <label for="applyCvInput">CV-tekst</label>
+          <textarea id="applyCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+
+          <button id="applyBtn" class="primary-button" type="button">
+            Verstuur mijn sollicitatie
+          </button>
+
+          <div id="applyResultBox" class="result hidden">
+            <h3>Sollicitatie ontvangen</h3>
+            <pre id="applyResult"></pre>
+          </div>
+
+          <div id="applyError" class="error hidden"></div>
+        </section>
+
       </section>
     </main>
 
-     <!-- WERKGEVER VIEW -->
+    <!-- WERKGEVER VIEW -->
     <main id="employerView" class="main-grid hidden">
       <!-- Linker info-blok voor werkgevers -->
       <section class="intro-card">
@@ -238,79 +273,6 @@
       </section>
     </main>
 
-        <h2>Voor werkgevers</h2>
-        <p style="font-size:13px; color:#d1d5db; margin-top:4px;">
-          It's Peanuts AI helpt je om sneller, slimmer en goedkoper kandidaten te selecteren.
-          Eerste vacature: <strong>gratis</strong>. Daarna een simpel abonnement per maand.
-        </p>
-
-        <ul class="steps-list">
-          <li>
-            <strong>✔ Eerste vacature gratis</strong>
-            <p>Probeer de AI én ons platform zonder risico. Eén vacature, volledig gratis.</p>
-          </li>
-          <li>
-            <strong>✔ AI die CV's voorselecteert</strong>
-            <p>AI beoordeelt kandidaten, maakt matchscores en geeft een korte uitleg per kandidaat.</p>
-          </li>
-          <li>
-            <strong>✔ Vast bedrag per maand</strong>
-            <p>Na de gratis proef: bijvoorbeeld <strong>€99 p/m per account</strong>. Geen verrassingen, geen fee per plaatsing.</p>
-          </li>
-        </ul>
-
-        <div class="info-box">
-          <h3>Hoe werkt het?</h3>
-          <p>Vul rechts je bedrijfsgegevens in. Wij maken een trial-account aan en nemen contact met je op om de eerste vacature live te zetten.</p>
-        </div>
-      </section>
-
-      <!-- Rechterkolom: formulier voor werkgevers -->
-      <section class="cards-column">
-        <section class="card">
-          <h2>Start met een gratis trial-account</h2>
-          <p class="card-subtitle">
-            Vul hieronder je bedrijfsgegevens in. Je eerste vacature is gratis, daarna kun je kiezen voor een maandabonnement.
-          </p>
-
-          <label for="empCompanyName">Bedrijfsnaam</label>
-          <input id="empCompanyName" type="text" placeholder="Bijv. It's Peanuts Recruitment BV" />
-
-          <label for="empKvk">KVK-nummer</label>
-          <input id="empKvk" type="text" placeholder="Bijv. 12345678" />
-
-          <label for="empVat">BTW-nummer (optioneel)</label>
-          <input id="empVat" type="text" placeholder="Bijv. NL123456789B01" />
-
-          <label for="empContactName">Contactpersoon</label>
-          <input id="empContactName" type="text" placeholder="Naam contactpersoon" />
-
-          <label for="empContactEmail">E-mailadres</label>
-          <input id="empContactEmail" type="text" placeholder="contact@bedrijf.nl" />
-
-          <label for="empContactPhone">Telefoonnummer</label>
-          <input id="empContactPhone" type="text" placeholder="Bijv. 0612345678" />
-
-          <label for="empIban">IBAN (voor toekomstige automatische incasso)</label>
-          <input id="empIban" type="text" placeholder="Bijv. NL12BANK0123456789" />
-
-          <label for="empAccountHolder">Naam rekeninghouder</label>
-          <input id="empAccountHolder" type="text" placeholder="Bijv. Bedrijfsnaam BV" />
-
-          <button id="empSubmitBtn" class="primary-button" type="button">
-            Maak mijn gratis trial-account aan
-          </button>
-
-          <div id="empResultBox" class="result hidden">
-            <h3>Account aangemaakt</h3>
-            <pre id="empResult"></pre>
-          </div>
-
-          <div id="empError" class="error hidden"></div>
-        </section>
-      </section>
-    </main>
-
     <footer class="site-footer">
       <small>© <span id="yearSpan"></span> It's Peanuts AI Recruiter Suite – gebouwd met ❤️ voor kandidaten en werkgevers.</small>
     </footer>
@@ -323,5 +285,6 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
