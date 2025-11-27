@@ -129,10 +129,115 @@
       </section>
     </main>
 
-    <!-- WERKGEVER VIEW -->
+     <!-- WERKGEVER VIEW -->
     <main id="employerView" class="main-grid hidden">
       <!-- Linker info-blok voor werkgevers -->
       <section class="intro-card">
+        <h2>Voor werkgevers</h2>
+        <p style="font-size:13px; color:#d1d5db; margin-top:4px;">
+          It's Peanuts AI helpt je om sneller, slimmer en goedkoper kandidaten te selecteren.
+          Eerste vacature: <strong>gratis</strong>. Daarna een simpel abonnement per maand.
+        </p>
+
+        <ul class="steps-list">
+          <li>
+            <strong>✔ Eerste vacature gratis</strong>
+            <p>Probeer de AI én ons platform zonder risico. Eén vacature, volledig gratis.</p>
+          </li>
+          <li>
+            <strong>✔ AI die CV's voorselecteert</strong>
+            <p>AI beoordeelt kandidaten, maakt matchscores en geeft een korte uitleg per kandidaat.</p>
+          </li>
+          <li>
+            <strong>✔ Vast bedrag per maand</strong>
+            <p>Na de gratis proef: bijvoorbeeld <strong>€99 p/m per account</strong>. Geen verrassingen, geen fee per plaatsing.</p>
+          </li>
+        </ul>
+
+        <div class="info-box">
+          <h3>Hoe werkt het?</h3>
+          <p>Stap 1: maak een trial-account aan. Stap 2: plaats je eerste vacature. Onze AI helpt daarna met de selectie.</p>
+        </div>
+      </section>
+
+      <!-- Rechterkolom: formulieren voor werkgevers -->
+      <section class="cards-column">
+        <!-- Card 1: Trial-account -->
+        <section class="card">
+          <h2>Start met een gratis trial-account</h2>
+          <p class="card-subtitle">
+            Vul hieronder je bedrijfsgegevens in. Je eerste vacature is gratis, daarna kun je kiezen voor een maandabonnement.
+          </p>
+
+          <label for="empCompanyName">Bedrijfsnaam</label>
+          <input id="empCompanyName" type="text" placeholder="Bijv. It's Peanuts Recruitment BV" />
+
+          <label for="empKvk">KVK-nummer</label>
+          <input id="empKvk" type="text" placeholder="Bijv. 12345678" />
+
+          <label for="empVat">BTW-nummer (optioneel)</label>
+          <input id="empVat" type="text" placeholder="Bijv. NL123456789B01" />
+
+          <label for="empContactName">Contactpersoon</label>
+          <input id="empContactName" type="text" placeholder="Naam contactpersoon" />
+
+          <label for="empContactEmail">E-mailadres</label>
+          <input id="empContactEmail" type="text" placeholder="contact@bedrijf.nl" />
+
+          <label for="empContactPhone">Telefoonnummer</label>
+          <input id="empContactPhone" type="text" placeholder="Bijv. 0612345678" />
+
+          <label for="empIban">IBAN (voor toekomstige automatische incasso)</label>
+          <input id="empIban" type="text" placeholder="Bijv. NL12BANK0123456789" />
+
+          <label for="empAccountHolder">Naam rekeninghouder</label>
+          <input id="empAccountHolder" type="text" placeholder="Bijv. Bedrijfsnaam BV" />
+
+          <button id="empSubmitBtn" class="primary-button" type="button">
+            Maak mijn gratis trial-account aan
+          </button>
+
+          <div id="empResultBox" class="result hidden">
+            <h3>Account aangemaakt</h3>
+            <pre id="empResult"></pre>
+          </div>
+
+          <div id="empError" class="error hidden"></div>
+        </section>
+
+        <!-- Card 2: Eerste vacature plaatsen -->
+        <section class="card">
+          <h2>Plaats je eerste (gratis) vacature</h2>
+          <p class="card-subtitle">
+            Gebruik het trial-account dat je zojuist hebt aangemaakt. Je eerste vacature is gratis en wordt gekoppeld aan jouw bedrijf.
+          </p>
+
+          <label for="jobTitleInput">Functietitel</label>
+          <input id="jobTitleInput" type="text" placeholder="Bijv. Accountmanager Binnendienst" />
+
+          <label for="jobLocationInput">Locatie</label>
+          <input id="jobLocationInput" type="text" placeholder="Bijv. Amsterdam, Rotterdam, remote" />
+
+          <label for="jobSalaryInput">Salarisrange (optioneel)</label>
+          <input id="jobSalaryInput" type="text" placeholder="Bijv. €3.000 – €4.000 bruto per maand" />
+
+          <label for="jobDescriptionInputEmp">Vacaturetekst</label>
+          <textarea id="jobDescriptionInputEmp" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
+
+          <button id="jobSubmitBtn" class="primary-button" type="button">
+            Plaats mijn eerste vacature
+          </button>
+
+          <div id="jobResultBox" class="result hidden">
+            <h3>Vacature aangemaakt</h3>
+            <pre id="jobResult"></pre>
+          </div>
+
+          <div id="jobError" class="error hidden"></div>
+        </section>
+      </section>
+    </main>
+
         <h2>Voor werkgevers</h2>
         <p style="font-size:13px; color:#d1d5db; margin-top:4px;">
           It's Peanuts AI helpt je om sneller, slimmer en goedkoper kandidaten te selecteren.
