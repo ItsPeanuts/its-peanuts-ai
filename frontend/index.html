@@ -7,86 +7,136 @@
 </head>
 <body>
   <div class="page">
-    <header>
-      <h1>It's Peanuts AI</h1>
-      <p>Laat AI je CV netjes maken voor recruiters.</p>
+    <!-- Top bar / logo -->
+    <header class="site-header">
+      <div class="logo-block">
+        <div class="logo-circle">IP</div>
+        <div>
+          <h1>It's Peanuts AI</h1>
+          <p>Jouw AI-sollicitatie assistent – CV, motivatiebrief & matchscore in één plek.</p>
+        </div>
+      </div>
+      <nav class="top-nav">
+        <span class="nav-pill nav-pill-active">Ik ben kandidaat</span>
+        <span class="nav-pill nav-pill-muted">Ik ben werkgever (binnenkort)</span>
+      </nav>
     </header>
 
-    <main>
-      <!-- CV herschrijven -->
-      <section class="card">
-        <h2>Stap 1 – Plak je CV</h2>
-        <label for="cvInput">Ruwe CV-tekst</label>
-        <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
-
-        <label for="targetRole">Functie waar je op wilt solliciteren (optioneel)</label>
-        <input id="targetRole" type="text" placeholder="Bijv. Business Development Manager" />
-
-        <button id="rewriteBtn">Herschrijf mijn CV met AI</button>
-
-        <div id="cvResultBox" class="result hidden">
-          <h3>Herschreven CV</h3>
-          <pre id="cvResult"></pre>
+    <main class="main-grid">
+      <!-- Linkerkolom met uitleg -->
+      <section class="intro-card">
+        <h2>Solliciteren in 3 simpele stappen</h2>
+        <ol class="steps-list">
+          <li>
+            <strong>Stap 1 – Herschrijf je CV</strong>
+            <p>Plak je ruwe CV-tekst. De AI maakt er een nette, professionele CV-tekst van voor recruiters.</p>
+          </li>
+          <li>
+            <strong>Stap 2 – Laat AI je motivatiebrief schrijven</strong>
+            <p>Plak je CV en de vacaturetekst. AI schrijft een sterke motivatiebrief in jouw toon.</p>
+          </li>
+          <li>
+            <strong>Stap 3 – Check je matchscore</strong>
+            <p>Zie direct hoe goed je aansluit op de vacature (0–100) met een korte uitleg.</p>
+          </li>
+        </ol>
+        <div class="info-box">
+          <h3>TIP</h3>
+          <p>Gebruik één en dezelfde CV-tekst in alle stappen. Zo blijft je verhaal overal hetzelfde.</p>
         </div>
-
-        <div id="cvError" class="error hidden"></div>
       </section>
 
-      <!-- Motivatiebrief genereren -->
-      <section class="card" style="margin-top: 16px;">
-        <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
-        <p style="font-size: 14px; color: #9ca3af;">
-          Tip: gebruik hier het herschreven CV uit stap 1 en plak de volledige vacaturetekst.
-        </p>
+      <!-- Rechterkolom met AI-functionaliteit -->
+      <section class="cards-column">
 
-        <label for="letterCvInput">CV-tekst (bij voorkeur de herschreven versie)</label>
-        <textarea id="letterCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+        <!-- CV herschrijven -->
+        <section class="card">
+          <h2>Stap 1 – Plak je CV</h2>
+          <p class="card-subtitle">
+            Plak hieronder je ruwe CV of werkervaring. AI maakt er een nette, overzichtelijke CV-tekst van.
+          </p>
 
-        <label for="jobDescriptionInput">Vacaturetekst</label>
-        <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
+          <label for="cvInput">Ruwe CV-tekst</label>
+          <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
 
-        <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
-        <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
+          <label for="targetRole">Functie waar je op wilt solliciteren (optioneel)</label>
+          <input id="targetRole" type="text" placeholder="Bijv. Business Development Manager" />
 
-        <button id="letterBtn">Schrijf mijn motivatiebrief met AI</button>
+          <button id="rewriteBtn" class="primary-button">Herschrijf mijn CV met AI</button>
 
-        <div id="letterResultBox" class="result hidden">
-          <h3>Motivatiebrief</h3>
-          <pre id="letterResult"></pre>
-        </div>
+          <div id="cvResultBox" class="result hidden">
+            <h3>Herschreven CV</h3>
+            <pre id="cvResult"></pre>
+          </div>
 
-        <div id="letterError" class="error hidden"></div>
+          <div id="cvError" class="error hidden"></div>
+        </section>
+
+        <!-- Motivatiebrief genereren -->
+        <section class="card">
+          <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
+          <p class="card-subtitle">
+            Gebruik bij voorkeur de herschreven CV uit stap 1 en plak hieronder de volledige vacaturetekst.
+          </p>
+
+          <label for="letterCvInput">CV-tekst (bij voorkeur de herschreven versie)</label>
+          <textarea id="letterCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+
+          <label for="jobDescriptionInput">Vacaturetekst</label>
+          <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
+
+          <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
+          <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
+
+          <button id="letterBtn" class="primary-button">Schrijf mijn motivatiebrief met AI</button>
+
+          <div id="letterResultBox" class="result hidden">
+            <h3>Motivatiebrief</h3>
+            <pre id="letterResult"></pre>
+          </div>
+
+          <div id="letterError" class="error hidden"></div>
+        </section>
+
+        <!-- Matchscore berekenen -->
+        <section class="card">
+          <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
+          <p class="card-subtitle">
+            Vul je CV en de vacaturetekst in. AI geeft een matchscore (0–100) met een korte uitleg.
+          </p>
+
+          <label for="matchCvInput">CV-tekst</label>
+          <textarea id="matchCvInput" placeholder="Plak je CV-tekst..."></textarea>
+
+          <label for="matchJobInput">Vacaturetekst</label>
+          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
+
+          <button id="matchBtn" class="primary-button">Bereken matchscore</button>
+
+          <div id="matchResultBox" class="result hidden">
+            <h3>Matchscore</h3>
+            <pre id="matchResult"></pre>
+          </div>
+
+          <div id="matchError" class="error hidden"></div>
+        </section>
+
       </section>
-
-      <!-- Matchscore berekenen -->
-      <section class="card" style="margin-top: 16px;">
-        <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
-        <p style="font-size: 14px; color: #9ca3af;">
-          Vul je CV in en plak de vacaturetekst. De AI geeft een matchscore (0–100) + uitleg.
-        </p>
-
-        <label for="matchCvInput">CV-tekst</label>
-        <textarea id="matchCvInput" placeholder="Plak je CV-tekst..."></textarea>
-
-        <label for="matchJobInput">Vacaturetekst</label>
-        <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
-
-        <button id="matchBtn">Bereken matchscore</button>
-
-        <div id="matchResultBox" class="result hidden">
-          <h3>Matchscore</h3>
-          <pre id="matchResult"></pre>
-        </div>
-
-        <div id="matchError" class="error hidden"></div>
-      </section>
-
     </main>
 
-    <footer>
-      <small>Powered by It's Peanuts AI Recruiter Suite</small>
+    <footer class="site-footer">
+      <small>© <span id="yearSpan"></span> It's Peanuts AI Recruiter Suite – gebouwd met ❤️ voor kandidaten en werkgevers.</small>
     </footer>
   </div>
+
+  <script>
+    // Zet automatisch het jaar in de footer
+    document.getElementById("yearSpan").textContent = new Date().getFullYear();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
+
 
   <script src="app.js"></script>
 </body>
