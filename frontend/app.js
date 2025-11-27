@@ -238,8 +238,178 @@ const empResultBox = document.getElementById("empResultBox");
 const empResult = document.getElementById("empResult");
 const empError = document.getElementById("empError");
 
+// Velden voor vacature aanmaken
+const jobTitleInput = document.getElementById("jobTitleInput");
+const jobLocationInput = document.getElementById("jobLocationInput");
+const jobSalaryInput = document.getElementById("jobSalaryInput");
+const jobDescriptionInputEmp = document.getElementById("jobDescriptionInputEmp");
+const jobSubmitBtn = document.getElementById("jobSubmitBtn");
+const jobResultBox = document.getElementById("jobResultBox");
+const jobResult = document.getElementById("jobResult");
+const jobError = document.getElementById("jobError");
+
+// Dit wordt gebruikt om company_id te bewaren in de browser
+const COMPANY_ID_STORAGE_KEY = "its_peanuts_company_id";
+
+function saveCompanyId(id) {
+  try {
+    localStorage.setItem(COMPANY_ID_STORAGE_KEY, String(id));
+  } catch (e) {
+    console.warn("Kon company_id niet opslaan in localStorage:", e);
+  }
+}
+
+function getCompanyId() {
+  try {
+    const raw = localStorage.getItem(COMPANY_ID_STORAGE_KEY);
+    if (!raw) return null;
+    const num = Number(raw);
+    return Number.isNaN(num) ? null : num;
+  } catch (e) {
+    console.warn("Kon company_id niet lezen uit localStorage:", e);
+    return null;
+  }
+}
+
 if (empSubmitBtn) {
   empSubmitBtn.addEventListener("click", async () => {
+    const name = (empCompanyName?.value || "").trim();
+    const kvk = (empKvk?.value || "").trim();
+    const vat = (empVat?.value || "").trim();
+    const contactName = (empContactName?.value || "").trim();
+    const contactEmail = (empContactEmail?.value || "").trim();
+    const contactPhone = (empContactPhone?.value || "").trim();
+    const iban = (empIban?.value || "").trim();
+    const accountHolder = (empAccountHolder?.value || "").trim();
+
+    empError.classList.add("hidden");
+    empResultBox.classList.add("hidden");
+    empResult.textContent = "";
+
+    if (!name || !contactEmail) {
+      empError.textContent = "Vul minimaal bedrijfsnaam en e-mailadres in.";
+      empError.classList.remove("hidden");
+      return;
+    }
+
+    empSubmitBtn.disabled = true;
+    empSubmitBtn.textContent = "Account wordt aangemaakt...";
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/ats/companies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          kvk_number: kvk || null,
+          vat_number: vat || null,
+          contact_name: contactName || null,
+          contact_email: contactEmail,
+          contact_phone: contactPhone || null,
+          iban: iban || null,
+          account_holder: accountHolder || null
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        empError.textContent = `Er ging iets mis (${response.status}): ${errorText}`;
+        empError.classList.remove("hidden");
+      } else {
+        const data = await response.json();
+
+        // company_id opslaan voor vacatures
+        saveCompanyId(data.id);
+
+        empResult.textContent =
+          `Bedrijf-ID: ${data.id}\n` +
+          `Bedrijfsnaam: ${data.name}\n` +
+          `E-mail: ${data.contact_email}\n` +
+          `Abonnement: ${data.billing_plan}\n` +
+          `Trial vacatures gebruikt: ${data.trial_jobs_used}`;
+        empResultBox.classList.remove("hidden");
+      }
+    } catch (err) {
+      empError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      empError.classList.remove("hidden");
+      console.error(err);
+    } finally {
+      empSubmitBtn.disabled = false;
+      empSubmitBtn.textContent = "Maak mijn gratis trial-account aan";
+    }
+  });
+}
+
+// ---- WERKGEVER: VACATURE AANMAKEN ----
+if (jobSubmitBtn) {
+  jobSubmitBtn.addEventListener("click", async () => {
+    const title = (jobTitleInput?.value || "").trim();
+    const location = (jobLocationInput?.value || "").trim();
+    const salary = (jobSalaryInput?.value || "").trim();
+    const description = (jobDescriptionInputEmp?.value || "").trim();
+
+    jobError.classList.add("hidden");
+    jobResultBox.classList.add("hidden");
+    jobResult.textContent = "";
+
+    if (!title || !description) {
+      jobError.textContent = "Vul minimaal functietitel en vacaturetekst in.";
+      jobError.classList.remove("hidden");
+      return;
+    }
+
+    const companyId = getCompanyId();
+    if (!companyId) {
+      jobError.textContent = "Geen bedrijf gevonden. Maak eerst een trial-account aan (Stap 1).";
+      jobError.classList.remove("hidden");
+      return;
+    }
+
+    jobSubmitBtn.disabled = true;
+    jobSubmitBtn.textContent = "Vacature wordt aangemaakt...";
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/ats/jobs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          company_id: companyId,
+          title,
+          description,
+          location: location || null,
+          salary_range: salary || null
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        jobError.textContent = `Er ging iets mis (${response.status}): ${errorText}`;
+        jobError.classList.remove("hidden");
+      } else {
+        const data = await response.json();
+        jobResult.textContent =
+          `Vacature-ID: ${data.id}\n` +
+          `Titel: ${data.title}\n` +
+          `Status: ${data.status}\n` +
+          `Is trial-vacature: ${data.is_trial ? "JA" : "NEE"}\n` +
+          `Company ID: ${data.company_id}`;
+        jobResultBox.classList.remove("hidden");
+      }
+    } catch (err) {
+      jobError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      jobError.classList.remove("hidden");
+      console.error(err);
+    } finally {
+      jobSubmitBtn.disabled = false;
+      jobSubmitBtn.textContent = "Plaats mijn eerste vacature";
+    }
+  });
+}
+
     const name = (empCompanyName?.value || "").trim();
     const kvk = (empKvk?.value || "").trim();
     const vat = (empVat?.value || "").trim();
