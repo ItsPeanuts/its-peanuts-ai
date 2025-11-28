@@ -29,7 +29,9 @@ if (navCandidate && navEmployer && candidateView && employerView) {
   });
 }
 
-// ---- KANDIDAAT: CV HERSCHRIJVEN ----
+// ==================== KANDIDAAT: CV / BRIEF / MATCH ====================
+
+// Elementen voor CV herschrijven
 const cvInput = document.getElementById("cvInput");
 const targetRoleInput = document.getElementById("targetRole");
 const rewriteBtn = document.getElementById("rewriteBtn");
@@ -96,7 +98,8 @@ if (rewriteBtn) {
         cvResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      cvError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      cvError.textContent =
+        "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       cvError.classList.remove("hidden");
       console.error(err);
     } finally {
@@ -157,7 +160,8 @@ if (letterBtn) {
         letterResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      letterError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      letterError.textContent =
+        "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       letterError.classList.remove("hidden");
       console.error(err);
     } finally {
@@ -210,7 +214,9 @@ if (matchBtn) {
         matchError.classList.remove("hidden");
       } else {
         const data = await response.json();
-        matchResult.textContent = `Score: ${data.match_score}/100\n\nUitleg:\n${data.explanation || "Geen uitleg ontvangen."}`;
+        matchResult.textContent = `Score: ${data.match_score}/100\n\nUitleg:\n${
+          data.explanation || "Geen uitleg ontvangen."
+        }`;
         matchResultBox.classList.remove("hidden");
       }
     } catch (err) {
@@ -224,7 +230,9 @@ if (matchBtn) {
   });
 }
 
-// ---- WERKGEVER: TRIAL-ACCOUNT AANMAKEN ----
+// ==================== WERKGEVER: ACCOUNT, VACATURE, AI-RANK ====================
+
+// Velden voor bedrijfsaccount
 const empCompanyName = document.getElementById("empCompanyName");
 const empKvk = document.getElementById("empKvk");
 const empVat = document.getElementById("empVat");
@@ -248,17 +256,18 @@ const jobResultBox = document.getElementById("jobResultBox");
 const jobResult = document.getElementById("jobResult");
 const jobError = document.getElementById("jobError");
 
-// Kandidaat solliciteren
-const applyJobIdInput = document.getElementById("applyJobIdInput");
-const applyNameInput = document.getElementById("applyNameInput");
-const applyEmailInput = document.getElementById("applyEmailInput");
-const applyCvInput = document.getElementById("applyCvInput");
-const applyBtn = document.getElementById("applyBtn");
-const applyResultBox = document.getElementById("applyResultBox");
-const applyResult = document.getElementById("applyResult");
-const applyError = document.getElementById("applyError");
+// Employer dashboard (vacatures & kandidaten)
+const employerLoadJobsBtn = document.getElementById("employerLoadJobsBtn");
+const employerJobSelect = document.getElementById("employerJobSelect");
+const employerLoadCandidatesBtn = document.getElementById("employerLoadCandidatesBtn");
+const employerAIRankBtn = document.getElementById("employerAIRankBtn");
+const employerDashboardError = document.getElementById("employerDashboardError");
+const employerCandidatesBox = document.getElementById("employerCandidatesBox");
+const employerCandidates = document.getElementById("employerCandidates");
+const employerAIRankBox = document.getElementById("employerAIRankBox");
+const employerAIRank = document.getElementById("employerAIRank");
 
-// Dit wordt gebruikt om company_id te bewaren in de browser
+// Gebruik localStorage om company_id te bewaren in de browser
 const COMPANY_ID_STORAGE_KEY = "its_peanuts_company_id";
 
 function saveCompanyId(id) {
@@ -281,6 +290,7 @@ function getCompanyId() {
   }
 }
 
+// ---- WERKGEVER: ACCOUNT AANMAKEN ----
 if (empSubmitBtn) {
   empSubmitBtn.addEventListener("click", async () => {
     const name = (empCompanyName?.value || "").trim();
@@ -330,7 +340,7 @@ if (empSubmitBtn) {
       } else {
         const data = await response.json();
 
-        // company_id opslaan voor vacatures
+        // company_id opslaan voor vacatures en dashboard
         saveCompanyId(data.id);
 
         empResult.textContent =
@@ -342,7 +352,8 @@ if (empSubmitBtn) {
         empResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      empError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      empError.textContent =
+        "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       empError.classList.remove("hidden");
       console.error(err);
     } finally {
@@ -410,7 +421,8 @@ if (jobSubmitBtn) {
         jobResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      jobError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
+      jobError.textContent =
+        "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       jobError.classList.remove("hidden");
       console.error(err);
     } finally {
@@ -420,75 +432,204 @@ if (jobSubmitBtn) {
   });
 }
 
-// ---- KANDIDAAT: SOLLICITEREN OP VACATURE ----
-if (applyBtn) {
-  applyBtn.addEventListener("click", async () => {
-    const jobIdRaw = (applyJobIdInput?.value || "").trim();
-    const fullName = (applyNameInput?.value || "").trim();
-    const email = (applyEmailInput?.value || "").trim();
-    const cvText = (applyCvInput?.value || "").trim();
+// ---- WERKGEVER: VACATURES LADEN VOOR DASHBOARD ----
+if (employerLoadJobsBtn) {
+  employerLoadJobsBtn.addEventListener("click", async () => {
+    employerDashboardError.classList.add("hidden");
+    employerCandidatesBox.classList.add("hidden");
+    employerAIRankBox.classList.add("hidden");
+    employerCandidates.textContent = "";
+    employerAIRank.textContent = "";
 
-    applyError.classList.add("hidden");
-    applyResultBox.classList.add("hidden");
-    applyResult.textContent = "";
-
-    if (!jobIdRaw) {
-      applyError.textContent = "Vul eerst een vacature-ID in.";
-      applyError.classList.remove("hidden");
+    const companyId = getCompanyId();
+    if (!companyId) {
+      employerDashboardError.textContent =
+        "Geen bedrijf gevonden. Maak eerst een trial-account aan in stap 1.";
+      employerDashboardError.classList.remove("hidden");
       return;
     }
 
-    const jobId = Number(jobIdRaw);
-    if (Number.isNaN(jobId)) {
-      applyError.textContent = "Vacature-ID moet een getal zijn.";
-      applyError.classList.remove("hidden");
-      return;
-    }
-
-    if (!cvText) {
-      applyError.textContent = "Vul eerst je CV-tekst in.";
-      applyError.classList.remove("hidden");
-      return;
-    }
-
-    applyBtn.disabled = true;
-    applyBtn.textContent = "Sollicitatie wordt verstuurd...";
+    employerLoadJobsBtn.disabled = true;
+    employerLoadJobsBtn.textContent = "Vacatures worden geladen...";
 
     try {
-      const response = await fetch(`${BACKEND_URL}/ats/jobs/${jobId}/apply`, {
-        method: "POST",
+      const response = await fetch(`${BACKEND_URL}/ats/companies/${companyId}/jobs`, {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          full_name: fullName || null,
-          email: email || null,
-          cv_text: cvText
-        })
+          "Accept": "application/json"
+        }
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        applyError.textContent = `Er ging iets mis (${response.status}): ${errorText}`;
-        applyError.classList.remove("hidden");
+        employerDashboardError.textContent =
+          `Er ging iets mis bij het laden van vacatures (${response.status}): ${errorText}`;
+        employerDashboardError.classList.remove("hidden");
       } else {
-        const data = await response.json();
-        applyResult.textContent =
-          `Sollicitatie-ID: ${data.id}\n` +
-          `Vacature-ID: ${data.job_id}\n` +
-          `Naam: ${data.full_name || "-"}\n` +
-          `E-mail: ${data.email || "-"}\n` +
-          `Matchscore (later): ${data.match_score ?? "nog niet berekend"}`;
-        applyResultBox.classList.remove("hidden");
+        const jobs = await response.json();
+
+        employerJobSelect.innerHTML = "";
+
+        if (!jobs.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Dit bedrijf heeft nog geen vacatures.";
+          employerJobSelect.appendChild(option);
+        } else {
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Kies een vacature...";
+          employerJobSelect.appendChild(placeholder);
+
+          jobs.forEach((job) => {
+            const option = document.createElement("option");
+            option.value = job.id;
+            option.textContent = `${job.id} – ${job.title} (${job.status})`;
+            employerJobSelect.appendChild(option);
+          });
+        }
       }
     } catch (err) {
-      applyError.textContent = "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
-      applyError.classList.remove("hidden");
+      employerDashboardError.textContent =
+        "Kon geen contact maken met de server bij het laden van vacatures.";
+      employerDashboardError.classList.remove("hidden");
       console.error(err);
     } finally {
-      applyBtn.disabled = false;
-      applyBtn.textContent = "Verstuur mijn sollicitatie";
+      employerLoadJobsBtn.disabled = false;
+      employerLoadJobsBtn.textContent = "Laad mijn vacatures";
     }
   });
 }
+
+// ---- WERKGEVER: KANDIDATEN LADEN VOOR GEKOZEN VACATURE ----
+if (employerLoadCandidatesBtn) {
+  employerLoadCandidatesBtn.addEventListener("click", async () => {
+    employerDashboardError.classList.add("hidden");
+    employerCandidatesBox.classList.add("hidden");
+    employerAIRankBox.classList.add("hidden");
+    employerCandidates.textContent = "";
+    employerAIRank.textContent = "";
+
+    const selectedJobId = employerJobSelect?.value || "";
+    if (!selectedJobId) {
+      employerDashboardError.textContent = "Kies eerst een vacature.";
+      employerDashboardError.classList.remove("hidden");
+      return;
+    }
+
+    employerLoadCandidatesBtn.disabled = true;
+    employerLoadCandidatesBtn.textContent = "Kandidaten worden geladen...";
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/ats/jobs/${selectedJobId}/candidates`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        employerDashboardError.textContent =
+          `Er ging iets mis bij het laden van kandidaten (${response.status}): ${errorText}`;
+        employerDashboardError.classList.remove("hidden");
+      } else {
+        const candidates = await response.json();
+
+        if (!candidates.length) {
+          employerCandidates.textContent = "Er zijn nog geen kandidaten voor deze vacature.";
+        } else {
+          const lines = candidates.map((c) => {
+            const name = c.full_name || "(Naam onbekend)";
+            const email = c.email || "-";
+            const score =
+              typeof c.match_score === "number" ? `${c.match_score}/100` : "nog niet gescoord";
+            return `#${c.id} – ${name} – ${email} – matchscore: ${score}`;
+          });
+
+          employerCandidates.textContent = lines.join("\n");
+        }
+
+        employerCandidatesBox.classList.remove("hidden");
+      }
+    } catch (err) {
+      employerDashboardError.textContent =
+        "Kon geen contact maken met de server bij het laden van kandidaten.";
+      employerDashboardError.classList.remove("hidden");
+      console.error(err);
+    } finally {
+      employerLoadCandidatesBtn.disabled = false;
+      employerLoadCandidatesBtn.textContent = "Laad kandidaten";
+    }
+  });
+}
+
+// ---- WERKGEVER: AI-RANKING VOOR GEKOZEN VACATURE ----
+if (employerAIRankBtn) {
+  employerAIRankBtn.addEventListener("click", async () => {
+    employerDashboardError.classList.add("hidden");
+    employerAIRankBox.classList.add("hidden");
+    employerAIRank.textContent = "";
+
+    const selectedJobId = employerJobSelect?.value || "";
+    if (!selectedJobId) {
+      employerDashboardError.textContent = "Kies eerst een vacature.";
+      employerDashboardError.classList.remove("hidden");
+      return;
+    }
+
+    employerAIRankBtn.disabled = true;
+    employerAIRankBtn.textContent = "AI is kandidaten aan het rangschikken...";
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/ats/jobs/${selectedJobId}/ai-rank-internal`,
+        {
+          method: "POST",
+          headers: {
+            "Accept": "application/json"
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        employerDashboardError.textContent =
+          `Er ging iets mis bij AI-ranking (${response.status}): ${errorText}`;
+        employerDashboardError.classList.remove("hidden");
+      } else {
+        const ranked = await response.json();
+
+        if (!ranked.length) {
+          employerAIRank.textContent =
+            "AI kon geen ranking maken of er zijn geen kandidaten voor deze vacature.";
+        } else {
+          const lines = ranked.map((item, index) => {
+            const name = item.full_name || "(Naam onbekend)";
+            const email = item.email || "-";
+            return (
+              `#${index + 1}: ${name} – ${email}\n` +
+              `Score: ${item.match_score}/100\n` +
+              `Uitleg: ${item.explanation}\n` +
+              "----------------------------------------"
+            );
+          });
+
+          employerAIRank.textContent = lines.join("\n\n");
+        }
+
+        employerAIRankBox.classList.remove("hidden");
+      }
+    } catch (err) {
+      employerDashboardError.textContent =
+        "Kon geen contact maken met de server voor AI-ranking.";
+      employerDashboardError.classList.remove("hidden");
+      console.error(err);
+    } finally {
+      employerAIRankBtn.disabled = false;
+      employerAIRankBtn.textContent = "Laat AI sorteren";
+    }
+  });
+}
+
 
