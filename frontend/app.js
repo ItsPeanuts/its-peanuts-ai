@@ -37,6 +37,7 @@ if (navCandidate && navEmployer && candidateView && employerView) {
 
 // Elementen voor CV herschrijven
 const cvInput = document.getElementById("cvInput");
+const cvFileInput = document.getElementById("cvFileInput");
 const targetRoleInput = document.getElementById("targetRole");
 const rewriteBtn = document.getElementById("rewriteBtn");
 const cvResultBox = document.getElementById("cvResultBox");
@@ -59,6 +60,28 @@ const matchBtn = document.getElementById("matchBtn");
 const matchResultBox = document.getElementById("matchResultBox");
 const matchResult = document.getElementById("matchResult");
 const matchError = document.getElementById("matchError");
+
+// ---- EVENT: CV UPLOAD ALS .TXT ----
+if (cvFileInput) {
+  cvFileInput.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type && file.type !== "text/plain") {
+      alert("Voor nu ondersteunen we alleen .txt bestanden. Je kunt anders je CV tekst plakken.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result || "";
+      if (cvInput) {
+        cvInput.value = text;
+      }
+    };
+    reader.readAsText(file);
+  });
+}
 
 // ---- EVENT: CV HERSCHRIJVEN ----
 if (rewriteBtn) {
@@ -258,7 +281,6 @@ if (matchBtn) {
         matchResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      // Dit is waar jij die melding zag
       matchError.textContent =
         "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       matchError.classList.remove("hidden");
@@ -473,16 +495,6 @@ if (jobSubmitBtn) {
 }
 
 // ---- WERKGEVER: VACATURES LADEN VOOR DASHBOARD ----
-const employerLoadJobsBtn = document.getElementById("employerLoadJobsBtn");
-const employerJobSelect = document.getElementById("employerJobSelect");
-const employerLoadCandidatesBtn = document.getElementById("employerLoadCandidatesBtn");
-const employerAIRankBtn = document.getElementById("employerAIRankBtn");
-const employerDashboardError = document.getElementById("employerDashboardError");
-const employerCandidatesBox = document.getElementById("employerCandidatesBox");
-const employerCandidates = document.getElementById("employerCandidates");
-const employerAIRankBox = document.getElementById("employerAIRankBox");
-const employerAIRank = document.getElementById("employerAIRank");
-
 if (employerLoadJobsBtn) {
   employerLoadJobsBtn.addEventListener("click", async () => {
     employerDashboardError.classList.add("hidden");
@@ -681,5 +693,6 @@ if (employerAIRankBtn) {
     }
   });
 }
+
 
 
