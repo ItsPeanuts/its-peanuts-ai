@@ -1,6 +1,10 @@
 // VUL HIER JOUW BACKEND-URL IN, ZONDER /docs ERACHTER
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
+// Kleine geheugen-variabelen voor CV's
+let lastRawCvText = "";
+let lastRewrittenCvText = "";
+
 // ---- TAB SWITCH (KANDIDAAT / WERKGEVER) ----
 const navCandidate = document.getElementById("navCandidate");
 const navEmployer = document.getElementById("navEmployer");
@@ -72,6 +76,9 @@ if (rewriteBtn) {
       return;
     }
 
+    // Onthoud de ruwe CV
+    lastRawCvText = cvText;
+
     rewriteBtn.disabled = true;
     rewriteBtn.textContent = "AI is bezig...";
 
@@ -94,8 +101,22 @@ if (rewriteBtn) {
         cvError.classList.remove("hidden");
       } else {
         const data = await response.json();
-        cvResult.textContent = data.rewritten_cv || "Geen resultaat ontvangen.";
+        const rewritten = data.rewritten_cv || "Geen resultaat ontvangen.";
+
+        // Toon resultaat
+        cvResult.textContent = rewritten;
         cvResultBox.classList.remove("hidden");
+
+        // Onthoud het herschreven CV
+        lastRewrittenCvText = rewritten;
+
+        // Vul automatisch CV-velden voor motivatiebrief en match als ze nog leeg zijn
+        if (letterCvInput && !letterCvInput.value.trim()) {
+          letterCvInput.value = rewritten;
+        }
+        if (matchCvInput && !matchCvInput.value.trim()) {
+          matchCvInput.value = rewritten;
+        }
       }
     } catch (err) {
       cvError.textContent =
@@ -112,16 +133,24 @@ if (rewriteBtn) {
 // ---- EVENT: MOTIVATIEBRIEF ----
 if (letterBtn) {
   letterBtn.addEventListener("click", async () => {
-    const cvText = (letterCvInput?.value || "").trim();
+    let cvText = (letterCvInput?.value || "").trim();
     const jobText = (jobDescriptionInput?.value || "").trim();
     const companyName = (companyNameInput?.value || "").trim();
+
+    // Als CV-veld leeg is maar we hebben een herschreven CV → automatisch invullen
+    if (!cvText && lastRewrittenCvText) {
+      cvText = lastRewrittenCvText;
+      if (letterCvInput) {
+        letterCvInput.value = lastRewrittenCvText;
+      }
+    }
 
     letterError.classList.add("hidden");
     letterResultBox.classList.add("hidden");
     letterResult.textContent = "";
 
     if (!cvText) {
-      letterError.textContent = "Vul eerst je CV-tekst in.";
+      letterError.textContent = "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
       letterError.classList.remove("hidden");
       return;
     }
@@ -174,15 +203,24 @@ if (letterBtn) {
 // ---- EVENT: MATCHSCORE ----
 if (matchBtn) {
   matchBtn.addEventListener("click", async () => {
-    const cvText = (matchCvInput?.value || "").trim();
+    let cvText = (matchCvInput?.value || "").trim();
     const jobText = (matchJobInput?.value || "").trim();
 
     matchError.classList.add("hidden");
     matchResultBox.classList.add("hidden");
     matchResult.textContent = "";
 
+    // Als het veld leeg is maar we hebben een herschreven CV → gebruik die
+    if (!cvText && lastRewrittenCvText) {
+      cvText = lastRewrittenCvText;
+      if (matchCvInput) {
+        matchCvInput.value = lastRewrittenCvText;
+      }
+    }
+
     if (!cvText) {
-      matchError.textContent = "Vul eerst je CV-tekst in.";
+      matchError.textContent =
+        "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
       matchError.classList.remove("hidden");
       return;
     }
@@ -220,9 +258,11 @@ if (matchBtn) {
         matchResultBox.classList.remove("hidden");
       }
     } catch (err) {
-      matchError.textContent = "Kon geen contact maken met de server.";
+      // Dit is waar jij die melding zag
+      matchError.textContent =
+        "Kon geen contact maken met de server. Controleer de URL of probeer later opnieuw.";
       matchError.classList.remove("hidden");
-      console.error(err);
+      console.error("Matchscore error:", err);
     } finally {
       matchBtn.disabled = false;
       matchBtn.textContent = "Bereken matchscore";
@@ -433,6 +473,16 @@ if (jobSubmitBtn) {
 }
 
 // ---- WERKGEVER: VACATURES LADEN VOOR DASHBOARD ----
+const employerLoadJobsBtn = document.getElementById("employerLoadJobsBtn");
+const employerJobSelect = document.getElementById("employerJobSelect");
+const employerLoadCandidatesBtn = document.getElementById("employerLoadCandidatesBtn");
+const employerAIRankBtn = document.getElementById("employerAIRankBtn");
+const employerDashboardError = document.getElementById("employerDashboardError");
+const employerCandidatesBox = document.getElementById("employerCandidatesBox");
+const employerCandidates = document.getElementById("employerCandidates");
+const employerAIRankBox = document.getElementById("employerAIRankBox");
+const employerAIRank = document.getElementById("employerAIRank");
+
 if (employerLoadJobsBtn) {
   employerLoadJobsBtn.addEventListener("click", async () => {
     employerDashboardError.classList.add("hidden");
@@ -456,7 +506,7 @@ if (employerLoadJobsBtn) {
       const response = await fetch(`${BACKEND_URL}/ats/companies/${companyId}/jobs`, {
         method: "GET",
         headers: {
-          "Accept": "application/json"
+          Accept: "application/json"
         }
       });
 
@@ -524,7 +574,7 @@ if (employerLoadCandidatesBtn) {
       const response = await fetch(`${BACKEND_URL}/ats/jobs/${selectedJobId}/candidates`, {
         method: "GET",
         headers: {
-          "Accept": "application/json"
+          Accept: "application/json"
         }
       });
 
@@ -587,7 +637,7 @@ if (employerAIRankBtn) {
         {
           method: "POST",
           headers: {
-            "Accept": "application/json"
+            Accept: "application/json"
           }
         }
       );
