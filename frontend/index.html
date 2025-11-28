@@ -2,76 +2,34 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>It's Peanuts AI – Slim Solliciteren</title>
+  <title>It's Peanuts AI – Slim Solliciteren & Slim Werven</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="page">
-    <!-- Top bar / logo -->
-    <header class="site-header">
-      <div class="logo-block">
-        <div class="logo-circle">IP</div>
-        <div>
-          <h1>It's Peanuts AI</h1>
-          <p>AI-sollicitatie assistent voor kandidaten én werkgevers.</p>
-        </div>
-      </div>
-      <nav class="top-nav">
-        <button id="navCandidate" class="nav-pill nav-pill-active" type="button">
-          Ik ben kandidaat
-        </button>
-        <button id="navEmployer" class="nav-pill nav-pill-muted" type="button">
-          Ik ben werkgever
-        </button>
+    <header>
+      <h1>It's Peanuts AI</h1>
+      <p>AI die kandidaten helpt met solliciteren én werkgevers helpt met werven.</p>
+
+      <nav class="tabs">
+        <button id="navCandidate" class="nav-pill nav-pill-active">Ik ben kandidaat</button>
+        <button id="navEmployer" class="nav-pill nav-pill-muted">Ik ben werkgever</button>
       </nav>
     </header>
 
-    <!-- KANDIDAAT VIEW -->
-    <main id="candidateView" class="main-grid">
-      <!-- Linkerkolom met uitleg -->
-      <section class="intro-card">
-        <h2>Solliciteren in 4 simpele stappen</h2>
-        <ol class="steps-list">
-          <li>
-            <strong>Stap 1 – Herschrijf je CV</strong>
-            <p>Plak je ruwe CV-tekst. De AI maakt er een nette, professionele CV-tekst van voor recruiters.</p>
-          </li>
-          <li>
-            <strong>Stap 2 – Laat AI je motivatiebrief schrijven</strong>
-            <p>Plak je CV en de vacaturetekst. AI schrijft een sterke motivatiebrief in jouw toon.</p>
-          </li>
-          <li>
-            <strong>Stap 3 – Check je matchscore</strong>
-            <p>Zie direct hoe goed je aansluit op de vacature (0–100) met een korte uitleg.</p>
-          </li>
-          <li>
-            <strong>Stap 4 – Solliciteer op een vacature</strong>
-            <p>Heb je een vacature-ID van It's Peanuts AI? Solliciteer direct via het platform.</p>
-          </li>
-        </ol>
-        <div class="info-box">
-          <h3>TIP</h3>
-          <p>Gebruik één en dezelfde CV-tekst in alle stappen. Zo blijft je verhaal overal hetzelfde.</p>
-        </div>
-      </section>
-
-      <!-- Rechterkolom met AI-functionaliteit -->
-      <section class="cards-column">
-
+    <main>
+      <!-- ================= KANDIDAAT VIEW ================= -->
+      <section id="candidateView">
         <!-- CV herschrijven -->
         <section class="card">
           <h2>Stap 1 – Plak je CV</h2>
-          <p class="card-subtitle">
-            Plak hieronder je ruwe CV of werkervaring. AI maakt er een nette, overzichtelijke CV-tekst van.
-          </p>
-
           <label for="cvInput">Ruwe CV-tekst</label>
           <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
 
           <label for="targetRole">Functie waar je op wilt solliciteren (optioneel)</label>
           <input id="targetRole" type="text" placeholder="Bijv. Business Development Manager" />
 
-          <button id="rewriteBtn" class="primary-button">Herschrijf mijn CV met AI</button>
+          <button id="rewriteBtn">Herschrijf mijn CV met AI</button>
 
           <div id="cvResultBox" class="result hidden">
             <h3>Herschreven CV</h3>
@@ -82,10 +40,10 @@
         </section>
 
         <!-- Motivatiebrief genereren -->
-        <section class="card">
+        <section class="card" style="margin-top: 16px;">
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
-          <p class="card-subtitle">
-            Gebruik bij voorkeur de herschreven CV uit stap 1 en plak hieronder de volledige vacaturetekst.
+          <p style="font-size: 14px; color: #9ca3af;">
+            Tip: gebruik hier het herschreven CV uit stap 1 en plak de volledige vacaturetekst.
           </p>
 
           <label for="letterCvInput">CV-tekst (bij voorkeur de herschreven versie)</label>
@@ -97,7 +55,7 @@
           <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
           <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
 
-          <button id="letterBtn" class="primary-button">Schrijf mijn motivatiebrief met AI</button>
+          <button id="letterBtn">Schrijf mijn motivatiebrief met AI</button>
 
           <div id="letterResultBox" class="result hidden">
             <h3>Motivatiebrief</h3>
@@ -108,10 +66,10 @@
         </section>
 
         <!-- Matchscore berekenen -->
-        <section class="card">
+        <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
-          <p class="card-subtitle">
-            Vul je CV en de vacaturetekst in. AI geeft een matchscore (0–100) met een korte uitleg.
+          <p style="font-size: 14px; color: #9ca3af;">
+            Vul je CV in en plak de vacaturetekst. De AI geeft een matchscore (0–100) + uitleg.
           </p>
 
           <label for="matchCvInput">CV-tekst</label>
@@ -120,7 +78,7 @@
           <label for="matchJobInput">Vacaturetekst</label>
           <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
 
-          <button id="matchBtn" class="primary-button">Bereken matchscore</button>
+          <button id="matchBtn">Bereken matchscore</button>
 
           <div id="matchResultBox" class="result hidden">
             <h3>Matchscore</h3>
@@ -129,85 +87,21 @@
 
           <div id="matchError" class="error hidden"></div>
         </section>
-
-        <!-- Solliciteren op een vacature -->
-        <section class="card">
-          <h2>Stap 4 – Solliciteer op een vacature bij It's Peanuts</h2>
-          <p class="card-subtitle">
-            Heb je een vacature-ID van It's Peanuts AI? Vul je gegevens in en solliciteer direct.
-          </p>
-
-          <label for="applyJobIdInput">Vacature-ID</label>
-          <input id="applyJobIdInput" type="text" placeholder="Bijv. 1, 2, 3..." />
-
-          <label for="applyNameInput">Naam</label>
-          <input id="applyNameInput" type="text" placeholder="Je volledige naam" />
-
-          <label for="applyEmailInput">E-mailadres</label>
-          <input id="applyEmailInput" type="text" placeholder="jouwemail@example.com" />
-
-          <label for="applyCvInput">CV-tekst</label>
-          <textarea id="applyCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
-
-          <button id="applyBtn" class="primary-button" type="button">
-            Verstuur mijn sollicitatie
-          </button>
-
-          <div id="applyResultBox" class="result hidden">
-            <h3>Sollicitatie ontvangen</h3>
-            <pre id="applyResult"></pre>
-          </div>
-
-          <div id="applyError" class="error hidden"></div>
-        </section>
-
-      </section>
-    </main>
-
-    <!-- WERKGEVER VIEW -->
-    <main id="employerView" class="main-grid hidden">
-      <!-- Linker info-blok voor werkgevers -->
-      <section class="intro-card">
-        <h2>Voor werkgevers</h2>
-        <p style="font-size:13px; color:#d1d5db; margin-top:4px;">
-          It's Peanuts AI helpt je om sneller, slimmer en goedkoper kandidaten te selecteren.
-          Eerste vacature: <strong>gratis</strong>. Daarna een simpel abonnement per maand.
-        </p>
-
-        <ul class="steps-list">
-          <li>
-            <strong>✔ Eerste vacature gratis</strong>
-            <p>Probeer de AI én ons platform zonder risico. Eén vacature, volledig gratis.</p>
-          </li>
-          <li>
-            <strong>✔ AI die CV's voorselecteert</strong>
-            <p>AI beoordeelt kandidaten, maakt matchscores en geeft een korte uitleg per kandidaat.</p>
-          </li>
-          <li>
-            <strong>✔ Vast bedrag per maand</strong>
-            <p>Na de gratis proef: bijvoorbeeld <strong>€99 p/m per account</strong>. Geen verrassingen, geen fee per plaatsing.</p>
-          </li>
-        </ul>
-
-        <div class="info-box">
-          <h3>Hoe werkt het?</h3>
-          <p>Stap 1: maak een trial-account aan. Stap 2: plaats je eerste vacature. Onze AI helpt daarna met de selectie.</p>
-        </div>
       </section>
 
-      <!-- Rechterkolom: formulieren voor werkgevers -->
-      <section class="cards-column">
-        <!-- Card 1: Trial-account -->
+      <!-- ================= WERKGEVER VIEW ================= -->
+      <section id="employerView" class="hidden">
+        <!-- Stap 1: Bedrijf / trial-account -->
         <section class="card">
-          <h2>Start met een gratis trial-account</h2>
-          <p class="card-subtitle">
-            Vul hieronder je bedrijfsgegevens in. Je eerste vacature is gratis, daarna kun je kiezen voor een maandabonnement.
+          <h2>Stap 1 – Maak je (gratis) trial-account aan</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            De eerste vacature is gratis. Daarna kun je overstappen op een abonnement.
           </p>
 
           <label for="empCompanyName">Bedrijfsnaam</label>
-          <input id="empCompanyName" type="text" placeholder="Bijv. It's Peanuts Recruitment BV" />
+          <input id="empCompanyName" type="text" placeholder="Bijv. It's Peanuts BV" />
 
-          <label for="empKvk">KVK-nummer</label>
+          <label for="empKvk">KVK-nummer (optioneel)</label>
           <input id="empKvk" type="text" placeholder="Bijv. 12345678" />
 
           <label for="empVat">BTW-nummer (optioneel)</label>
@@ -217,51 +111,47 @@
           <input id="empContactName" type="text" placeholder="Naam contactpersoon" />
 
           <label for="empContactEmail">E-mailadres</label>
-          <input id="empContactEmail" type="text" placeholder="contact@bedrijf.nl" />
+          <input id="empContactEmail" type="email" placeholder="E-mailadres voor factuur / login" />
 
-          <label for="empContactPhone">Telefoonnummer</label>
+          <label for="empContactPhone">Telefoonnummer (optioneel)</label>
           <input id="empContactPhone" type="text" placeholder="Bijv. 0612345678" />
 
-          <label for="empIban">IBAN (voor toekomstige automatische incasso)</label>
+          <label for="empIban">IBAN (optioneel, voor automatische incasso later)</label>
           <input id="empIban" type="text" placeholder="Bijv. NL12BANK0123456789" />
 
-          <label for="empAccountHolder">Naam rekeninghouder</label>
-          <input id="empAccountHolder" type="text" placeholder="Bijv. Bedrijfsnaam BV" />
+          <label for="empAccountHolder">Rekeninghouder (optioneel)</label>
+          <input id="empAccountHolder" type="text" placeholder="Bijv. It's Peanuts BV" />
 
-          <button id="empSubmitBtn" class="primary-button" type="button">
-            Maak mijn gratis trial-account aan
-          </button>
+          <button id="empSubmitBtn">Maak mijn gratis trial-account aan</button>
 
           <div id="empResultBox" class="result hidden">
-            <h3>Account aangemaakt</h3>
+            <h3>Bedrijfsaccount aangemaakt</h3>
             <pre id="empResult"></pre>
           </div>
 
           <div id="empError" class="error hidden"></div>
         </section>
 
-        <!-- Card 2: Eerste vacature plaatsen -->
-        <section class="card">
-          <h2>Plaats je eerste (gratis) vacature</h2>
-          <p class="card-subtitle">
-            Gebruik het trial-account dat je zojuist hebt aangemaakt. Je eerste vacature is gratis en wordt gekoppeld aan jouw bedrijf.
+        <!-- Stap 2: Vacature plaatsen -->
+        <section class="card" style="margin-top: 16px;">
+          <h2>Stap 2 – Plaats je eerste vacature</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            Deze vacature wordt gekoppeld aan het bedrijf dat je in stap 1 hebt aangemaakt.
           </p>
 
           <label for="jobTitleInput">Functietitel</label>
-          <input id="jobTitleInput" type="text" placeholder="Bijv. Accountmanager Binnendienst" />
+          <input id="jobTitleInput" type="text" placeholder="Bijv. Senior Accountmanager AI" />
 
           <label for="jobLocationInput">Locatie</label>
-          <input id="jobLocationInput" type="text" placeholder="Bijv. Amsterdam, Rotterdam, remote" />
+          <input id="jobLocationInput" type="text" placeholder="Bijv. Amsterdam, Hybride" />
 
           <label for="jobSalaryInput">Salarisrange (optioneel)</label>
-          <input id="jobSalaryInput" type="text" placeholder="Bijv. €3.000 – €4.000 bruto per maand" />
+          <input id="jobSalaryInput" type="text" placeholder="Bijv. €4.000 - €6.000" />
 
           <label for="jobDescriptionInputEmp">Vacaturetekst</label>
           <textarea id="jobDescriptionInputEmp" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
 
-          <button id="jobSubmitBtn" class="primary-button" type="button">
-            Plaats mijn eerste vacature
-          </button>
+          <button id="jobSubmitBtn">Plaats mijn eerste vacature</button>
 
           <div id="jobResultBox" class="result hidden">
             <h3>Vacature aangemaakt</h3>
@@ -270,18 +160,46 @@
 
           <div id="jobError" class="error hidden"></div>
         </section>
+
+        <!-- Stap 3: Kandidaten & AI-ranking -->
+        <section class="card" style="margin-top: 16px;">
+          <h2>Stap 3 – Kandidaten en AI-match</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            Laad je vacatures, kies er één, bekijk kandidaten en laat AI ze rangschikken.
+          </p>
+
+          <button id="employerLoadJobsBtn">Laad mijn vacatures</button>
+
+          <label for="employerJobSelect" style="margin-top: 12px;">Kies een vacature</label>
+          <select id="employerJobSelect">
+            <option value="">Nog geen vacatures geladen...</option>
+          </select>
+
+          <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="employerLoadCandidatesBtn">Laad kandidaten</button>
+            <button id="employerAIRankBtn">Laat AI sorteren</button>
+          </div>
+
+          <div id="employerDashboardError" class="error hidden" style="margin-top: 8px;"></div>
+
+          <div id="employerCandidatesBox" class="result hidden" style="margin-top: 12px;">
+            <h3>Kandidaten (onbewerkt)</h3>
+            <pre id="employerCandidates"></pre>
+          </div>
+
+          <div id="employerAIRankBox" class="result hidden" style="margin-top: 12px;">
+            <h3>AI-rangschikking</h3>
+            <pre id="employerAIRank"></pre>
+          </div>
+        </section>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <small>© <span id="yearSpan"></span> It's Peanuts AI Recruiter Suite – gebouwd met ❤️ voor kandidaten en werkgevers.</small>
+    <footer>
+      <small>Powered by It's Peanuts AI Recruiter Suite</small>
     </footer>
   </div>
 
-  <script>
-    // Zet automatisch het jaar in de footer
-    document.getElementById("yearSpan").textContent = new Date().getFullYear();
-  </script>
   <script src="app.js"></script>
 </body>
 </html>
