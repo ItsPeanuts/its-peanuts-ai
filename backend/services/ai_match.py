@@ -1,143 +1,118 @@
-from typing import List, Dict, Any
 import json
+from typing import List, Dict
 
+from sqlalchemy.orm import Session
 from openai import OpenAI
 
 from backend.config import OPENAI_API_KEY
 from backend import models
 
-# OpenAI client gebruiken zoals in de andere services
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-async def rank_candidates_for_job(
-    job_description: str,
+def rank_candidates_for_job(
+    db: Session,
+    job: models.Job,
     candidates: List[models.CandidateProfile],
-) -> List[Dict[str, Any]]:
+) -> List[Dict]:
     """
-    Krijgt:
-      - job_description: de tekst van de vacature
-      - candidates: lijst met CandidateProfile objecten uit de database
-
-    Geeft een lijst terug met dicts:
-      {
-        "candidate": <CandidateProfile>,
-        "score": <int 0-100>,
-        "explanation": <uitleg in NL>
-      }
+    Laat AI alle kandidaten voor één vacature beoordelen en rangschikken.
+    - Leest vacaturetekst
+    - Leest CV-teksten
+    - Geeft per kandidaat een score (0–100) + korte uitleg terug
+    - Slaat match_score op in de database
+    - Retourneert een gesorteerde lijst (beste eerst)
     """
 
-    # Geen kandidaten? Dan valt er niks te ranken.
     if not candidates:
         return []
 
-    # Bouw een compacte lijst van kandidaten voor de prompt
-    candidate_blocks = []
+    job_text = f"Titel: {job.title}\nLocatie: {job.location or 'Onbekend'}\n\nOmschrijving:\n{job.description}"
+
+    candidates_payload = []
     for c in candidates:
-        name = c.full_name or f"Kandidaat {c.id}"
-        cv_text = (c.cv_text or "")[:1500]  # niet té lang maken
-
-        block = f"""
-KANDIDAAT_ID: {c.id}
-Naam: {name}
-CV:
-{cv_text}
---------------------
-"""
-        candidate_blocks.append(block)
-
-    prompt = f"""
-Je bent een senior recruiter.
-
-Je krijgt één vacature + een lijst met kandidaten (met KANDIDAAT_ID).
-Voor elke kandidaat geef je:
-
-- een matchscore tussen 0 en 100 (hoe beter de match, hoe hoger)
-- een korte uitleg in het Nederlands waarom je deze score geeft.
-
-Vacature:
------------
-{job_description}
-
-Kandidaten:
------------
-{''.join(candidate_blocks)}
-
-BELANGRIJK:
-- Geef ALLEEN geldige JSON terug.
-- Formaat van de JSON:
-
-{{
-  "candidates": [
-    {{
-      "id": <int>,          // KANDIDAAT_ID
-      "score": <int>,       // 0 tot 100
-      "uitleg": "<korte uitleg in het Nederlands>"
-    }},
-    ...
-  ]
-}}
-"""
-
-    try:
-        response = client.responses.create(
-            model="gpt-4.1-mini",
-            input=prompt,
-            response_format={"type": "json_object"},
+        name_or_email = c.full_name or c.email or f"Kandidaat {c.id}"
+        candidates_payload.append(
+            {
+                "id": c.id,
+                "name": name_or_email,
+                "cv_text": (c.cv_text or "")[:8000],  # safeguard
+            }
         )
 
-        raw_text = response.output[0].content[0].text
+    system_prompt = (
+        "Je bent een ervaren recruitment consultant. "
+        "Je beoordeelt kandidaten objectief op basis van hun CV en de vacaturetekst. "
+        "Je geeft een matchscore tussen 0 en 100 en een korte Nederlandse uitleg per kandidaat."
+    )
 
-        data = json.loads(raw_text)
+    user_prompt = {
+        "job": job_text,
+        "candidates": candidates_payload,
+        "instructions": (
+            "Geef je antwoord als geldig JSON-object met één key 'rankings', "
+            "die een array bevat van objecten met exact deze velden: "
+            "{'candidate_id': int, 'match_score': int, 'explanation': str}. "
+            "Gebruik Nederlandse uitleg. Sorteer in je JSON van beste naar minst goede kandidaat."
+        ),
+    }
 
-        # We verwachten {"candidates": [...]}
-        items = data.get("candidates", [])
-
-        scores_by_id: Dict[int, Dict[str, Any]] = {}
-        for item in items:
-            cid = item.get("id")
-            score = item.get("score")
-            explanation = item.get("uitleg") or item.get("explanation")
-
-            if cid is None or score is None:
-                continue
-
-            scores_by_id[int(cid)] = {
-                "score": int(score),
-                "explanation": explanation or "",
-            }
-
-        # Bouw resultaatlijst met dezelfde CandidateProfile objecten
-        results: List[Dict[str, Any]] = []
-        for c in candidates:
-            meta = scores_by_id.get(
-                c.id,
-                {
-                    "score": 0,
-                    "explanation": "Geen score ontvangen van AI.",
-                },
-            )
-            results.append(
-                {
-                    "candidate": c,
-                    "score": meta["score"],
-                    "explanation": meta["explanation"],
-                }
-            )
-
-        # Sorteer op score (hoog naar laag)
-        results.sort(key=lambda r: r["score"], reverse=True)
-        return results
-
-    except Exception as e:
-        # Als OpenAI stuk is, crasht de hele API nu niet maar geven
-        # we gewoon alles terug met score 0.
-        print("AI match error:", e)
-        return [
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
             {
-                "candidate": c,
-                "score": 0,
-                "explanation": "AI-matchen is tijdelijk niet beschikbaar.",
+                "role": "user",
+                "content": json.dumps(user_prompt, ensure_ascii=False),
+            },
+        ],
+        temperature=0.3,
+    )
+
+    content = response.choices[0].message.content
+
+    try:
+        data = json.loads(content)
+        rankings = data.get("rankings", [])
+    except json.JSONDecodeError:
+        # Als AI geen geldig JSON terugstuurt, doen we geen update
+        # maar geven we een lege lijst terug
+        return []
+
+    ranking_by_id = {}
+    for item in rankings:
+        cid = item.get("candidate_id")
+        score = item.get("match_score")
+        explanation = item.get("explanation", "")
+        if cid is None or score is None:
+            continue
+        ranking_by_id[int(cid)] = {
+            "match_score": int(score),
+            "explanation": explanation,
+        }
+
+    result: List[Dict] = []
+
+    for c in candidates:
+        info = ranking_by_id.get(c.id)
+        if not info:
+            # AI heeft deze kandidaat niet gerankt, sla over
+            continue
+
+        c.match_score = info["match_score"]
+
+        result.append(
+            {
+                "candidate_id": c.id,
+                "full_name": c.full_name,
+                "email": c.email,
+                "match_score": info["match_score"],
+                "explanation": info["explanation"],
             }
-            for c in candidates
-        ]
+        )
+
+    db.commit()
+
+    # Extra sortering, just in case
+    result.sort(key=lambda x: x["match_score"], reverse=True)
+    return result
