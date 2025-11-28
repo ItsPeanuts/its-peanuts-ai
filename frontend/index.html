@@ -22,11 +22,18 @@
       <section id="candidateView">
         <!-- CV herschrijven -->
         <section class="card">
-          <h2>Stap 1 – Plak je CV</h2>
+          <h2>Stap 1 – Plak of upload je CV</h2>
+
           <label for="cvInput">Ruwe CV-tekst</label>
           <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
 
-          <label for="targetRole">Functie waar je op wilt solliciteren (optioneel)</label>
+          <label for="cvFileInput" style="margin-top: 8px;">Of upload je CV als .txt bestand</label>
+          <input id="cvFileInput" type="file" accept=".txt" />
+          <small style="font-size: 12px; color: #9ca3af;">
+            Voor nu ondersteunen we .txt bestanden. De inhoud wordt automatisch in het veld hierboven gezet.
+          </small>
+
+          <label for="targetRole" style="margin-top: 12px;">Functie waar je op wilt solliciteren (optioneel)</label>
           <input id="targetRole" type="text" placeholder="Bijv. Business Development Manager" />
 
           <button id="rewriteBtn">Herschrijf mijn CV met AI</button>
@@ -43,11 +50,11 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Tip: gebruik hier het herschreven CV uit stap 1 en plak de volledige vacaturetekst.
+            Tip: het veld hieronder wordt automatisch gevuld met je herschreven CV uit stap 1.
           </p>
 
-          <label for="letterCvInput">CV-tekst (bij voorkeur de herschreven versie)</label>
-          <textarea id="letterCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+          <label for="letterCvInput">CV-tekst</label>
+          <textarea id="letterCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="jobDescriptionInput">Vacaturetekst</label>
           <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
@@ -69,11 +76,11 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Vul je CV in en plak de vacaturetekst. De AI geeft een matchscore (0–100) + uitleg.
+            Dit veld wordt ook automatisch gevuld met je herschreven CV. Alleen de vacaturetekst hoef je nog te plakken.
           </p>
 
           <label for="matchCvInput">CV-tekst</label>
-          <textarea id="matchCvInput" placeholder="Plak je CV-tekst..."></textarea>
+          <textarea id="matchCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="matchJobInput">Vacaturetekst</label>
           <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
