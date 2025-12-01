@@ -20,40 +20,70 @@
     <main>
       <!-- ================= KANDIDAAT VIEW ================= -->
       <section id="candidateView">
-        <!-- Vacature-overzicht (zoals Indeed) -->
+        <!-- VACATUREZOEKER (Indeed-stijl) -->
         <section class="card">
-          <h2>Vacatures op It's Peanuts AI</h2>
+          <h2>Vacatures zoeken</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Hier zie je alle vacatures die werkgevers via It's Peanuts AI hebben geplaatst.
-            Je kunt een vacature lezen, opslaan en er direct met AI op solliciteren.
+            Zoek vacatures op titel, bedrijf of trefwoord. Je kunt daarna met één klik AI inschakelen
+            om de beste matches te vinden op basis van jouw CV.
           </p>
 
-          <button id="jobBoardLoadBtn">Laad alle vacatures</button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+            <div>
+              <label for="jobSearchQuery">Zoekwoord / functie / bedrijf</label>
+              <input id="jobSearchQuery" type="text" placeholder="Bijv. accountmanager, AI, Bol.com" />
+            </div>
+            <div>
+              <label for="jobSearchLocation">Plaats of regio</label>
+              <input id="jobSearchLocation" type="text" placeholder="Bijv. Amsterdam, Randstad" />
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+            <button id="jobBoardSearchBtn">Zoek vacatures</button>
+            <button id="jobBoardAIButton">AI: zoek beste matches op basis van mijn CV</button>
+          </div>
 
           <div id="jobBoardError" class="error hidden" style="margin-top: 8px;"></div>
 
-          <div id="jobBoardList" style="margin-top: 12px;"></div>
-
-          <div id="jobBoardDetail" class="result hidden" style="margin-top: 12px;">
-            <h3 id="jobBoardDetailTitle"></h3>
-            <p id="jobBoardDetailMeta" style="font-size: 14px; color: #9ca3af;"></p>
-            <pre id="jobBoardDetailDescription" style="white-space: pre-wrap;"></pre>
-
-            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-              <button id="jobBoardUseForAI">Solliciteer met AI</button>
-              <button id="jobBoardSaveBtn">Sla vacature op</button>
+          <div style="display: flex; gap: 12px; align-items: flex-start; margin-top: 12px;">
+            <!-- Linkerkant: lijst met vacatures (scrollbaar) -->
+            <div id="jobBoardList" style="
+              flex: 1;
+              max-height: 350px;
+              overflow-y: auto;
+              border-right: 1px solid #e5e7eb;
+              padding-right: 8px;
+              font-size: 14px;
+            ">
+              <p style="color: #9ca3af;">
+                Vul hierboven een zoekwoord en/of locatie in en klik op "Zoek vacatures".
+              </p>
             </div>
 
-            <div id="jobBoardDetailInfo" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+            <!-- Rechterkant: detail van geselecteerde vacature -->
+            <div id="jobBoardDetail" class="result hidden" style="flex: 1; max-height: 350px; overflow-y: auto;">
+              <h3 id="jobBoardDetailTitle"></h3>
+              <p id="jobBoardDetailMeta" style="font-size: 14px; color: #9ca3af;"></p>
+              <pre id="jobBoardDetailDescription" style="white-space: pre-wrap;"></pre>
+
+              <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="jobBoardUseForAI">Solliciteer met AI</button>
+                <button id="jobBoardSaveBtn">Sla vacature op</button>
+              </div>
+
+              <div id="jobBoardDetailInfo" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+            </div>
           </div>
         </section>
 
-        <!-- Stap 0: Vacatures kiezen van platform (voor snelle koppeling) -->
+        <!-- Stap 0: Vacatures kiezen van platform (optioneel, extra) -->
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 0 – Kies een vacature van ons platform (optioneel)</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Klik op "Laad vacatures" om vacatures te zien die bedrijven via It's Peanuts AI hebben geplaatst.
-            Als je er één kiest, vullen we automatisch de vacaturetekst in bij je motivatiebrief en matchscore.
+            Dit is een snelle lijst met vacatures van It's Peanuts AI. Je kunt ook hierboven zoeken
+            zoals bij Indeed. Als je hier een vacature kiest, vullen we automatisch de vacaturetekst
+            in bij je motivatiebrief en matchscore.
           </p>
 
           <button id="candLoadJobsBtn">Laad beschikbare vacatures</button>
@@ -100,9 +130,8 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Tip: het CV-veld wordt automatisch gevuld met je herschreven CV uit stap 1.
-            Als je in stap 0 of boven in het vacature-overzicht een vacature hebt gekozen,
-            vullen we hier de vacaturetekst alvast voor je in.
+            We vullen dit CV-veld automatisch met je herschreven CV. Als je in het vacature-overzicht
+            of in stap 0 een vacature hebt gekozen, vullen we hier de vacaturetekst alvast voor je in.
           </p>
 
           <label for="letterCvInput">CV-tekst</label>
@@ -128,7 +157,7 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Dit veld wordt ook automatisch gevuld met je herschreven CV. Als je een vacature
+            Dit veld wordt automatisch gevuld met je herschreven CV. Als je een vacature
             gekozen hebt in het overzicht of in stap 0, gebruiken we automatisch die vacaturetekst.
           </p>
 
@@ -263,6 +292,7 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
