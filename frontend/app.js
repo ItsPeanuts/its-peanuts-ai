@@ -1,41 +1,10 @@
-// VUL HIER JOUW BACKEND-URL IN, ZONDER /docs ERACHTER
+// BACKEND URL (ZONDER /docs)
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
-// Kleine geheugen-variabelen
-let lastRawCvText = "";
-let lastRewrittenCvText = "";
-let candidateJobsCache = [];
-let allJobsCache = [];
-let selectedCandidateJobId = null;
-let selectedDetailJobId = null;
+// Key om vacature vanuit jobs.html door te geven
+const SELECTED_JOB_FOR_AI_KEY = "its_peanuts_selected_job_for_ai";
 
-// Saved jobs (client-side opslaan)
-const SAVED_JOBS_KEY = "its_peanuts_saved_jobs";
-
-function loadSavedJobIds() {
-  try {
-    const raw = localStorage.getItem(SAVED_JOBS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((id) => Number(id)).filter((id) => !Number.isNaN(id));
-  } catch (e) {
-    console.warn("Kon saved_jobs niet lezen:", e);
-    return [];
-  }
-}
-
-function saveSavedJobIds(ids) {
-  try {
-    localStorage.setItem(SAVED_JOBS_KEY, JSON.stringify(ids));
-  } catch (e) {
-    console.warn("Kon saved_jobs niet opslaan:", e);
-  }
-}
-
-let savedJobIds = loadSavedJobIds();
-
-// ---- TAB SWITCH (KANDIDAAT / WERKGEVER) ----
+// ------------------ TAB SWITCH (KANDIDAAT / WERKGEVER) ------------------
 const navCandidate = document.getElementById("navCandidate");
 const navEmployer = document.getElementById("navEmployer");
 const candidateView = document.getElementById("candidateView");
@@ -63,490 +32,12 @@ if (navCandidate && navEmployer && candidateView && employerView) {
   });
 }
 
-// ==================== KANDIDAAT: VACATURE-OVERZICHT (JOBBOARD) ====================
+// ------------------ KANDIDAAT: CV / MOTIVATIE / MATCH ------------------
 
-const jobBoardSearchBtn = document.getElementById("jobBoardSearchBtn");
-const jobBoardAIButton = document.getElementById("jobBoardAIButton");
-const jobSearchQuery = document.getElementById("jobSearchQuery");
-const jobSearchLocation = document.getElementById("jobSearchLocation");
+let lastRawCvText = "";
+let lastRewrittenCvText = "";
 
-const jobBoardError = document.getElementById("jobBoardError");
-const jobBoardList = document.getElementById("jobBoardList");
-const jobBoardDetail = document.getElementById("jobBoardDetail");
-const jobBoardDetailTitle = document.getElementById("jobBoardDetailTitle");
-const jobBoardDetailMeta = document.getElementById("jobBoardDetailMeta");
-const jobBoardDetailDescription = document.getElementById("jobBoardDetailDescription");
-const jobBoardUseForAI = document.getElementById("jobBoardUseForAI");
-const jobBoardSaveBtn = document.getElementById("jobBoardSaveBtn");
-const jobBoardDetailInfo = document.getElementById("jobBoardDetailInfo");
-
-function renderJobBoardList(showScores = false) {
-  if (!jobBoardList) return;
-
-  jobBoardList.innerHTML = "";
-
-  if (!allJobsCache.length) {
-    const p = document.createElement("p");
-    p.textContent = "Geen vacatures gevonden voor deze zoekopdracht.";
-    p.style.color = "#9ca3af";
-    jobBoardList.appendChild(p);
-    return;
-  }
-
-  const container = document.createElement("div");
-
-  allJobsCache.forEach((job) => {
-    const item = document.createElement("div");
-    item.style.borderTop = "1px solid #e5e7eb";
-    item.style.padding = "8px 0";
-    item.style.cursor = "pointer";
-
-    const title = document.createElement("div");
-    title.style.fontWeight = "600";
-    title.textContent = job.title;
-    item.appendChild(title);
-
-    const meta = document.createElement("div");
-    meta.style.fontSize = "13px";
-    meta.style.color = "#6b7280";
-    const companyName = job.company_name || `Bedrijf #${job.company_id}`;
-    const location = job.location || "Locatie onbekend";
-    const salary = job.salary_range || "";
-    meta.textContent = `${companyName} – ${location}${salary ? " – " + salary : ""}`;
-    item.appendChild(meta);
-
-    if (showScores && typeof job._matchScore === "number") {
-      const scoreLine = document.createElement("div");
-      scoreLine.style.fontSize = "13px";
-      scoreLine.style.color = "#16a34a";
-      scoreLine.textContent = `AI-matchscore: ${job._matchScore}/100`;
-      item.appendChild(scoreLine);
-    }
-
-    const snippet = document.createElement("div");
-    snippet.style.fontSize = "13px";
-    snippet.style.color = "#4b5563";
-    const text = job.description || "";
-    const shortText = text.length > 180 ? text.slice(0, 180) + "..." : text;
-    snippet.textContent = shortText;
-    item.appendChild(snippet);
-
-    const buttonRow = document.createElement("div");
-    buttonRow.style.marginTop = "6px";
-    buttonRow.style.display = "flex";
-    buttonRow.style.flexWrap = "wrap";
-    buttonRow.style.gap = "6px";
-
-    const readBtn = document.createElement("button");
-    readBtn.textContent = "Lees vacature";
-    readBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showJobDetail(job.id);
-    });
-    buttonRow.appendChild(readBtn);
-
-    const applyBtn = document.createElement("button");
-    applyBtn.textContent = "Solliciteer met AI";
-    applyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      useJobForAI(job);
-    });
-    buttonRow.appendChild(applyBtn);
-
-    const saveBtn = document.createElement("button");
-    const isSaved = savedJobIds.includes(job.id);
-    saveBtn.textContent = isSaved ? "Verwijder uit opgeslagen" : "Sla vacature op";
-    saveBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleSaveJob(job.id);
-      const nowSaved = savedJobIds.includes(job.id);
-      saveBtn.textContent = nowSaved ? "Verwijder uit opgeslagen" : "Sla vacature op";
-    });
-    buttonRow.appendChild(saveBtn);
-
-    item.addEventListener("click", () => {
-      showJobDetail(job.id);
-    });
-
-    item.appendChild(buttonRow);
-    container.appendChild(item);
-  });
-
-  jobBoardList.appendChild(container);
-}
-
-function showJobDetail(jobId) {
-  const job = allJobsCache.find((j) => j.id === jobId);
-  if (!job || !jobBoardDetail) return;
-
-  selectedDetailJobId = job.id;
-
-  jobBoardDetailTitle.textContent = job.title;
-  const companyName = job.company_name || `Bedrijf #${job.company_id}`;
-  const location = job.location || "Locatie onbekend";
-  const salary = job.salary_range || "";
-  jobBoardDetailMeta.textContent =
-    `${companyName} – ${location}${salary ? " – " + salary : ""}`;
-
-  jobBoardDetailDescription.textContent = job.description || "(Geen vacaturetekst ingevuld)";
-
-  const isSaved = savedJobIds.includes(job.id);
-  jobBoardSaveBtn.textContent = isSaved ? "Verwijder uit opgeslagen" : "Sla vacature op";
-  jobBoardDetailInfo.textContent =
-    "Klik op 'Solliciteer met AI' om deze vacature direct te gebruiken voor motivatiebrief en matchscore.";
-
-  jobBoardDetail.classList.remove("hidden");
-}
-
-function useJobForAI(job) {
-  selectedCandidateJobId = job.id;
-  const description = job.description || "";
-
-  if (description) {
-    if (jobDescriptionInput) jobDescriptionInput.value = description;
-    if (matchJobInput) matchJobInput.value = description;
-
-    if (jobBoardDetailInfo) {
-      jobBoardDetailInfo.textContent =
-        "Deze vacaturetekst is nu ingevuld bij je motivatiebrief en matchscore. Scroll naar beneden om verder te gaan.";
-    }
-    if (candJobsError) {
-      candJobsError.textContent =
-        `Vacature '${job.title}' is geselecteerd voor AI-sollicitatie.`;
-      candJobsError.classList.remove("hidden");
-    }
-  }
-}
-
-function toggleSaveJob(jobId) {
-  if (savedJobIds.includes(jobId)) {
-    savedJobIds = savedJobIds.filter((id) => id !== jobId);
-  } else {
-    savedJobIds.push(jobId);
-  }
-  saveSavedJobIds(savedJobIds);
-}
-
-// Vacatures zoeken (zoals Indeed: eerst zoek, dan pas lijst)
-if (jobBoardSearchBtn) {
-  jobBoardSearchBtn.addEventListener("click", async () => {
-    if (jobBoardError) {
-      jobBoardError.classList.add("hidden");
-      jobBoardError.textContent = "";
-    }
-    if (jobBoardDetail) {
-      jobBoardDetail.classList.add("hidden");
-    }
-
-    const q = (jobSearchQuery?.value || "").trim().toLowerCase();
-    const loc = (jobSearchLocation?.value || "").trim().toLowerCase();
-
-    if (jobBoardList) {
-      jobBoardList.innerHTML = "<p>Zoekresultaten worden geladen...</p>";
-    }
-
-    jobBoardSearchBtn.disabled = true;
-    jobBoardSearchBtn.textContent = "Zoekresultaten worden geladen...";
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/ats/jobs`, {
-        method: "GET",
-        headers: { Accept: "application/json" }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        if (jobBoardError) {
-          jobBoardError.textContent =
-            `Er ging iets mis bij het laden van vacatures (${response.status}): ${errorText}`;
-          jobBoardError.classList.remove("hidden");
-        }
-        if (jobBoardList) {
-          jobBoardList.innerHTML = "<p>Kon vacatures niet laden.</p>";
-        }
-      } else {
-        const jobs = await response.json();
-
-        // Client-side filteren (titel + locatie + beschrijving)
-        allJobsCache = jobs.filter((job) => {
-          const title = (job.title || "").toLowerCase();
-          const location = (job.location || "").toLowerCase();
-          const desc = (job.description || "").toLowerCase();
-
-          const matchesQ =
-            !q ||
-            title.includes(q) ||
-            location.includes(q) ||
-            desc.includes(q);
-
-          const matchesLoc =
-            !loc ||
-            location.includes(loc);
-
-          return matchesQ && matchesLoc;
-        });
-
-        // Reset eventuele oude AI-scores
-        allJobsCache.forEach((job) => {
-          delete job._matchScore;
-          delete job._matchExplanation;
-        });
-
-        renderJobBoardList(false);
-      }
-    } catch (err) {
-      console.error("Fout bij laden vacatures (jobboard search):", err);
-      if (jobBoardError) {
-        jobBoardError.textContent =
-          "Kon geen contact maken met de server bij het zoeken naar vacatures.";
-        jobBoardError.classList.remove("hidden");
-      }
-      if (jobBoardList) {
-        jobBoardList.innerHTML = "<p>Kon vacatures niet laden.</p>";
-      }
-    } finally {
-      jobBoardSearchBtn.disabled = false;
-      jobBoardSearchBtn.textContent = "Zoek vacatures";
-    }
-  });
-}
-
-// AI: beste matches vinden op basis van CV
-if (jobBoardAIButton) {
-  jobBoardAIButton.addEventListener("click", async () => {
-    if (jobBoardError) {
-      jobBoardError.classList.add("hidden");
-      jobBoardError.textContent = "";
-    }
-
-    if (!allJobsCache.length) {
-      if (jobBoardError) {
-        jobBoardError.textContent =
-          "Zoek eerst vacatures met de zoekbalk. Daarna kan AI ze beoordelen op basis van jouw CV.";
-        jobBoardError.classList.remove("hidden");
-      }
-      return;
-    }
-
-    let cvText = lastRewrittenCvText || (cvInput?.value || "").trim();
-
-    if (!cvText) {
-      if (jobBoardError) {
-        jobBoardError.textContent =
-          "Vul eerst je CV in en laat AI het herschrijven (Stap 1). Daarna kan AI vacatures matchen.";
-        jobBoardError.classList.remove("hidden");
-      }
-      return;
-    }
-
-    jobBoardAIButton.disabled = true;
-    jobBoardAIButton.textContent = "AI is vacatures aan het beoordelen...";
-
-    try {
-      let anyScored = false;
-
-      for (let job of allJobsCache) {
-        const description = job.description || "";
-        if (!description) continue;
-
-        try {
-          const response = await fetch(`${BACKEND_URL}/ai/match-job`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              candidate_profile_text: cvText,
-              job_description: description
-            })
-          });
-
-          if (!response.ok) {
-            console.warn("AI-match-job fout voor job", job.id, response.status);
-            continue;
-          }
-
-          const data = await response.json();
-          job._matchScore = data.match_score ?? null;
-          job._matchExplanation = data.explanation ?? null;
-          anyScored = true;
-        } catch (err) {
-          console.error("Fout bij AI-match-job voor job", job.id, err);
-        }
-      }
-
-      if (!anyScored) {
-        if (jobBoardError) {
-          jobBoardError.textContent =
-            "AI kon geen scores berekenen. Probeer het later opnieuw of controleer je CV.";
-          jobBoardError.classList.remove("hidden");
-        }
-      } else {
-        allJobsCache.sort((a, b) => (b._matchScore || 0) - (a._matchScore || 0));
-        renderJobBoardList(true);
-
-        if (jobBoardError) {
-          jobBoardError.textContent =
-            "AI heeft vacatures gesorteerd op beste match op basis van jouw CV.";
-          jobBoardError.classList.remove("hidden");
-        }
-      }
-    } catch (err) {
-      console.error("Fout bij AI-ranking van vacatures:", err);
-      if (jobBoardError) {
-        jobBoardError.textContent =
-          "Kon geen contact maken met de server voor AI-matching.";
-        jobBoardError.classList.remove("hidden");
-      }
-    } finally {
-      jobBoardAIButton.disabled = false;
-      jobBoardAIButton.textContent = "AI: zoek beste matches op basis van mijn CV";
-    }
-  });
-}
-
-// Detailbuttons
-if (jobBoardUseForAI) {
-  jobBoardUseForAI.addEventListener("click", () => {
-    if (!selectedDetailJobId) return;
-    const job = allJobsCache.find((j) => j.id === selectedDetailJobId);
-    if (!job) return;
-    useJobForAI(job);
-  });
-}
-
-if (jobBoardSaveBtn) {
-  jobBoardSaveBtn.addEventListener("click", () => {
-    if (!selectedDetailJobId) return;
-    toggleSaveJob(selectedDetailJobId);
-    const isSaved = savedJobIds.includes(selectedDetailJobId);
-    jobBoardSaveBtn.textContent = isSaved
-      ? "Verwijder uit opgeslagen"
-      : "Sla vacature op";
-  });
-}
-
-// ==================== KANDIDAAT: VACATURES KIEZEN (STAP 0) ====================
-
-const candLoadJobsBtn = document.getElementById("candLoadJobsBtn");
-const candJobSelect = document.getElementById("candJobSelect");
-const candUseJobBtn = document.getElementById("candUseJobBtn");
-const candJobsError = document.getElementById("candJobsError");
-
-if (candLoadJobsBtn) {
-  candLoadJobsBtn.addEventListener("click", async () => {
-    if (candJobsError) {
-      candJobsError.classList.add("hidden");
-      candJobsError.textContent = "";
-    }
-
-    if (candJobSelect) {
-      candJobSelect.innerHTML = "";
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "Vacatures worden geladen...";
-      candJobSelect.appendChild(opt);
-    }
-
-    candLoadJobsBtn.disabled = true;
-    candLoadJobsBtn.textContent = "Vacatures worden geladen...";
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/ats/jobs`, {
-        method: "GET",
-        headers: { Accept: "application/json" }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        if (candJobsError) {
-          candJobsError.textContent =
-            `Er ging iets mis bij het laden van vacatures (${response.status}): ${errorText}`;
-          candJobsError.classList.remove("hidden");
-        }
-        if (candJobSelect) {
-          candJobSelect.innerHTML = "";
-          const opt = document.createElement("option");
-          opt.value = "";
-          opt.textContent = "Kon vacatures niet laden.";
-          candJobSelect.appendChild(opt);
-        }
-      } else {
-        const jobs = await response.json();
-        candidateJobsCache = jobs;
-
-        if (candJobSelect) {
-          candJobSelect.innerHTML = "";
-
-          if (!jobs.length) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "Er zijn nog geen vacatures op het platform.";
-            candJobSelect.appendChild(opt);
-          } else {
-            const placeholder = document.createElement("option");
-            placeholder.value = "";
-            placeholder.textContent = "Kies een vacature...";
-            candJobSelect.appendChild(placeholder);
-
-            jobs.forEach((job) => {
-              const opt = document.createElement("option");
-              opt.value = job.id;
-              const companyName = job.company_name || `Bedrijf #${job.company_id}`;
-              const location = job.location || "Locatie onbekend";
-              opt.textContent = `${job.title} – ${companyName} (${location})`;
-              candJobSelect.appendChild(opt);
-            });
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Fout bij laden vacatures (kandidaat):", err);
-      if (candJobsError) {
-        candJobsError.textContent =
-          "Kon geen contact maken met de server bij het laden van vacatures.";
-        candJobsError.classList.remove("hidden");
-      }
-    } finally {
-      candLoadJobsBtn.disabled = false;
-      candLoadJobsBtn.textContent = "Laad beschikbare vacatures";
-    }
-  });
-}
-
-if (candUseJobBtn) {
-  candUseJobBtn.addEventListener("click", () => {
-    if (candJobsError) {
-      candJobsError.classList.add("hidden");
-      candJobsError.textContent = "";
-    }
-
-    const selectedIdRaw = candJobSelect?.value || "";
-    if (!selectedIdRaw) {
-      if (candJobsError) {
-        candJobsError.textContent = "Kies eerst een vacature in de lijst.";
-        candJobsError.classList.remove("hidden");
-      }
-      return;
-    }
-
-    const selectedId = Number(selectedIdRaw);
-    const job =
-      candidateJobsCache.find((j) => j.id === selectedId) ||
-      allJobsCache.find((j) => j.id === selectedId);
-
-    if (!job) {
-      if (candJobsError) {
-        candJobsError.textContent = "De gekozen vacature kon niet gevonden worden.";
-        candJobsError.classList.remove("hidden");
-      }
-      return;
-    }
-
-    useJobForAI(job);
-  });
-}
-
-// ==================== KANDIDAAT: CV, MOTIVATIE, MATCH ====================
-
+// Elementen
 const cvInput = document.getElementById("cvInput");
 const cvFileInput = document.getElementById("cvFileInput");
 const targetRoleInput = document.getElementById("targetRole");
@@ -570,7 +61,34 @@ const matchResultBox = document.getElementById("matchResultBox");
 const matchResult = document.getElementById("matchResult");
 const matchError = document.getElementById("matchError");
 
-// CV upload .txt
+// --- Vul velden automatisch als je via jobs.html komt ---
+(function prefillJobFromStorage() {
+  try {
+    const raw = localStorage.getItem(SELECTED_JOB_FOR_AI_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+
+    const description = data.description || "";
+    const companyName = data.company_name || "";
+
+    if (jobDescriptionInput && description && !jobDescriptionInput.value.trim()) {
+      jobDescriptionInput.value = description;
+    }
+    if (matchJobInput && description && !matchJobInput.value.trim()) {
+      matchJobInput.value = description;
+    }
+    if (companyNameInput && companyName && !companyNameInput.value.trim()) {
+      companyNameInput.value = companyName;
+    }
+
+    // Eén keer gebruiken, daarna weghalen
+    localStorage.removeItem(SELECTED_JOB_FOR_AI_KEY);
+  } catch (e) {
+    console.warn("Kon geselecteerde vacature niet lezen:", e);
+  }
+})();
+
+// --- CV upload .txt ---
 if (cvFileInput) {
   cvFileInput.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
@@ -592,7 +110,7 @@ if (cvFileInput) {
   });
 }
 
-// CV herschrijven
+// --- CV herschrijven ---
 if (rewriteBtn) {
   rewriteBtn.addEventListener("click", async () => {
     const cvText = (cvInput?.value || "").trim();
@@ -656,7 +174,7 @@ if (rewriteBtn) {
   });
 }
 
-// Motivatiebrief
+// --- Motivatiebrief ---
 if (letterBtn) {
   letterBtn.addEventListener("click", async () => {
     let cvText = (letterCvInput?.value || "").trim();
@@ -675,14 +193,15 @@ if (letterBtn) {
     }
 
     if (!cvText) {
-      letterError.textContent = "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
+      letterError.textContent =
+        "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
       letterError.classList.remove("hidden");
       return;
     }
 
     if (!jobText) {
       letterError.textContent =
-        "Vul eerst de vacaturetekst in (of kies een vacature in het overzicht).";
+        "Vul eerst de vacaturetekst in (of kies een vacature via de vacatures-pagina).";
       letterError.classList.remove("hidden");
       return;
     }
@@ -724,7 +243,7 @@ if (letterBtn) {
   });
 }
 
-// Matchscore
+// --- Matchscore ---
 if (matchBtn) {
   matchBtn.addEventListener("click", async () => {
     let cvText = (matchCvInput?.value || "").trim();
@@ -750,7 +269,7 @@ if (matchBtn) {
 
     if (!jobText) {
       matchError.textContent =
-        "Vul eerst de vacaturetekst in (of kies een vacature in het overzicht).";
+        "Vul eerst de vacaturetekst in (of kies een vacature via de vacatures-pagina).";
       matchError.classList.remove("hidden");
       return;
     }
@@ -791,7 +310,7 @@ if (matchBtn) {
   });
 }
 
-// ==================== WERKGEVER: ACCOUNT, VACATURE, DASHBOARD ====================
+// ------------------ WERKGEVER: ACCOUNT / VACATURE / DASHBOARD ------------------
 
 const empCompanyName = document.getElementById("empCompanyName");
 const empKvk = document.getElementById("empKvk");
@@ -1177,6 +696,7 @@ if (employerAIRankBtn) {
     }
   });
 }
+
 
 
 
