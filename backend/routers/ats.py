@@ -58,6 +58,21 @@ class JobOut(BaseModel):
         orm_mode = True
 
 
+class JobPublicOut(BaseModel):
+    id: int
+    company_id: int
+    title: str
+    description: str
+    location: Optional[str]
+    salary_range: Optional[str]
+    status: str
+    is_trial: bool
+    company_name: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+
 class CandidateCreate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -88,7 +103,7 @@ class CandidateListItem(BaseModel):
 
 
 # =========================
-# Endpoints: bedrijF
+# Endpoints: bedrijven
 # =========================
 
 @router.post("/companies", response_model=CompanyOut)
@@ -175,6 +190,38 @@ def list_company_jobs(company_id: int, db: Session = Depends(get_db)):
     return jobs
 
 
+@router.get("/jobs", response_model=List[JobPublicOut])
+def list_all_jobs(db: Session = Depends(get_db)):
+    """
+    Alle open vacatures op het platform.
+    Dit gebruiken we aan de kandidaten-kant om een vacature te kiezen.
+    """
+    jobs = (
+        db.query(models.Job)
+        .filter(models.Job.status == "open")
+        .order_by(models.Job.created_at.desc())
+        .all()
+    )
+
+    out: List[JobPublicOut] = []
+    for job in jobs:
+        company_name = job.company.name if job.company else None
+        out.append(
+            JobPublicOut(
+                id=job.id,
+                company_id=job.company_id,
+                title=job.title,
+                description=job.description,
+                location=job.location,
+                salary_range=job.salary_range,
+                status=job.status,
+                is_trial=job.is_trial,
+                company_name=company_name,
+            )
+        )
+    return out
+
+
 # =========================
 # Endpoints: kandidaten
 # =========================
@@ -252,11 +299,8 @@ def ai_rank_internal(job_id: int, db: Session = Depends(get_db)):
 
     ranked = rank_candidates_for_job(job, candidates)
 
-    # rank_candidates_for_job geeft lijst dicts terug
-    # met candidate_id, match_score, explanation, etc.
     out: List[CandidateListItem] = []
     for item in ranked:
-        # zoek bijbehorende candidate
         c = next((c for c in candidates if c.id == item["candidate_id"]), None)
         if not c:
             continue
@@ -270,6 +314,7 @@ def ai_rank_internal(job_id: int, db: Session = Depends(get_db)):
             )
         )
     return out
+
 
 
 
