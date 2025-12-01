@@ -1,9 +1,11 @@
 // VUL HIER JOUW BACKEND-URL IN, ZONDER /docs ERACHTER
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
-// Kleine geheugen-variabelen voor CV's
+// Kleine geheugen-variabelen voor CV's en vacatures
 let lastRawCvText = "";
 let lastRewrittenCvText = "";
+let candidateJobsCache = [];
+let selectedCandidateJobId = null;
 
 // ---- TAB SWITCH (KANDIDAAT / WERKGEVER) ----
 const navCandidate = document.getElementById("navCandidate");
@@ -33,7 +35,13 @@ if (navCandidate && navEmployer && candidateView && employerView) {
   });
 }
 
-// ==================== KANDIDAAT: CV / BRIEF / MATCH ====================
+// ==================== KANDIDAAT: VACATURES, CV, BRIEF, MATCH ====================
+
+// Vacatures voor kandidaat
+const candLoadJobsBtn = document.getElementById("candLoadJobsBtn");
+const candJobSelect = document.getElementById("candJobSelect");
+const candUseJobBtn = document.getElementById("candUseJobBtn");
+const candJobsError = document.getElementById("candJobsError");
 
 // Elementen voor CV herschrijven
 const cvInput = document.getElementById("cvInput");
@@ -83,6 +91,151 @@ if (cvFileInput) {
   });
 }
 
+// ---- EVENT: VACATURES LADEN VOOR KANDIDAAT ----
+if (candLoadJobsBtn) {
+  candLoadJobsBtn.addEventListener("click", async () => {
+    if (candJobsError) {
+      candJobsError.classList.add("hidden");
+      candJobsError.textContent = "";
+    }
+
+    if (candJobSelect) {
+      candJobSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Vacatures worden geladen...";
+      candJobSelect.appendChild(opt);
+    }
+
+    candLoadJobsBtn.disabled = true;
+    candLoadJobsBtn.textContent = "Vacatures worden geladen...";
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/ats/jobs`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (candJobsError) {
+          candJobsError.textContent =
+            `Er ging iets mis bij het laden van vacatures (${response.status}): ${errorText}`;
+          candJobsError.classList.remove("hidden");
+        }
+        if (candJobSelect) {
+          candJobSelect.innerHTML = "";
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Kon vacatures niet laden.";
+          candJobSelect.appendChild(opt);
+        }
+      } else {
+        const jobs = await response.json();
+        candidateJobsCache = jobs;
+
+        if (candJobSelect) {
+          candJobSelect.innerHTML = "";
+
+          if (!jobs.length) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Er zijn nog geen vacatures op het platform.";
+            candJobSelect.appendChild(opt);
+          } else {
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Kies een vacature...";
+            candJobSelect.appendChild(placeholder);
+
+            jobs.forEach((job) => {
+              const opt = document.createElement("option");
+              opt.value = job.id;
+              const companyName = job.company_name || `Bedrijf #${job.company_id}`;
+              const location = job.location || "Locatie onbekend";
+              opt.textContent = `${job.title} – ${companyName} (${location})`;
+              candJobSelect.appendChild(opt);
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Fout bij laden vacatures (kandidaat):", err);
+      if (candJobsError) {
+        candJobsError.textContent =
+          "Kon geen contact maken met de server bij het laden van vacatures.";
+        candJobsError.classList.remove("hidden");
+      }
+    } finally {
+      candLoadJobsBtn.disabled = false;
+      candLoadJobsBtn.textContent = "Laad beschikbare vacatures";
+    }
+  });
+}
+
+// ---- EVENT: GEBRUIK GEKOZEN VACATURE ----
+if (candUseJobBtn) {
+  candUseJobBtn.addEventListener("click", () => {
+    if (candJobsError) {
+      candJobsError.classList.add("hidden");
+      candJobsError.textContent = "";
+    }
+
+    const selectedIdRaw = candJobSelect?.value || "";
+    if (!selectedIdRaw) {
+      if (candJobsError) {
+        candJobsError.textContent = "Kies eerst een vacature in de lijst.";
+        candJobsError.classList.remove("hidden");
+      }
+      return;
+    }
+
+    const selectedId = Number(selectedIdRaw);
+    const job = candidateJobsCache.find((j) => j.id === selectedId);
+    if (!job) {
+      if (candJobsError) {
+        candJobsError.textContent = "De gekozen vacature kon niet gevonden worden.";
+        candJobsError.classList.remove("hidden");
+      }
+      return;
+    }
+
+    selectedCandidateJobId = job.id;
+
+    const description = job.description || "";
+    if (!description) {
+      if (candJobsError) {
+        candJobsError.textContent =
+          "Deze vacature heeft geen beschrijving. Neem contact op met de werkgever.";
+        candJobsError.classList.remove("hidden");
+      }
+      return;
+    }
+
+    // Vacaturetekst automatisch invullen bij motivatiebrief en matchscore
+    if (jobDescriptionInput && !jobDescriptionInput.value.trim()) {
+      jobDescriptionInput.value = description;
+    } else if (jobDescriptionInput) {
+      // Overschrijven is misschien gewenst; voor nu mag hij gewoon altijd overschrijven:
+      jobDescriptionInput.value = description;
+    }
+
+    if (matchJobInput && !matchJobInput.value.trim()) {
+      matchJobInput.value = description;
+    } else if (matchJobInput) {
+      matchJobInput.value = description;
+    }
+
+    if (candJobsError) {
+      candJobsError.textContent =
+        `Vacature #${job.id} is geselecteerd. De vacaturetekst is ingevuld bij motivatie & matchscore.`;
+      candJobsError.classList.remove("hidden");
+    }
+  });
+}
+
 // ---- EVENT: CV HERSCHRIJVEN ----
 if (rewriteBtn) {
   rewriteBtn.addEventListener("click", async () => {
@@ -99,7 +252,6 @@ if (rewriteBtn) {
       return;
     }
 
-    // Onthoud de ruwe CV
     lastRawCvText = cvText;
 
     rewriteBtn.disabled = true;
@@ -126,14 +278,11 @@ if (rewriteBtn) {
         const data = await response.json();
         const rewritten = data.rewritten_cv || "Geen resultaat ontvangen.";
 
-        // Toon resultaat
         cvResult.textContent = rewritten;
         cvResultBox.classList.remove("hidden");
 
-        // Onthoud het herschreven CV
         lastRewrittenCvText = rewritten;
 
-        // Vul automatisch CV-velden voor motivatiebrief en match als ze nog leeg zijn
         if (letterCvInput && !letterCvInput.value.trim()) {
           letterCvInput.value = rewritten;
         }
@@ -160,17 +309,16 @@ if (letterBtn) {
     const jobText = (jobDescriptionInput?.value || "").trim();
     const companyName = (companyNameInput?.value || "").trim();
 
-    // Als CV-veld leeg is maar we hebben een herschreven CV → automatisch invullen
+    letterError.classList.add("hidden");
+    letterResultBox.classList.add("hidden");
+    letterResult.textContent = "";
+
     if (!cvText && lastRewrittenCvText) {
       cvText = lastRewrittenCvText;
       if (letterCvInput) {
         letterCvInput.value = lastRewrittenCvText;
       }
     }
-
-    letterError.classList.add("hidden");
-    letterResultBox.classList.add("hidden");
-    letterResult.textContent = "";
 
     if (!cvText) {
       letterError.textContent = "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
@@ -179,7 +327,7 @@ if (letterBtn) {
     }
 
     if (!jobText) {
-      letterError.textContent = "Vul eerst de vacaturetekst in.";
+      letterError.textContent = "Vul eerst de vacaturetekst in (of kies een vacature in stap 0).";
       letterError.classList.remove("hidden");
       return;
     }
@@ -233,7 +381,6 @@ if (matchBtn) {
     matchResultBox.classList.add("hidden");
     matchResult.textContent = "";
 
-    // Als het veld leeg is maar we hebben een herschreven CV → gebruik die
     if (!cvText && lastRewrittenCvText) {
       cvText = lastRewrittenCvText;
       if (matchCvInput) {
@@ -249,7 +396,8 @@ if (matchBtn) {
     }
 
     if (!jobText) {
-      matchError.textContent = "Vul eerst de vacaturetekst in.";
+      matchError.textContent =
+        "Vul eerst de vacaturetekst in (of kies een vacature in stap 0).";
       matchError.classList.remove("hidden");
       return;
     }
@@ -402,7 +550,6 @@ if (empSubmitBtn) {
       } else {
         const data = await response.json();
 
-        // company_id opslaan voor vacatures en dashboard
         saveCompanyId(data.id);
 
         empResult.textContent =
