@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>It's Peanuts AI – Vacatures zoeken</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Vacatures op It's Peanuts AI</h1>
+      <p>Zoek vacatures zoals op Indeed, met een AI-laag erbovenop.</p>
+
+      <p style="margin-top: 8px;">
+        <a href="index.html">← Terug naar AI solliciteren</a>
+      </p>
+    </header>
+
+    <main>
+      <!-- CV voor AI-zoekfunctie -->
+      <section class="card">
+        <h2>Stap 0 – Plak je CV voor AI-zoekopdrachten (optioneel)</h2>
+        <p style="font-size: 14px; color: #9ca3af;">
+          Als je hieronder je CV plakt, kan AI vacatures beoordelen en sorteren op beste match.
+          Als je dit leeg laat, kun je nog steeds gewoon zoeken zoals op Indeed.
+        </p>
+
+        <label for="jobsCvInput">CV-tekst</label>
+        <textarea id="jobsCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
+      </section>
+
+      <!-- Vacaturezoeker -->
+      <section class="card" style="margin-top: 16px;">
+        <h2>Vacatures zoeken</h2>
+        <p style="font-size: 14px; color: #9ca3af;">
+          Zoek vacatures op titel, bedrijf of trefwoord. Gebruik daarna eventueel AI om te sorteren
+          op beste match met jouw CV.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+          <div>
+            <label for="jobSearchQuery">Zoekwoord / functie / bedrijf</label>
+            <input id="jobSearchQuery" type="text" placeholder="Bijv. accountmanager, AI, Bol.com" />
+          </div>
+          <div>
+            <label for="jobSearchLocation">Plaats of regio</label>
+            <input id="jobSearchLocation" type="text" placeholder="Bijv. Amsterdam, Randstad" />
+          </div>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+          <button id="jobBoardSearchBtn">Zoek vacatures</button>
+          <button id="jobBoardAIButton">AI: sorteer op beste match met mijn CV</button>
+        </div>
+
+        <div id="jobBoardError" class="error hidden" style="margin-top: 8px;"></div>
+
+        <div style="display: flex; gap: 12px; align-items: flex-start; margin-top: 12px;">
+          <!-- Linkerkant: lijst met vacatures (scrollbaar) -->
+          <div id="jobBoardList" style="
+            flex: 1;
+            max-height: 400px;
+            overflow-y: auto;
+            border-right: 1px solid #e5e7eb;
+            padding-right: 8px;
+            font-size: 14px;
+          ">
+            <p style="color: #9ca3af;">
+              Vul hierboven een zoekwoord en/of locatie in en klik op "Zoek vacatures".
+            </p>
+          </div>
+
+          <!-- Rechterkant: detail van geselecteerde vacature -->
+          <div id="jobBoardDetail" class="result hidden" style="flex: 1; max-height: 400px; overflow-y: auto;">
+            <h3 id="jobBoardDetailTitle"></h3>
+            <p id="jobBoardDetailMeta" style="font-size: 14px; color: #9ca3af;"></p>
+            <pre id="jobBoardDetailDescription" style="white-space: pre-wrap;"></pre>
+
+            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="jobBoardUseForAI">Solliciteer met AI</button>
+              <button id="jobBoardSaveBtn">Sla vacature op</button>
+            </div>
+
+            <div id="jobBoardDetailInfo" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <small>Powered by It's Peanuts AI Recruiter Suite</small>
+    </footer>
+  </div>
+
+  <script src="jobs.js"></script>
+</body>
+</html>
