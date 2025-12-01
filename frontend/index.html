@@ -20,8 +20,36 @@
     <main>
       <!-- ================= KANDIDAAT VIEW ================= -->
       <section id="candidateView">
-        <!-- Stap 0: Vacatures kiezen van platform -->
+        <!-- Vacature-overzicht (zoals Indeed) -->
         <section class="card">
+          <h2>Vacatures op It's Peanuts AI</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            Hier zie je alle vacatures die werkgevers via It's Peanuts AI hebben geplaatst.
+            Je kunt een vacature lezen, opslaan en er direct met AI op solliciteren.
+          </p>
+
+          <button id="jobBoardLoadBtn">Laad alle vacatures</button>
+
+          <div id="jobBoardError" class="error hidden" style="margin-top: 8px;"></div>
+
+          <div id="jobBoardList" style="margin-top: 12px;"></div>
+
+          <div id="jobBoardDetail" class="result hidden" style="margin-top: 12px;">
+            <h3 id="jobBoardDetailTitle"></h3>
+            <p id="jobBoardDetailMeta" style="font-size: 14px; color: #9ca3af;"></p>
+            <pre id="jobBoardDetailDescription" style="white-space: pre-wrap;"></pre>
+
+            <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="jobBoardUseForAI">Solliciteer met AI</button>
+              <button id="jobBoardSaveBtn">Sla vacature op</button>
+            </div>
+
+            <div id="jobBoardDetailInfo" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+          </div>
+        </section>
+
+        <!-- Stap 0: Vacatures kiezen van platform (voor snelle koppeling) -->
+        <section class="card" style="margin-top: 16px;">
           <h2>Stap 0 – Kies een vacature van ons platform (optioneel)</h2>
           <p style="font-size: 14px; color: #9ca3af;">
             Klik op "Laad vacatures" om vacatures te zien die bedrijven via It's Peanuts AI hebben geplaatst.
@@ -73,14 +101,15 @@
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
           <p style="font-size: 14px; color: #9ca3af;">
             Tip: het CV-veld wordt automatisch gevuld met je herschreven CV uit stap 1.
-            Als je in stap 0 een vacature hebt gekozen, vullen we hier de vacaturetekst alvast voor je in.
+            Als je in stap 0 of boven in het vacature-overzicht een vacature hebt gekozen,
+            vullen we hier de vacaturetekst alvast voor je in.
           </p>
 
           <label for="letterCvInput">CV-tekst</label>
           <textarea id="letterCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="jobDescriptionInput">Vacaturetekst</label>
-          <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst... of kies er één in stap 0."></textarea>
+          <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst... of kies er één bovenaan."></textarea>
 
           <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
           <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
@@ -99,15 +128,15 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Dit veld wordt ook automatisch gevuld met je herschreven CV. Als je in stap 0 een vacature
-            hebt gekozen, gebruiken we automatisch die vacaturetekst.
+            Dit veld wordt ook automatisch gevuld met je herschreven CV. Als je een vacature
+            gekozen hebt in het overzicht of in stap 0, gebruiken we automatisch die vacaturetekst.
           </p>
 
           <label for="matchCvInput">CV-tekst</label>
           <textarea id="matchCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="matchJobInput">Vacaturetekst</label>
-          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst... of kies er één in stap 0."></textarea>
+          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst... of kies er één bovenaan."></textarea>
 
           <button id="matchBtn">Bereken matchscore</button>
 
@@ -234,6 +263,7 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
