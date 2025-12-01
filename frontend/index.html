@@ -20,8 +20,30 @@
     <main>
       <!-- ================= KANDIDAAT VIEW ================= -->
       <section id="candidateView">
-        <!-- CV herschrijven -->
+        <!-- Stap 0: Vacatures kiezen van platform -->
         <section class="card">
+          <h2>Stap 0 – Kies een vacature van ons platform (optioneel)</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            Klik op "Laad vacatures" om vacatures te zien die bedrijven via It's Peanuts AI hebben geplaatst.
+            Als je er één kiest, vullen we automatisch de vacaturetekst in bij je motivatiebrief en matchscore.
+          </p>
+
+          <button id="candLoadJobsBtn">Laad beschikbare vacatures</button>
+
+          <label for="candJobSelect" style="margin-top: 12px;">Beschikbare vacatures</label>
+          <select id="candJobSelect">
+            <option value="">Nog geen vacatures geladen...</option>
+          </select>
+
+          <button id="candUseJobBtn" style="margin-top: 8px;">
+            Gebruik deze vacature voor mijn motivatie & matchscore
+          </button>
+
+          <div id="candJobsError" class="error hidden" style="margin-top: 8px;"></div>
+        </section>
+
+        <!-- CV herschrijven -->
+        <section class="card" style="margin-top: 16px;">
           <h2>Stap 1 – Plak of upload je CV</h2>
 
           <label for="cvInput">Ruwe CV-tekst</label>
@@ -50,14 +72,15 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Tip: het veld hieronder wordt automatisch gevuld met je herschreven CV uit stap 1.
+            Tip: het CV-veld wordt automatisch gevuld met je herschreven CV uit stap 1.
+            Als je in stap 0 een vacature hebt gekozen, vullen we hier de vacaturetekst alvast voor je in.
           </p>
 
           <label for="letterCvInput">CV-tekst</label>
           <textarea id="letterCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="jobDescriptionInput">Vacaturetekst</label>
-          <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst..."></textarea>
+          <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst... of kies er één in stap 0."></textarea>
 
           <label for="companyNameInput">Bedrijfsnaam (optioneel)</label>
           <input id="companyNameInput" type="text" placeholder="Bijv. Bol.com, DEKRA, It's Peanuts" />
@@ -76,14 +99,15 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Dit veld wordt ook automatisch gevuld met je herschreven CV. Alleen de vacaturetekst hoef je nog te plakken.
+            Dit veld wordt ook automatisch gevuld met je herschreven CV. Als je in stap 0 een vacature
+            hebt gekozen, gebruiken we automatisch die vacaturetekst.
           </p>
 
           <label for="matchCvInput">CV-tekst</label>
           <textarea id="matchCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
 
           <label for="matchJobInput">Vacaturetekst</label>
-          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst..."></textarea>
+          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst... of kies er één in stap 0."></textarea>
 
           <button id="matchBtn">Bereken matchscore</button>
 
