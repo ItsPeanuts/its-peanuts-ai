@@ -1,8 +1,32 @@
 // BACKEND URL (ZONDER /docs)
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
-// Key om vacature vanuit jobs.html door te geven
+// Keys voor localStorage
 const SELECTED_JOB_FOR_AI_KEY = "its_peanuts_selected_job_for_ai";
+const CANDIDATE_PROFILE_KEY = "its_peanuts_candidate_profile";
+
+// ------------- CANDIDATE PROFIEL (alleen in browser) -------------
+
+function saveCandidateProfile(cvText) {
+  if (!cvText) return;
+  const profile = { cv_text: cvText, updated_at: new Date().toISOString() };
+  try {
+    localStorage.setItem(CANDIDATE_PROFILE_KEY, JSON.stringify(profile));
+  } catch (e) {
+    console.warn("Kon kandidaat-profiel niet opslaan:", e);
+  }
+}
+
+function loadCandidateProfile() {
+  try {
+    const raw = localStorage.getItem(CANDIDATE_PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("Kon kandidaat-profiel niet lezen:", e);
+    return null;
+  }
+}
 
 // ------------------ TAB SWITCH (KANDIDAAT / WERKGEVER) ------------------
 const navCandidate = document.getElementById("navCandidate");
@@ -155,6 +179,10 @@ if (rewriteBtn) {
 
         lastRewrittenCvText = rewritten;
 
+        // PROFIEL CV OPSLAAN
+        saveCandidateProfile(rewritten);
+
+        // Automatisch doorschuiven naar motivatie + match
         if (letterCvInput && !letterCvInput.value.trim()) {
           letterCvInput.value = rewritten;
         }
