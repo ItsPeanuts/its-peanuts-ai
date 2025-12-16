@@ -4,6 +4,7 @@ const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 // Keys voor opslag
 const SAVED_JOBS_KEY = "its_peanuts_saved_jobs";
 const SELECTED_JOB_FOR_AI_KEY = "its_peanuts_selected_job_for_ai";
+const PROFILE_CV_KEY = "its_peanuts_profile_cv";
 
 // Kleine helpers voor opgeslagen vacatures
 function loadSavedJobIds() {
@@ -27,12 +28,20 @@ function saveSavedJobIds(ids) {
   }
 }
 
+function getProfileCvForJobs() {
+  try {
+    return localStorage.getItem(PROFILE_CV_KEY) || "";
+  } catch (e) {
+    console.warn("Kon profiel-CV niet lezen in jobs.js:", e);
+    return "";
+  }
+}
+
 let savedJobIds = loadSavedJobIds();
 let allJobsCache = [];
 let selectedDetailJobId = null;
 
 // Elementen
-const jobsCvInput = document.getElementById("jobsCvInput");
 const jobSearchQuery = document.getElementById("jobSearchQuery");
 const jobSearchLocation = document.getElementById("jobSearchLocation");
 const jobBoardSearchBtn = document.getElementById("jobBoardSearchBtn");
@@ -278,7 +287,7 @@ if (jobBoardSearchBtn) {
   });
 }
 
-// ------------ AI: sorteren op beste match ------------
+// ------------ AI Recruiter: sorteren op beste match met profiel-CV ------------
 
 if (jobBoardAIButton) {
   jobBoardAIButton.addEventListener("click", async () => {
@@ -290,24 +299,24 @@ if (jobBoardAIButton) {
     if (!allJobsCache.length) {
       if (jobBoardError) {
         jobBoardError.textContent =
-          "Zoek eerst vacatures met de zoekbalk. Daarna kan AI ze beoordelen op basis van jouw CV.";
+          "Zoek eerst vacatures met de zoekbalk. Daarna kan AI ze beoordelen op basis van jouw profiel-CV.";
         jobBoardError.classList.remove("hidden");
       }
       return;
     }
 
-    const cvText = (jobsCvInput?.value || "").trim();
+    const cvText = getProfileCvForJobs();
     if (!cvText) {
       if (jobBoardError) {
         jobBoardError.textContent =
-          "Plak eerst je CV-tekst hierboven, dan kan AI vacatures matchen op basis van jouw profiel.";
+          "We hebben geen CV gevonden in jouw profiel. Ga terug naar de hoofdpagina, vul je profiel in en sla je CV op.";
         jobBoardError.classList.remove("hidden");
       }
       return;
     }
 
     jobBoardAIButton.disabled = true;
-    jobBoardAIButton.textContent = "AI is vacatures aan het beoordelen...";
+    jobBoardAIButton.textContent = "AI Recruiter is vacatures aan het beoordelen...";
 
     try {
       let anyScored = false;
@@ -343,7 +352,7 @@ if (jobBoardAIButton) {
       if (!anyScored) {
         if (jobBoardError) {
           jobBoardError.textContent =
-            "AI kon geen scores berekenen. Probeer het later opnieuw of controleer je CV.";
+            "AI kon geen scores berekenen. Probeer het later opnieuw of controleer je profiel-CV.";
           jobBoardError.classList.remove("hidden");
         }
       } else {
@@ -352,7 +361,7 @@ if (jobBoardAIButton) {
 
         if (jobBoardError) {
           jobBoardError.textContent =
-            "AI heeft vacatures gesorteerd op beste match op basis van jouw CV.";
+            "AI Recruiter heeft vacatures gesorteerd op beste match met jouw profiel-CV.";
           jobBoardError.classList.remove("hidden");
         }
       }
@@ -365,7 +374,8 @@ if (jobBoardAIButton) {
       }
     } finally {
       jobBoardAIButton.disabled = false;
-      jobBoardAIButton.textContent = "AI: sorteer op beste match met mijn CV";
+      jobBoardAIButton.textContent =
+        "AI Recruiter: sorteer op beste match met mijn profiel-CV";
     }
   });
 }
