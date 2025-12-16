@@ -1,32 +1,11 @@
 // BACKEND URL (ZONDER /docs)
 const BACKEND_URL = "https://its-peanuts-ai.onrender.com";
 
-// Keys voor localStorage
+// LocalStorage keys
+const PROFILE_NAME_KEY = "its_peanuts_profile_name";
+const PROFILE_EMAIL_KEY = "its_peanuts_profile_email";
+const PROFILE_CV_KEY = "its_peanuts_profile_cv";
 const SELECTED_JOB_FOR_AI_KEY = "its_peanuts_selected_job_for_ai";
-const CANDIDATE_PROFILE_KEY = "its_peanuts_candidate_profile";
-
-// ------------- CANDIDATE PROFIEL (alleen in browser) -------------
-
-function saveCandidateProfile(cvText) {
-  if (!cvText) return;
-  const profile = { cv_text: cvText, updated_at: new Date().toISOString() };
-  try {
-    localStorage.setItem(CANDIDATE_PROFILE_KEY, JSON.stringify(profile));
-  } catch (e) {
-    console.warn("Kon kandidaat-profiel niet opslaan:", e);
-  }
-}
-
-function loadCandidateProfile() {
-  try {
-    const raw = localStorage.getItem(CANDIDATE_PROFILE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    console.warn("Kon kandidaat-profiel niet lezen:", e);
-    return null;
-  }
-}
 
 // ------------------ TAB SWITCH (KANDIDAAT / WERKGEVER) ------------------
 const navCandidate = document.getElementById("navCandidate");
@@ -53,6 +32,99 @@ if (navCandidate && navEmployer && candidateView && employerView) {
 
     employerView.classList.remove("hidden");
     candidateView.classList.add("hidden");
+  });
+}
+
+// ------------------ KANDIDAATPROFIEL ------------------
+
+const profileNameInput = document.getElementById("profileName");
+const profileEmailInput = document.getElementById("profileEmail");
+const profileCvTextarea = document.getElementById("profileCv");
+const profileSaveBtn = document.getElementById("profileSaveBtn");
+const profileMessage = document.getElementById("profileMessage");
+
+function loadProfileFromStorage() {
+  try {
+    const name = localStorage.getItem(PROFILE_NAME_KEY) || "";
+    const email = localStorage.getItem(PROFILE_EMAIL_KEY) || "";
+    const cv = localStorage.getItem(PROFILE_CV_KEY) || "";
+
+    if (profileNameInput) profileNameInput.value = name;
+    if (profileEmailInput) profileEmailInput.value = email;
+    if (profileCvTextarea) profileCvTextarea.value = cv;
+
+    return { name, email, cv };
+  } catch (e) {
+    console.warn("Kon profiel niet laden uit localStorage:", e);
+    return { name: "", email: "", cv: "" };
+  }
+}
+
+function saveProfileToStorage(name, email, cv) {
+  try {
+    localStorage.setItem(PROFILE_NAME_KEY, name || "");
+    localStorage.setItem(PROFILE_EMAIL_KEY, email || "");
+    localStorage.setItem(PROFILE_CV_KEY, cv || "");
+  } catch (e) {
+    console.warn("Kon profiel niet opslaan in localStorage:", e);
+  }
+}
+
+function getProfileCv() {
+  try {
+    return localStorage.getItem(PROFILE_CV_KEY) || "";
+  } catch (e) {
+    console.warn("Kon profiel-CV niet lezen:", e);
+    return "";
+  }
+}
+
+// Laden bij start
+const initialProfile = loadProfileFromStorage();
+
+// Kandidaatvelden automatisch vullen met profiel-CV als ze leeg zijn
+function prefillCvFieldsFromProfile() {
+  const profileCv = initialProfile.cv;
+  if (!profileCv) return;
+
+  if (document.getElementById("cvInput") && !document.getElementById("cvInput").value.trim()) {
+    document.getElementById("cvInput").value = profileCv;
+  }
+  if (document.getElementById("letterCvInput") && !document.getElementById("letterCvInput").value.trim()) {
+    document.getElementById("letterCvInput").value = profileCv;
+  }
+  if (document.getElementById("matchCvInput") && !document.getElementById("matchCvInput").value.trim()) {
+    document.getElementById("matchCvInput").value = profileCv;
+  }
+}
+
+prefillCvFieldsFromProfile();
+
+if (profileSaveBtn) {
+  profileSaveBtn.addEventListener("click", () => {
+    const name = (profileNameInput?.value || "").trim();
+    const email = (profileEmailInput?.value || "").trim();
+    const cv = (profileCvTextarea?.value || "").trim();
+
+    saveProfileToStorage(name, email, cv);
+
+    // Kandidaat CV-velden ook meteen vullen als ze leeg zijn
+    if (cv) {
+      const cvInput = document.getElementById("cvInput");
+      const letterCvInput = document.getElementById("letterCvInput");
+      const matchCvInput = document.getElementById("matchCvInput");
+
+      if (cvInput && !cvInput.value.trim()) cvInput.value = cv;
+      if (letterCvInput && !letterCvInput.value.trim()) letterCvInput.value = cv;
+      if (matchCvInput && !matchCvInput.value.trim()) matchCvInput.value = cv;
+    }
+
+    if (profileMessage) {
+      profileMessage.textContent = "Je profiel is opgeslagen in deze browser.";
+      setTimeout(() => {
+        profileMessage.textContent = "";
+      }, 3500);
+    }
   });
 }
 
@@ -85,7 +157,7 @@ const matchResultBox = document.getElementById("matchResultBox");
 const matchResult = document.getElementById("matchResult");
 const matchError = document.getElementById("matchError");
 
-// --- Vul velden automatisch als je via jobs.html komt ---
+// --- Vul vacaturevelden automatisch als je via jobs.html komt ---
 (function prefillJobFromStorage() {
   try {
     const raw = localStorage.getItem(SELECTED_JOB_FOR_AI_KEY);
@@ -105,7 +177,6 @@ const matchError = document.getElementById("matchError");
       companyNameInput.value = companyName;
     }
 
-    // Eén keer gebruiken, daarna weghalen
     localStorage.removeItem(SELECTED_JOB_FOR_AI_KEY);
   } catch (e) {
     console.warn("Kon geselecteerde vacature niet lezen:", e);
@@ -134,10 +205,20 @@ if (cvFileInput) {
   });
 }
 
+// Helper om CV-tekst te bepalen: veld > herschreven > profiel
+function resolveCvText(fieldValueRaw) {
+  const fieldVal = (fieldValueRaw || "").trim();
+  if (fieldVal) return fieldVal;
+  if (lastRewrittenCvText) return lastRewrittenCvText;
+  const profileCv = getProfileCv();
+  if (profileCv) return profileCv;
+  return "";
+}
+
 // --- CV herschrijven ---
 if (rewriteBtn) {
   rewriteBtn.addEventListener("click", async () => {
-    const cvText = (cvInput?.value || "").trim();
+    const cvText = (cvInput?.value || "").trim() || getProfileCv();
     const targetRole = (targetRoleInput?.value || "").trim();
 
     cvError.classList.add("hidden");
@@ -145,7 +226,7 @@ if (rewriteBtn) {
     cvResult.textContent = "";
 
     if (!cvText) {
-      cvError.textContent = "Vul eerst je CV-tekst in.";
+      cvError.textContent = "Vul eerst je CV-tekst in (of in je profiel).";
       cvError.classList.remove("hidden");
       return;
     }
@@ -179,10 +260,16 @@ if (rewriteBtn) {
 
         lastRewrittenCvText = rewritten;
 
-        // PROFIEL CV OPSLAAN
-        saveCandidateProfile(rewritten);
+        // Profiel-CV ook bijwerken met de nette versie
+        if (profileCvTextarea) {
+          profileCvTextarea.value = rewritten;
+        }
+        saveProfileToStorage(
+          (profileNameInput?.value || "").trim(),
+          (profileEmailInput?.value || "").trim(),
+          rewritten
+        );
 
-        // Automatisch doorschuiven naar motivatie + match
         if (letterCvInput && !letterCvInput.value.trim()) {
           letterCvInput.value = rewritten;
         }
@@ -205,7 +292,7 @@ if (rewriteBtn) {
 // --- Motivatiebrief ---
 if (letterBtn) {
   letterBtn.addEventListener("click", async () => {
-    let cvText = (letterCvInput?.value || "").trim();
+    let cvText = resolveCvText(letterCvInput?.value);
     const jobText = (jobDescriptionInput?.value || "").trim();
     const companyName = (companyNameInput?.value || "").trim();
 
@@ -213,16 +300,9 @@ if (letterBtn) {
     letterResultBox.classList.add("hidden");
     letterResult.textContent = "";
 
-    if (!cvText && lastRewrittenCvText) {
-      cvText = lastRewrittenCvText;
-      if (letterCvInput) {
-        letterCvInput.value = lastRewrittenCvText;
-      }
-    }
-
     if (!cvText) {
       letterError.textContent =
-        "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
+        "We hebben geen CV gevonden. Vul je profiel in of laat eerst je CV herschrijven.";
       letterError.classList.remove("hidden");
       return;
     }
@@ -232,6 +312,10 @@ if (letterBtn) {
         "Vul eerst de vacaturetekst in (of kies een vacature via de vacatures-pagina).";
       letterError.classList.remove("hidden");
       return;
+    }
+
+    if (letterCvInput && !letterCvInput.value.trim()) {
+      letterCvInput.value = cvText;
     }
 
     letterBtn.disabled = true;
@@ -274,23 +358,16 @@ if (letterBtn) {
 // --- Matchscore ---
 if (matchBtn) {
   matchBtn.addEventListener("click", async () => {
-    let cvText = (matchCvInput?.value || "").trim();
+    let cvText = resolveCvText(matchCvInput?.value);
     const jobText = (matchJobInput?.value || "").trim();
 
     matchError.classList.add("hidden");
     matchResultBox.classList.add("hidden");
     matchResult.textContent = "";
 
-    if (!cvText && lastRewrittenCvText) {
-      cvText = lastRewrittenCvText;
-      if (matchCvInput) {
-        matchCvInput.value = lastRewrittenCvText;
-      }
-    }
-
     if (!cvText) {
       matchError.textContent =
-        "Vul eerst je CV-tekst in (of laat AI eerst je CV herschrijven).";
+        "We hebben geen CV gevonden. Vul je profiel in of laat eerst je CV herschrijven.";
       matchError.classList.remove("hidden");
       return;
     }
@@ -300,6 +377,10 @@ if (matchBtn) {
         "Vul eerst de vacaturetekst in (of kies een vacature via de vacatures-pagina).";
       matchError.classList.remove("hidden");
       return;
+    }
+
+    if (matchCvInput && !matchCvInput.value.trim()) {
+      matchCvInput.value = cvText;
     }
 
     matchBtn.disabled = true;
@@ -724,6 +805,7 @@ if (employerAIRankBtn) {
     }
   });
 }
+
 
 
 
