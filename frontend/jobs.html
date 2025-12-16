@@ -9,32 +9,20 @@
   <div class="page">
     <header>
       <h1>Vacatures op It's Peanuts AI</h1>
-      <p>Zoek vacatures zoals op Indeed, met een AI-laag erbovenop.</p>
+      <p>Zoek vacatures zoals op Indeed, met een AI Recruiter erbovenop.</p>
 
       <p style="margin-top: 8px;">
-        <a href="index.html">← Terug naar AI solliciteren</a>
+        <a href="index.html">← Terug naar AI solliciteren & profiel</a>
       </p>
     </header>
 
     <main>
-      <!-- CV voor AI-zoekfunctie -->
+      <!-- Vacaturezoeker + AI Recruiter -->
       <section class="card">
-        <h2>Stap 0 – Plak je CV voor AI-zoekopdrachten (optioneel)</h2>
-        <p style="font-size: 14px; color: #9ca3af;">
-          Als je hieronder je CV plakt, kan AI vacatures beoordelen en sorteren op beste match.
-          Als je dit leeg laat, kun je nog steeds gewoon zoeken zoals op Indeed.
-        </p>
-
-        <label for="jobsCvInput">CV-tekst</label>
-        <textarea id="jobsCvInput" placeholder="Plak hier je CV-tekst..."></textarea>
-      </section>
-
-      <!-- Vacaturezoeker -->
-      <section class="card" style="margin-top: 16px;">
         <h2>Vacatures zoeken</h2>
         <p style="font-size: 14px; color: #9ca3af;">
-          Zoek vacatures op titel, bedrijf of trefwoord. Gebruik daarna eventueel AI om te sorteren
-          op beste match met jouw CV.
+          Zoek vacatures op titel, bedrijf of trefwoord. De AI Recruiter gebruikt automatisch
+          het CV uit jouw profiel (op de hoofdpagina) om de beste matches te vinden.
         </p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
@@ -50,7 +38,7 @@
 
         <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
           <button id="jobBoardSearchBtn">Zoek vacatures</button>
-          <button id="jobBoardAIButton">AI: sorteer op beste match met mijn CV</button>
+          <button id="jobBoardAIButton">AI Recruiter: sorteer op beste match met mijn profiel-CV</button>
         </div>
 
         <div id="jobBoardError" class="error hidden" style="margin-top: 8px;"></div>
@@ -95,3 +83,4 @@
   <script src="jobs.js"></script>
 </body>
 </html>
+
