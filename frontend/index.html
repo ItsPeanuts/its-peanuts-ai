@@ -20,12 +20,34 @@
     <main>
       <!-- ================= KANDIDAAT VIEW ================= -->
       <section id="candidateView">
-        <!-- Link naar vacatures -->
+        <!-- Kandidaatprofiel -->
         <section class="card">
+          <h2>Mijn profiel</h2>
+          <p style="font-size: 14px; color: #9ca3af;">
+            Vul hier één keer je profiel in. We gebruiken dit automatisch voor AI-sollicitaties
+            en de AI Recruiter op de vacaturepagina.
+          </p>
+
+          <label for="profileName">Naam</label>
+          <input id="profileName" type="text" placeholder="Bijv. Joshua Brouwn" />
+
+          <label for="profileEmail">E-mailadres</label>
+          <input id="profileEmail" type="email" placeholder="Bijv. joshua@example.com" />
+
+          <label for="profileCv">Mijn CV-tekst</label>
+          <textarea id="profileCv" placeholder="Plak hier je CV-tekst..."></textarea>
+
+          <button id="profileSaveBtn">Sla mijn profiel op</button>
+
+          <div id="profileMessage" style="margin-top: 8px; font-size: 13px; color: #16a34a;"></div>
+        </section>
+
+        <!-- Link naar vacatures -->
+        <section class="card" style="margin-top: 16px;">
           <h2>Vacatures bekijken</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Wil je eerst vacatures zien, zoals op Indeed? Klik dan hieronder om alle vacatures
-            op It's Peanuts AI te bekijken en daar direct op te solliciteren met AI.
+            Wil je vacatures bekijken zoals op Indeed? Klik hieronder om alle vacatures
+            op It's Peanuts AI te zien en daar direct op te solliciteren met AI.
           </p>
           <a href="jobs.html">
             <button>Bekijk alle vacatures</button>
@@ -35,11 +57,6 @@
         <!-- CV herschrijven -->
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 1 – Plak of upload je CV</h2>
-
-          <p style="font-size: 13px; color: #9ca3af; margin-bottom: 6px;">
-            Als je hieronder je CV laat herschrijven, slaan we het automatisch op als jouw
-            <strong>profiel-CV</strong>. De AI Recruiter gebruikt dat CV later om vacatures te vinden die bij jou passen.
-          </p>
 
           <label for="cvInput">Ruwe CV-tekst</label>
           <textarea id="cvInput" placeholder="Plak hier je CV of werkervaring..."></textarea>
@@ -67,12 +84,12 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 2 – Laat AI je motivatiebrief schrijven</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            We vullen dit CV-veld automatisch met je herschreven CV. Als je via de vacaturepagina
-            (Indeed-stijl) op "Solliciteer met AI" klikt, vullen we automatisch de vacaturetekst in.
+            We vullen dit veld automatisch met je herschreven CV of het CV uit je profiel.
+            Als je via de vacaturepagina op "Solliciteer met AI" klikt, vullen we automatisch de vacaturetekst in.
           </p>
 
           <label for="letterCvInput">CV-tekst</label>
-          <textarea id="letterCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
+          <textarea id="letterCvInput" placeholder="Je herschreven of profiel-CV verschijnt hier automatisch..."></textarea>
 
           <label for="jobDescriptionInput">Vacaturetekst</label>
           <textarea id="jobDescriptionInput" placeholder="Plak hier de volledige vacaturetekst... of kies er één via de vacatures-pagina."></textarea>
@@ -94,15 +111,15 @@
         <section class="card" style="margin-top: 16px;">
           <h2>Stap 3 – Hoe goed pas ik op deze vacature?</h2>
           <p style="font-size: 14px; color: #9ca3af;">
-            Dit veld wordt automatisch gevuld met je herschreven CV. Als je via de vacaturepagina
-            op "Solliciteer met AI" hebt geklikt, gebruiken we automatisch die vacaturetekst.
+            Dit veld wordt automatisch gevuld met je herschreven CV of het CV uit je profiel.
+            Als je via de vacaturepagina op "Solliciteer met AI" hebt geklikt, gebruiken we automatisch die vacaturetekst.
           </p>
 
           <label for="matchCvInput">CV-tekst</label>
-          <textarea id="matchCvInput" placeholder="Je herschreven CV verschijnt hier automatisch..."></textarea>
+          <textarea id="matchCvInput" placeholder="Je herschreven of profiel-CV verschijnt hier automatisch..."></textarea>
 
           <label for="matchJobInput">Vacaturetekst</label>
-          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst... of kies er één via de vacatures-pagina."></textarea>
+          <textarea id="matchJobInput" placeholder="Plak de volledige vacaturetekst... of kies een vacature via de vacatures-pagina."></textarea>
 
           <button id="matchBtn">Bereken matchscore</button>
 
@@ -229,6 +246,7 @@
   <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
