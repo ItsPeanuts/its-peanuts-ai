@@ -1,19 +1,16 @@
 import os
 
-def _get(name: str, default: str | None = None) -> str | None:
-    return os.getenv(name, default)
+# CORS / Origins
+raw_origins = os.getenv("ALLOWED_ORIGINS", "*").strip()
+if raw_origins == "*" or raw_origins == "":
+    ALLOWED_ORIGINS = ["*"]
+else:
+    ALLOWED_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
-APP_ENV = _get("APP_ENV", "prod")
+# Database
+# Als Render geen DATABASE_URL heeft, gebruiken we SQLite als fallback
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./its_peanuts.db")
 
-DATABASE_URL = _get("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set")
-
-JWT_SECRET = _get("JWT_SECRET", "change-me-in-render")
-JWT_ALG = "HS256"
-JWT_EXPIRE_MINUTES = int(_get("JWT_EXPIRE_MINUTES", "43200"))  # 30 dagen
-
-OPENAI_API_KEY = _get("OPENAI_API_KEY", "")
-
-ALLOWED_ORIGINS = _get("ALLOWED_ORIGINS", "*")  # kommapunt/komma separated of *
+# Omgevingsnaam (optioneel)
+APP_ENV = os.getenv("APP_ENV", "production")
 
