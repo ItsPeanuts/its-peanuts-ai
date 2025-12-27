@@ -11,16 +11,22 @@ else:
     ALLOWED_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
 # ========== DATABASE ==========
-# Als Render geen DATABASE_URL heeft, gebruiken we SQLite als fallback
+# Fallback naar SQLite als Render geen DATABASE_URL heeft
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./its_peanuts.db")
 
 # ========== OPENAI ==========
-# Altijd definiëren, ook als hij leeg is (zodat imports nooit falen)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-
-# Als je later modelnaam / org nodig hebt:
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_ORG_ID = os.getenv("OPENAI_ORG_ID", "")
+
+# ========== AUTH / JWT ==========
+# Let op: voor productie wil je deze via Render env vars instellen.
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+JWT_ALG = os.getenv("JWT_ALG", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "43200"))  # 30 dagen
+
+# ========== OPTIONAL: COOKIE / FRONTEND ==========
+FRONTEND_URL = os.getenv("FRONTEND_URL", "")
 
 
 
