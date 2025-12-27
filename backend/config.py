@@ -23,3 +23,4 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_ORG_ID = os.getenv("OPENAI_ORG_ID", "")
 
 
+
