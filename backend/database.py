@@ -1,23 +1,21 @@
+# backend/database.py
 import os
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-# Render zet meestal DATABASE_URL (Postgres). Soms begint die met postgres://
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+# Render Postgres URL kan soms postgres:// zijn; SQLAlchemy wil postgresq+psycopg2://
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
-# SQLite heeft speciale connect args nodig
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
-
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
-
 
 def get_db():
     db = SessionLocal()
@@ -25,3 +23,4 @@ def get_db():
         yield db
     finally:
         db.close()
+
