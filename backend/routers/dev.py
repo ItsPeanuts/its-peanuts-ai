@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend import models
+from backend.models import Candidate
 from backend.services.auth import hash_password
 
 router = APIRouter(prefix="/dev", tags=["dev"])
+
 
 @router.post("/seed-candidate")
 def seed_candidate(db: Session = Depends(get_db)):
@@ -16,11 +17,11 @@ def seed_candidate(db: Session = Depends(get_db)):
     email = "admin@itspeanuts.ai"
     password = "Admin1234!"
 
-    existing = db.query(models.Candidate).filter(models.Candidate.email == email).first()
+    existing = db.query(Candidate).filter(Candidate.email == email).first()
     if existing:
         return {"status": "exists", "email": email}
 
-    c = models.Candidate(
+    c = Candidate(
         email=email,
         hashed_password=hash_password(password),
         full_name="Admin",
@@ -29,3 +30,4 @@ def seed_candidate(db: Session = Depends(get_db)):
     db.commit()
     db.refresh(c)
     return {"status": "created", "id": c.id, "email": c.email, "password": password}
+
