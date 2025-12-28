@@ -5,16 +5,17 @@ from backend.routers import dev as dev_router
 
 app = FastAPI(title="It's Peanuts AI")
 
-# Create tables (simple approach; good for now)
+# create tables
 Base.metadata.create_all(bind=engine)
 
-# Routers
 app.include_router(auth_router.router)
 app.include_router(dev_router.router)
+
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
 
 
 
