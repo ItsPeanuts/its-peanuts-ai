@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create tables automatically (SQLite fallback / first boot)
+# Create tables automatically on boot (works for sqlite fallback too)
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router.router)
@@ -24,6 +24,7 @@ app.include_router(auth_router.router)
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
 
 
 
