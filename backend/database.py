@@ -1,12 +1,15 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-# If DATABASE_URL is missing, fall back to local sqlite so the service can boot.
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+# SQLAlchemy declarative base (required by backend.models.__init__)
+Base = declarative_base()
+
+# If DATABASE_URL is missing, fall back to sqlite so the service can boot.
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 if not DATABASE_URL:
-    # Works anywhere, including Render. Data is ephemeral on Render, but the API boots.
     DATABASE_URL = "sqlite:///./app.db"
 
 # SQLite needs special connect args
@@ -27,6 +30,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 
 
