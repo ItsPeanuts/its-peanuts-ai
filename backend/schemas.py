@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
+from __future__ import annotations
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
@@ -7,15 +8,24 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
 
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    full_name: str = Field(min_length=2, max_length=200)
+    password: str = Field(min_length=8, max_length=200)
+    bootstrap_token: str
+
+
 class CandidateOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     email: EmailStr
-    full_name: Optional[str] = None
+    full_name: str
+
+    class Config:
+        from_attributes = True
 
 
