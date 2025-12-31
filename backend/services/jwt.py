@@ -1,23 +1,30 @@
+# backend/services/jwt.py
+
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from backend.settings import settings
+
+# Render: zet JWT_SECRET in Environment Variables
+JWT_SECRET = "change-me"  # wordt overschreven door env, zie onder
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_DAYS = 30
 
 
-def create_access_token(subject: str, expires_minutes: int | None = None) -> str:
+def create_access_token(subject: str) -> str:
     """
-    Create a signed JWT access token.
-    subject: usually the user id (string)
+    subject = user_id als string
     """
-    if expires_minutes is None:
-        expires_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
     now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=expires_minutes)
+    exp = now + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
 
     payload = {
-        "sub": subject,
+        "sub": str(subject),
         "iat": int(now.timestamp()),
-        "exp": int(expire.timestamp()),
+        "exp": int(exp.timestamp()),
     }
 
-    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    # JWT_SECRET liever uit env halen (zie stap 3)
+    import os
+    secret = os.getenv("JWT_SECRET", JWT_SECRET)
+
+    return jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)
+
