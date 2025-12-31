@@ -1,17 +1,24 @@
+# backend/services/auth.py
+
 from passlib.context import CryptContext
 
-# bcrypt + passlib correct en stabiel
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def hash_password(password: str) -> str:
-    # bcrypt limiet = 72 bytes → hard afkappen voor veiligheid
-    password = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    # simpele safety; voorkomt rare errors en is netjes voor API's
+    if password is None:
+        raise ValueError("Password is required")
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    plain_password = plain_password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    if plain_password is None:
+        return False
+    if len(plain_password) > 72:
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
+
 
