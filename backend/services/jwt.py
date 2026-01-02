@@ -1,22 +1,32 @@
 import os
 from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
 
-from jose import jwt
+ALGORITHM = "HS256"
 
-SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-change-me")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "43200"))  # 30 dagen
+def _secret():
+    secret = os.getenv("JWT_SECRET", "")
+    if not secret:
+        raise RuntimeError("JWT_SECRET is not set")
+    return secret
 
 
 def create_access_token(subject: str) -> str:
     now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    to_encode = {
+    exp_days = int(os.getenv("JWT_EXPIRE_DAYS", "30"))
+    payload = {
         "sub": subject,
         "iat": int(now.timestamp()),
-        "exp": int(expire.timestamp()),
+        "exp": int((now + timedelta(days=exp_days)).timestamp()),
     }
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, _secret(), algorithm=ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict:
+    try:
+        return jwt.decode(token, _secret(), algorithms=[ALGORITHM])
+    except JWTError:
+        return {}
+
 
 
