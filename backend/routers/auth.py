@@ -1,12 +1,11 @@
-# backend/routers/auth.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import os
 
 from backend.database import get_db
 from backend import models
 from backend.schemas import RegisterRequest, LoginRequest, TokenOut, CandidateOut
-from backend.services.auth import hash_password, verify_password
+from backend.services.auth import hash_password, verify_password, get_current_user
 from backend.services.jwt import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -14,8 +13,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=CandidateOut)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
-    # Bootstrap check (zet BOOTSTRAP_TOKEN in Render env)
-    import os
     expected = os.getenv("BOOTSTRAP_TOKEN", "")
     if expected and body.bootstrap_token != expected:
         raise HTTPException(status_code=403, detail="Invalid bootstrap token")
@@ -43,5 +40,11 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_access_token(str(user.id))
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=CandidateOut)
+def me(current_user: models.Candidate = Depends(get_current_user)):
+    return current_user
+
 
 
