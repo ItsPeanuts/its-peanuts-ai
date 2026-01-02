@@ -1,11 +1,13 @@
+# backend/routers/auth.py
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-import os
 
 from backend.database import get_db
 from backend import models
-from backend.schemas import RegisterRequest, LoginRequest, TokenOut, CandidateOut
-from backend.services.auth import hash_password, verify_password, get_current_user
+from backend.schemas import RegisterRequest, TokenOut, CandidateOut
+from backend.services.auth import hash_password, verify_password
 from backend.services.jwt import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -13,6 +15,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=CandidateOut)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    import os
     expected = os.getenv("BOOTSTRAP_TOKEN", "")
     if expected and body.bootstrap_token != expected:
         raise HTTPException(status_code=403, detail="Invalid bootstrap token")
@@ -33,18 +36,18 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.Candidate).filter(models.Candidate.email == body.email).first()
-    if not user or not verify_password(body.password, user.hashed_password):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # Swagger OAuth2 popup gebruikt veldnaam "username"
+    email = form_data.username
+    password = form_data.password
+
+    user = db.query(models.Candidate).filter(models.Candidate.email == email).first()
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(str(user.id))
     return {"access_token": token, "token_type": "bearer"}
 
-
-@router.get("/me", response_model=CandidateOut)
-def me(current_user: models.Candidate = Depends(get_current_user)):
-    return current_user
 
 
 
