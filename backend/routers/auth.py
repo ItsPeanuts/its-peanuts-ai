@@ -1,7 +1,5 @@
-# backend/routers/auth.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -11,6 +9,8 @@ from backend.services.auth import hash_password, verify_password
 from backend.services.jwt import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 @router.post("/register", response_model=CandidateOut)
@@ -37,7 +37,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenOut)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Swagger OAuth2 popup gebruikt veldnaam "username"
+    # Swagger OAuth2 popup gebruikt "username" veld → wij gebruiken email daarin
     email = form_data.username
     password = form_data.password
 
@@ -47,6 +47,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     token = create_access_token(str(user.id))
     return {"access_token": token, "token_type": "bearer"}
+
 
 
 
