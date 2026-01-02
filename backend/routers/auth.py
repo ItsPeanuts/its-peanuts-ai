@@ -37,7 +37,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenOut)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Swagger OAuth2 popup gebruikt "username" veld → wij gebruiken email daarin
+    # Swagger OAuth2 popup gebruikt "username" -> wij gebruiken email daarin
     email = form_data.username
     password = form_data.password
 
@@ -47,6 +47,25 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     token = create_access_token(str(user.id))
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=CandidateOut)
+def me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    # token bevat het JWT; in jouw jwt-service staat "sub" = user_id.
+    # We houden het hier simpel: decode in jwt-service of (sneller) voeg een helper toe.
+    from backend.services.jwt import decode_access_token
+
+    payload = decode_access_token(token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(models.Candidate).filter(models.Candidate.id == int(user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
+
 
 
 
