@@ -1,22 +1,26 @@
-from pydantic import BaseModel, EmailStr, Field
+# backend/schemas.py
+from __future__ import annotations
+
+from typing import Optional, List
+from pydantic import BaseModel, EmailStr
 
 
-# ---------- Auth ----------
+# ---------- AUTH ----------
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=72)  # bcrypt limiet
-    full_name: str = Field(min_length=2, max_length=255)
-    bootstrap_token: str = Field(min_length=1)
+    password: str
+    full_name: str
+    bootstrap_token: str
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=1, max_length=72)
+    password: str
 
 
 class TokenOut(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str
 
 
 class CandidateOut(BaseModel):
@@ -29,39 +33,46 @@ class CandidateOut(BaseModel):
         from_attributes = True
 
 
-# ---------- Employer / Jobs ----------
-class JobCreate(BaseModel):
-    title: str = Field(min_length=2, max_length=255)
-    description: str = Field(min_length=10)
-    location: str | None = None
-    employment_type: str | None = None
+# ---------- VACANCIES ----------
+class VacancyCreate(BaseModel):
+    title: str
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+    description: Optional[str] = None
 
 
-class JobOut(BaseModel):
+class VacancyUpdate(BaseModel):
+    title: Optional[str] = None
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+    description: Optional[str] = None
+
+
+class VacancyOut(BaseModel):
     id: int
     employer_id: int
     title: str
-    description: str
-    location: str | None
-    employment_type: str | None
-    source: str
-    original_filename: str | None
-    original_type: str | None
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+
+    description: Optional[str] = None
+
+    source_type: Optional[str] = None
+    source_filename: Optional[str] = None
+    source_storage_key: Optional[str] = None
+    source_content_type: Optional[str] = None
+
+    extracted_text: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
-# ---------- Candidate / CV ----------
-class CVOut(BaseModel):
-    id: int
-    candidate_id: int
-    text: str
-    original_filename: str | None
-    original_type: str | None
-
-    class Config:
-        from_attributes = True
+class VacancyOutList(BaseModel):
+    items: List[VacancyOut]
 
 
 
