@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+# backend/models/candidate.py
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+
 from backend.database import Base
 
 
@@ -11,7 +14,8 @@ class Candidate(Base):
     hashed_password = Column(String(255), nullable=False)
 
     # "candidate" of "employer"
-    role = Column(String(50), nullable=False, server_default="candidate")
+    role = Column(String(50), nullable=False, default="candidate")
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    vacancies = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
+
 
