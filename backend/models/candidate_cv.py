@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, func, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from backend.database import Base
 
@@ -8,14 +9,16 @@ class CandidateCV(Base):
     __tablename__ = "candidate_cvs"
 
     id = Column(Integer, primary_key=True, index=True)
-    candidate_id = Column(Integer, ForeignKey("candidates.id"), nullable=False, index=True)
+    candidate_id = Column(Integer, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
 
+    # We slaan voorlopig de CV-inhoud als tekst op (later kunnen we files/object storage toevoegen)
+    text = Column(Text, nullable=True)
+
+    # "upload" of "text"
+    source = Column(String(50), default="upload", nullable=False)
     file_name = Column(String(255), nullable=True)
-    source = Column(String(50), nullable=False, default="upload")  # upload|text
-    raw_text = Column(Text, nullable=False)
-    extracted_text = Column(Text, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # optioneel, als Candidate model relationship heeft
-    candidate = relationship("Candidate", backref="cvs")
+    candidate = relationship("Candidate", back_populates="cvs")
+
