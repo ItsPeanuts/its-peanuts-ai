@@ -1,21 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend import models
-from backend.schemas import RegisterRequest, TokenOut, CandidateOut
+from backend.schemas import RegisterRequest, LoginRequest, TokenOut, CandidateOut
 from backend.services.auth import hash_password, verify_password
-from backend.services.jwt import create_access_token
+from backend.services.jwt import create_access_token, decode_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+bearer = HTTPBearer(auto_error=False)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+def get_current_candidate(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    db: Session = Depends(get_db),
+) -> models.Candidate:
+    if not creds or not creds.credentials:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        payload = decode_access_token(creds.credentials)
+        sub = payload.get("sub")
+        if not sub:
+            raise ValueError("Missing sub")
+        user_id = int(sub)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(models.Candidate).filter(models.Candidate.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 
 @router.post("/register", response_model=CandidateOut)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
     import os
+
     expected = os.getenv("BOOTSTRAP_TOKEN", "")
     if expected and body.bootstrap_token != expected:
         raise HTTPException(status_code=403, detail="Invalid bootstrap token")
@@ -36,13 +58,9 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Swagger OAuth2 popup gebruikt "username" -> wij gebruiken email daarin
-    email = form_data.username
-    password = form_data.password
-
-    user = db.query(models.Candidate).filter(models.Candidate.email == email).first()
-    if not user or not verify_password(password, user.hashed_password):
+def login(body: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.Candidate).filter(models.Candidate.email == body.email).first()
+    if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     token = create_access_token(str(user.id))
@@ -50,20 +68,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 @router.get("/me", response_model=CandidateOut)
-def me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    # token bevat het JWT; in jouw jwt-service staat "sub" = user_id.
-    # We houden het hier simpel: decode in jwt-service of (sneller) voeg een helper toe.
-    from backend.services.jwt import decode_access_token
-
-    payload = decode_access_token(token)
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = db.query(models.Candidate).filter(models.Candidate.id == int(user_id)).first()
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
+def me(user: models.Candidate = Depends(get_current_candidate)):
     return user
 
 
