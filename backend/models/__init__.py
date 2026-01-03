@@ -1,7 +1,12 @@
+# backend/models/__init__.py
 from backend.database import Base
-from .candidate import Candidate
-from .job import Job
-from .cv import CandidateCV
 
-__all__ = ["Base", "Candidate", "Job", "CandidateCV"]
+# Existing models
+from .candidate import Candidate  # noqa: F401
+
+# New model(s)
+from .vacancy import Vacancy  # noqa: F401
+
+# Relationships (backrefs) are declared inside models.
+
 
