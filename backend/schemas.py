@@ -1,19 +1,17 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Literal
-from datetime import datetime
 
 
-# ---------- AUTH ----------
+# ---------- Auth ----------
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    full_name: str = Field(min_length=2, max_length=120)
-    bootstrap_token: str
+    password: str = Field(min_length=8, max_length=72)  # bcrypt limiet
+    full_name: str = Field(min_length=2, max_length=255)
+    bootstrap_token: str = Field(min_length=1)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=72)
 
 
 class TokenOut(BaseModel):
@@ -25,61 +23,46 @@ class CandidateOut(BaseModel):
     id: int
     email: EmailStr
     full_name: str
+    role: str
 
     class Config:
         from_attributes = True
 
 
-# ---------- CV ----------
+# ---------- Employer / Jobs ----------
+class JobCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=255)
+    description: str = Field(min_length=10)
+    location: str | None = None
+    employment_type: str | None = None
+
+
+class JobOut(BaseModel):
+    id: int
+    employer_id: int
+    title: str
+    description: str
+    location: str | None
+    employment_type: str | None
+    source: str
+    original_filename: str | None
+    original_type: str | None
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- Candidate / CV ----------
 class CVOut(BaseModel):
     id: int
     candidate_id: int
-    filename: str
-    content_type: str
-    extracted_text: str
-    created_at: datetime
+    text: str
+    original_filename: str | None
+    original_type: str | None
 
     class Config:
         from_attributes = True
 
-
-# ---------- VACANCIES ----------
-class VacancyCreateText(BaseModel):
-    title: str = Field(min_length=2, max_length=200)
-    text: str = Field(min_length=20)
-
-
-class VacancyOut(BaseModel):
-    id: int
-    owner_candidate_id: int
-    title: str
-    source_type: Literal["text", "pdf", "docx"]
-    filename: Optional[str] = None
-    extracted_text: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# ---------- APPLICATIONS ----------
-class ApplicationCreate(BaseModel):
-    vacancy_id: int
-
-
-class ApplicationOut(BaseModel):
-    id: int
-    vacancy_id: int
-    candidate_id: int
-    status: Literal["new", "questions_sent", "shortlisted", "rejected"]
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class VacancyWithApplications(VacancyOut):
-    applications: List[ApplicationOut] = []
 
 
 
