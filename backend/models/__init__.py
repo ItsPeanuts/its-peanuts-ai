@@ -1,15 +1,15 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
 from backend.database import Base
 
+# Import all models so SQLAlchemy can discover them
+from .candidate import Candidate
+from .vacancy import Vacancy
+from .candidate_cv import CandidateCV
 
-class Candidate(Base):
-    __tablename__ = "candidates"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String, nullable=True)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+__all__ = [
+    "Base",
+    "Candidate",
+    "Vacancy",
+    "CandidateCV",
+]
 
 
