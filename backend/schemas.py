@@ -1,6 +1,13 @@
-from __future__ import annotations
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+
+# ---------- AUTH ----------
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    bootstrap_token: str
 
 
 class LoginRequest(BaseModel):
@@ -13,13 +20,7 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    full_name: str = Field(min_length=2, max_length=200)
-    password: str = Field(min_length=8, max_length=200)
-    bootstrap_token: str
-
-
+# ---------- CANDIDATE ----------
 class CandidateOut(BaseModel):
     id: int
     email: EmailStr
@@ -27,5 +28,37 @@ class CandidateOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---------- VACANCIES ----------
+class VacancyCreateText(BaseModel):
+    title: str
+    text: str
+
+
+class VacancyOut(BaseModel):
+    id: int
+    title: str
+    source: str
+    file_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- CV ----------
+class CVTextCreate(BaseModel):
+    text: str
+
+
+class CVOut(BaseModel):
+    id: int
+    candidate_id: int
+    source: str
+    file_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 
 
