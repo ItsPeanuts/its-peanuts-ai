@@ -3,30 +3,25 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 
 ALGORITHM = "HS256"
+JWT_SECRET = os.getenv("JWT_SECRET", "")
 
-def _secret():
-    secret = os.getenv("JWT_SECRET", "")
-    if not secret:
-        raise RuntimeError("JWT_SECRET is not set")
-    return secret
+if not JWT_SECRET:
+    # Fallback to something explicit so it fails clearly in prod if forgotten
+    raise RuntimeError("JWT_SECRET is not set")
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, expires_days: int = 30) -> str:
     now = datetime.now(timezone.utc)
-    exp_days = int(os.getenv("JWT_EXPIRE_DAYS", "30"))
-    payload = {
-        "sub": subject,
-        "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(days=exp_days)).timestamp()),
-    }
-    return jwt.encode(payload, _secret(), algorithm=ALGORITHM)
+    expire = now + timedelta(days=expires_days)
+    payload = {"sub": subject, "iat": int(now.timestamp()), "exp": int(expire.timestamp())}
+    return jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
 
 
 def decode_access_token(token: str) -> dict:
     try:
-        return jwt.decode(token, _secret(), algorithms=[ALGORITHM])
-    except JWTError:
-        return {}
+        return jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
+    except JWTError as e:
+        raise ValueError("Invalid token") from e
 
 
 
