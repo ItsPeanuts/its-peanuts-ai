@@ -4,15 +4,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    # bcrypt has a hard limit of 72 bytes; keep it safe
-    if len(password.encode("utf-8")) > 72:
-        password = password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+    # bcrypt heeft max 72 bytes; schema beperkt dit ook
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if len(plain_password.encode("utf-8")) > 72:
-        plain_password = plain_password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
     return pwd_context.verify(plain_password, hashed_password)
 
 
