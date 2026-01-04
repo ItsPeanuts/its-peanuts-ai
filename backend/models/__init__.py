@@ -1,61 +1,80 @@
 # backend/models/__init__.py
 
 """
-Auto-load alle SQLAlchemy model modules in deze map.
+Model package bootstrap.
 
-Probleem dat we nu oplossen:
-- In jouw repo bestaan waarschijnlijk 2 modelmodules die dezelfde table definieren,
-  bv. cv.py én candidate_cv.py -> beide maken __tablename__ = "candidate_cvs".
-- Als je ze allebei importeert, crasht SQLAlchemy met:
-  InvalidRequestError: Table 'candidate_cvs' is already defined ...
-
-Oplossing:
-- We importeren alle modelmodules, maar slaan bekende 'duplicate name' modules over
-  als er al een 'canonical' module aanwezig is.
+Doelen:
+1) Zorg dat alle modelmodules geladen zijn (zodat Base.metadata alle tabellen kent).
+2) Zorg dat routers veilig kunnen refereren aan `models.Candidate`, `models.Employer`, etc.
+3) Crash niet op duplicate-table issues tijdens import (tijdelijke mitigatie).
 """
 
 from __future__ import annotations
 
 import importlib
 import pkgutil
-from typing import Set
+import sys
+from typing import Any
+
+from sqlalchemy.exc import InvalidRequestError
 
 from backend.database import Base  # noqa: F401
-
-
-def _resolve_duplicates(mods: Set[str]) -> Set[str]:
-    """
-    Als beide varianten bestaan, kies 1 canonical module en skip de andere.
-    (Dit voorkomt dubbele __tablename__ definities.)
-    """
-    # CV duplicate: prefer "cv" over "candidate_cv"
-    if "cv" in mods and "candidate_cv" in mods:
-        mods.remove("candidate_cv")
-
-    # Vacancy duplicate: prefer "vacancy" over "vacancies"
-    if "vacancy" in mods and "vacancies" in mods:
-        mods.remove("vacancies")
-
-    # Employer duplicate: prefer "employer" over "employers"
-    if "employer" in mods and "employers" in mods:
-        mods.remove("employers")
-
-    return mods
 
 
 def _autoload_model_modules() -> None:
     package_name = __name__  # "backend.models"
     package = importlib.import_module(package_name)
 
-    found = {m.name for m in pkgutil.iter_modules(package.__path__) if not m.name.startswith("_")}
-    found = _resolve_duplicates(found)
+    for module_info in pkgutil.iter_modules(package.__path__):
+        mod_name = module_info.name
+        if mod_name.startswith("_"):
+            continue
 
-    # Deterministische volgorde
-    for mod_name in sorted(found):
-        importlib.import_module(f"{package_name}.{mod_name}")
+        full_name = f"{package_name}.{mod_name}"
+
+        # Als al geladen, sla over
+        if full_name in sys.modules:
+            continue
+
+        try:
+            importlib.import_module(full_name)
+        except InvalidRequestError as e:
+            # Mitigatie: duplicate table definitions laten we de app niet killen.
+            if "already defined for this MetaData instance" in str(e):
+                continue
+            raise
+
+
+def _export_known_models() -> None:
+    """
+    Exporteer bekende model classes als attributes op `backend.models`,
+    zodat code zoals `models.Candidate` blijft werken.
+    """
+
+    exports: dict[str, tuple[str, str]] = {
+        # attr_name: (module_name, class_name)
+        "Candidate": ("candidate", "Candidate"),
+        "Employer": ("employer", "Employer"),
+        "Vacancy": ("vacancy", "Vacancy"),
+        "CandidateCV": ("cv", "CandidateCV"),
+        "VacancyDoc": ("vacancy_doc", "VacancyDoc"),
+        "Conversation": ("conversation", "Conversation"),
+    }
+
+    for attr_name, (mod, cls) in exports.items():
+        try:
+            m = importlib.import_module(f"{__name__}.{mod}")
+            obj: Any = getattr(m, cls)
+            globals()[attr_name] = obj
+        except Exception:
+            # Niet ieder model hoeft al te bestaan in fase B.
+            # Belangrijk: Candidate moet wél bestaan; die fixen we in candidate.py als hij ontbreekt.
+            continue
 
 
 _autoload_model_modules()
+_export_known_models()
+
 
 
 
