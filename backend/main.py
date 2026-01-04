@@ -2,10 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import engine
-
-# Belangrijk: importeer models zodat alle tabellen geregistreerd zijn op Base.metadata
-from backend import models  # noqa: F401
 from backend.models import Base
+
+# Belangrijk: dit triggert het autoloaden van alle model-modules in backend/models/
+import backend.models  # noqa: F401
 
 from backend.routers import auth as auth_router
 from backend.routers import employer_vacancies as employer_vacancies_router
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create tables automatically on boot
+# Tables aanmaken bij boot
 Base.metadata.create_all(bind=engine)
 
 # Routers
@@ -31,6 +31,7 @@ app.include_router(employer_vacancies_router.router)
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
 
 
 
