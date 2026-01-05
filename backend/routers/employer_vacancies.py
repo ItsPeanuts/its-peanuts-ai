@@ -7,10 +7,7 @@ from backend.db import get_db
 from backend import models, schemas
 from backend.routers.auth import get_current_user
 
-router = APIRouter(
-    prefix="/employer/vacancies",
-    tags=["employer-vacancies"],
-)
+router = APIRouter(prefix="/employer/vacancies", tags=["employer-vacancies"])
 
 
 @router.get("", response_model=List[schemas.VacancyOut])
@@ -19,7 +16,7 @@ def list_vacancies(
     current_user: models.User = Depends(get_current_user),
 ):
     if current_user.role != "employer":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     return (
         db.query(models.Vacancy)
@@ -35,7 +32,7 @@ def create_vacancy(
     current_user: models.User = Depends(get_current_user),
 ):
     if current_user.role != "employer":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     vacancy = models.Vacancy(
         employer_id=current_user.id,
@@ -45,8 +42,8 @@ def create_vacancy(
         salary_range=payload.salary_range,
         description=payload.description,
     )
-
     db.add(vacancy)
     db.commit()
     db.refresh(vacancy)
     return vacancy
+
