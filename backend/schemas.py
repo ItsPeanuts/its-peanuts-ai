@@ -29,6 +29,14 @@ class EmployerRegister(BaseModel):
     bootstrap_token: str
 
 
+class LoginRequest(BaseModel):
+    """
+    Request body voor: POST /auth/login
+    """
+    email: EmailStr
+    password: str
+
+
 class UserOut(BaseModel):
     """
     Response model voor user objecten.
@@ -83,7 +91,6 @@ class VacancyOut(VacancyBase):
     extracted_text: Optional[str] = None
 
 
-# Optioneel: als je list response expliciet wil typeren
 class VacancyListOut(BaseModel):
     items: List[VacancyOut]
 
