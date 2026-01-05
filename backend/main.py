@@ -5,10 +5,7 @@ from backend.db import engine
 from backend.models import Base
 from backend.routers import auth, employer_vacancies
 
-app = FastAPI(
-    title="It's Peanuts AI",
-    version="0.1.0",
-)
+app = FastAPI(title="It's Peanuts AI", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,10 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# DATABASE TABLES
 Base.metadata.create_all(bind=engine)
 
-# ROUTERS
 app.include_router(auth.router)
 app.include_router(employer_vacancies.router)
 
@@ -29,9 +24,6 @@ app.include_router(employer_vacancies.router)
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
-
-
-
 
 
 
