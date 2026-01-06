@@ -1,3 +1,6 @@
+# backend/models/vacancy.py
+from __future__ import annotations
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -24,7 +27,8 @@ class Vacancy(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    employer = relationship("User", lazy="joined")
+    employer = relationship("User", back_populates="vacancies", lazy="joined")
+
 
 
 
