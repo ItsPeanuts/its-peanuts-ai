@@ -1,3 +1,6 @@
+# backend/models/__init__.py
+from __future__ import annotations
+
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -5,10 +8,9 @@ class Base(DeclarativeBase):
     pass
 
 
-# Import models ONCE here (no autoload, no scanning)
-from .user import User  # noqa: E402,F401
-from .vacancy import Vacancy  # noqa: E402,F401
-from .cv import CandidateCV  # noqa: E402,F401
+# Import models once so metadata is complete
+from .user import User  # noqa: F401,E402
+from .vacancy import Vacancy  # noqa: F401,E402
 
 
 
