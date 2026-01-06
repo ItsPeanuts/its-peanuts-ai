@@ -1,6 +1,9 @@
+# backend/routers/employer_vacancies.py
+from __future__ import annotations
+
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
@@ -16,11 +19,12 @@ def list_vacancies(
     current_user: models.User = Depends(get_current_user),
 ):
     if current_user.role != "employer":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     return (
         db.query(models.Vacancy)
         .filter(models.Vacancy.employer_id == current_user.id)
+        .order_by(models.Vacancy.id.desc())
         .all()
     )
 
@@ -32,7 +36,7 @@ def create_vacancy(
     current_user: models.User = Depends(get_current_user),
 ):
     if current_user.role != "employer":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     vacancy = models.Vacancy(
         employer_id=current_user.id,
@@ -46,4 +50,5 @@ def create_vacancy(
     db.commit()
     db.refresh(vacancy)
     return vacancy
+
 
