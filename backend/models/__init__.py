@@ -8,9 +8,11 @@ class Base(DeclarativeBase):
     pass
 
 
-# Import models once so metadata is complete
+# Import models exactly once so metadata is complete
 from .user import User  # noqa: F401,E402
 from .vacancy import Vacancy  # noqa: F401,E402
+from .cv import CandidateCV  # noqa: F401,E402
+
 
 
 
