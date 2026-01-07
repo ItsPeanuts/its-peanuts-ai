@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import json
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Generator, Optional, List, Any, Dict
 
@@ -13,7 +14,9 @@ from fastapi import (
     status,
     UploadFile,
     File,
+    Request,
 )
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
@@ -46,7 +49,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set. Add it in Render Environment.")
 
-# Render sometimes provides postgres:// which SQLAlchemy may not accept.
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
@@ -84,15 +86,13 @@ def get_db() -> Generator[Session, None, None]:
 # ----------------------------
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (
-        UniqueConstraint("email", name="uq_users_email"),
-    )
+    __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     full_name = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False, default="candidate")  # candidate | employer | admin
+    role = Column(String(50), nullable=False, default="candidate")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     vacancies = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
@@ -145,7 +145,6 @@ Base.metadata.create_all(bind=engine)
 # ----------------------------
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     email: EmailStr
     full_name: Optional[str] = None
@@ -253,27 +252,21 @@ def require_role(user: User, role: str) -> None:
 # File extract helpers
 # ----------------------------
 def _extract_pdf_text(file_bytes: bytes) -> str:
-    try:
-        from io import BytesIO
+    from io import BytesIO
 
-        reader = PdfReader(BytesIO(file_bytes))
-        parts: List[str] = []
-        for page in reader.pages:
-            parts.append(page.extract_text() or "")
-        return "\n".join(parts).strip()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read PDF: {e}")
+    reader = PdfReader(BytesIO(file_bytes))
+    parts: List[str] = []
+    for page in reader.pages:
+        parts.append(page.extract_text() or "")
+    return "\n".join(parts).strip()
 
 
 def _extract_docx_text(file_bytes: bytes) -> str:
-    try:
-        from io import BytesIO
+    from io import BytesIO
 
-        doc = Document(BytesIO(file_bytes))
-        parts = [p.text for p in doc.paragraphs if p.text]
-        return "\n".join(parts).strip()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read DOCX: {e}")
+    doc = Document(BytesIO(file_bytes))
+    parts = [p.text for p in doc.paragraphs if p.text]
+    return "\n".join(parts).strip()
 
 
 def extract_text_from_upload(upload: UploadFile, file_bytes: bytes) -> str:
@@ -297,16 +290,11 @@ def extract_text_from_upload(upload: UploadFile, file_bytes: bytes) -> str:
 # ----------------------------
 def _openai_client() -> OpenAI:
     if not OPENAI_API_KEY:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set in environment.")
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set in Render environment.")
     return OpenAI(api_key=OPENAI_API_KEY)
 
 
 def _extract_response_text(resp: Any) -> str:
-    """
-    Works across OpenAI SDK variations:
-    - If resp.output_text exists and is a string, use it.
-    - Else, walk resp.output[*].content[*].text.
-    """
     if hasattr(resp, "output_text") and isinstance(getattr(resp, "output_text"), str):
         return (resp.output_text or "").strip()
 
@@ -320,21 +308,15 @@ def _extract_response_text(resp: Any) -> str:
                     text += part.text
     except Exception:
         text = ""
-
     return (text or "").strip()
 
 
 def _safe_json_loads(s: str) -> Dict[str, Any]:
-    """
-    Tries to parse JSON, including when the model wraps it in ```json fences.
-    """
     s = (s or "").strip()
     if not s:
         return {}
     if s.startswith("```"):
-        # remove code fences
         s = s.strip("`")
-        # sometimes starts with json\n
         s = s.replace("json\n", "", 1).strip()
     try:
         return json.loads(s)
@@ -343,17 +325,39 @@ def _safe_json_loads(s: str) -> Dict[str, Any]:
 
 
 # ----------------------------
-# App
+# App + Global error handler
 # ----------------------------
 app = FastAPI(title="It's Peanuts AI", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later beperken
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Zorgt dat je nooit meer een kale 'Internal Server Error' krijgt.
+    Je krijgt JSON terug met stacktrace (handig voor 1x debuggen).
+    """
+    trace = traceback.format_exc()
+    # Log naar stdout -> Render logs
+    print("UNHANDLED_EXCEPTION:", repr(exc))
+    print(trace)
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error",
+            "error": repr(exc),
+            "path": str(request.url),
+            "trace": trace.splitlines()[-80:],  # laatste 80 regels
+        },
+    )
 
 
 # ----------------------------
@@ -400,12 +404,10 @@ def register_employer(payload: EmployerRegister, db: Session = Depends(get_db)) 
 
 @app.post("/auth/login", response_model=TokenOut, tags=["auth"])
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> TokenOut:
-    # OAuth2PasswordRequestForm uses "username" field (we treat it as email)
     email = (form_data.username or "").lower().strip()
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
     token = create_access_token(sub=str(user.id))
     return TokenOut(access_token=token)
 
@@ -439,7 +441,6 @@ def create_vacancy(
     current_user: User = Depends(get_current_user),
 ) -> Vacancy:
     require_role(current_user, "employer")
-
     vacancy = Vacancy(
         employer_id=current_user.id,
         title=payload.title,
@@ -467,7 +468,6 @@ async def upload_cv(
 
     file_bytes = await file.read()
     text = extract_text_from_upload(file, file_bytes)
-
     if not text:
         raise HTTPException(status_code=400, detail="No text extracted from file")
 
@@ -479,7 +479,6 @@ async def upload_cv(
     )
     db.add(row)
     db.commit()
-
     return text
 
 
@@ -494,7 +493,9 @@ def analyze_cv_vs_vacancy(
 ) -> AnalyzeOut:
     require_role(current_user, "candidate")
 
-    # Latest CV
+    # Debug log to Render
+    print(f"ANALYZE_START user_id={current_user.id} vacancy_id={vacancy_id}")
+
     cv = (
         db.query(CandidateCV)
         .filter(CandidateCV.candidate_id == current_user.id)
@@ -523,62 +524,53 @@ def analyze_cv_vs_vacancy(
         '  "gaps": ["string", ...],\n'
         '  "recommendations": ["string", ...]\n'
         "}\n"
-        "Rules: No markdown, no code fences, JSON only."
+        "Rules: JSON only. No markdown."
     )
 
-    user = (
-        f"VACANCY:\n{vacancy_text}\n\n"
-        f"CANDIDATE CV:\n{cv.extracted_text}\n"
-    )
+    user_prompt = f"VACANCY:\n{vacancy_text}\n\nCANDIDATE CV:\n{cv.extracted_text}\n"
 
     client = _openai_client()
-    try:
-        resp = client.responses.create(
-            model=OPENAI_MODEL,
-            input=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        )
-        raw = _extract_response_text(resp)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"OpenAI request failed: {e}")
+
+    resp = client.responses.create(
+        model=OPENAI_MODEL,
+        input=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    raw = _extract_response_text(resp)
+    print("ANALYZE_OPENAI_RAW_FIRST_500:", raw[:500])
 
     data = _safe_json_loads(raw)
     if not data:
-        # If the model did not return JSON, fail gracefully with raw snippet
-        raise HTTPException(status_code=502, detail=f"Model did not return valid JSON. Output: {raw[:500]}")
+        raise HTTPException(status_code=502, detail=f"Model did not return valid JSON. Output (first 500): {raw[:500]}")
 
-    # Validate/normalize
-    try:
-        match_score = int(data.get("match_score", 0))
-        decision = str(data.get("decision", "no_match"))
-        summary = str(data.get("summary", "")).strip()
+    match_score = int(data.get("match_score", 0))
+    decision = str(data.get("decision", "no_match"))
+    summary = str(data.get("summary", "")).strip()
 
-        strengths = data.get("strengths", []) or []
-        gaps = data.get("gaps", []) or []
-        recs = data.get("recommendations", []) or []
+    strengths = data.get("strengths", []) or []
+    gaps = data.get("gaps", []) or []
+    recs = data.get("recommendations", []) or []
 
-        if not isinstance(strengths, list):
-            strengths = [str(strengths)]
-        if not isinstance(gaps, list):
-            gaps = [str(gaps)]
-        if not isinstance(recs, list):
-            recs = [str(recs)]
+    if not isinstance(strengths, list):
+        strengths = [str(strengths)]
+    if not isinstance(gaps, list):
+        gaps = [str(gaps)]
+    if not isinstance(recs, list):
+        recs = [str(recs)]
 
-        # hard bounds
-        match_score = max(0, min(100, match_score))
+    match_score = max(0, min(100, match_score))
 
-        return AnalyzeOut(
-            match_score=match_score,
-            decision=decision,
-            summary=summary,
-            strengths=[str(x) for x in strengths][:10],
-            gaps=[str(x) for x in gaps][:10],
-            recommendations=[str(x) for x in recs][:10],
-        )
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Invalid analysis JSON format: {e}")
+    return AnalyzeOut(
+        match_score=match_score,
+        decision=decision,
+        summary=summary,
+        strengths=[str(x) for x in strengths][:10],
+        gaps=[str(x) for x in gaps][:10],
+        recommendations=[str(x) for x in recs][:10],
+    )
+
 
 
 
