@@ -2,14 +2,48 @@
 from __future__ import annotations
 
 import io
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
-from backend.routers.auth import get_current_user
 from backend import models
+from backend.routers.auth import get_current_user
+
+import PyPDF2
+from docx import Document
+
 
 router = APIRouter(prefix="/candidate", tags=["candidate-cv"])
+
+
+def _require_candidate(user: models.User) -> None:
+    if getattr(user, "role", None) != "candidate":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Candidate role required",
+        )
+
+
+def _extract_pdf_text(file_bytes: bytes) -> str:
+    reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
+    parts: list[str] = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        if text.strip():
+            parts.append(text)
+    return "\n".join(parts).strip()
+
+
+def _extract_docx_text(file_bytes: bytes) -> str:
+    doc = Document(io.BytesIO(file_bytes))
+    parts: list[str] = []
+    for p in doc.paragraphs:
+        t = (p.text or "").strip()
+        if t:
+            parts.append(t)
+    return "\n".join(parts).strip()
 
 
 @router.post("/cv", response_model=str)
@@ -18,65 +52,46 @@ async def upload_cv(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ) -> str:
-    # Alleen candidates mogen dit
-    if getattr(current_user, "role", None) != "candidate":
-        raise HTTPException(status_code=403, detail="Candidate role required")
+    _require_candidate(current_user)
 
-    filename = (file.filename or "").lower()
-    content_type = (file.content_type or "").lower()
+    filename: Optional[str] = file.filename
+    content_type: str = (file.content_type or "").lower()
 
-    is_pdf = filename.endswith(".pdf") or content_type == "application/pdf"
-    is_docx = filename.endswith(".docx") or content_type in (
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-    )
-
-    if not is_pdf and not is_docx:
-        raise HTTPException(status_code=400, detail="Unsupported file type. Upload a .pdf or .docx")
-
-    data = await file.read()
-    if not data:
+    # Lees bytes één keer
+    file_bytes = await file.read()
+    if not file_bytes:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    # Parse
-    try:
-        extracted_text = ""
-        if is_pdf:
-            # Snelle sanity check: PDF header
-            if not data.lstrip().startswith(b"%PDF"):
-                raise HTTPException(
-                    status_code=400,
-                    detail="File does not look like a valid PDF (missing %PDF header). Re-export the PDF and try again.",
-                )
+    is_pdf = (filename or "").lower().endswith(".pdf") or "pdf" in content_type
+    is_docx = (filename or "").lower().endswith(".docx") or "wordprocessingml" in content_type
 
-            from PyPDF2 import PdfReader  # imported here to keep startup clean
-
-            reader = PdfReader(io.BytesIO(data))
-            parts: list[str] = []
-            for page in reader.pages:
-                txt = page.extract_text() or ""
-                if txt.strip():
-                    parts.append(txt)
-            extracted_text = "\n\n".join(parts).strip()
-
-        else:  # docx
-            from docx import Document  # python-docx
-
-            doc = Document(io.BytesIO(data))
-            extracted_text = "\n".join([p.text for p in doc.paragraphs if p.text]).strip()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Cruciaal: nooit meer 500 door parsing
+    if not (is_pdf or is_docx):
         raise HTTPException(
             status_code=400,
-            detail=f"Could not read document: {type(e).__name__}: {str(e)}",
+            detail="Unsupported file type. Upload a .pdf or .docx",
         )
 
-    if not extracted_text:
-        # Geen crash, maar wel duidelijke output
-        raise HTTPException(status_code=400, detail="No text could be extracted from this document.")
+    try:
+        if is_pdf:
+            extracted_text = _extract_pdf_text(file_bytes)
+        else:
+            extracted_text = _extract_docx_text(file_bytes)
+    except Exception:
+        # Bewust generiek: parsing errors wil je niet “leaken” naar client
+        raise HTTPException(status_code=400, detail="Could not parse file")
 
-    # MVP: alleen tekst teruggeven. Opslaan doen we later (dan voegen we models.CandidateCV toe).
+    # Sla op in DB
+    cv_row = models.CandidateCV(
+        user_id=current_user.id,
+        filename=filename,
+        content_type=file.content_type,
+        storage_key=None,
+        extracted_text=extracted_text,
+    )
+    db.add(cv_row)
+    db.commit()
+    db.refresh(cv_row)
+
+    # Response blijft simpel (zoals je Swagger nu toont)
     return extracted_text
+
