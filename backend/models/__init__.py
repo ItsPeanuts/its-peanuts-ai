@@ -1,17 +1,22 @@
-# backend/models/__init__.py
-from __future__ import annotations
+from backend.models.base import Base
+from backend.models.user import User
+from backend.models.vacancy import Vacancy
+from backend.models.candidate_cv import CandidateCV
+from backend.models.application import Application
+from backend.models.intake import IntakeQuestion, IntakeAnswer
+from backend.models.ai_result import AIResult
 
-from sqlalchemy.orm import DeclarativeBase
+__all__ = [
+    "Base",
+    "User",
+    "Vacancy",
+    "CandidateCV",
+    "Application",
+    "IntakeQuestion",
+    "IntakeAnswer",
+    "AIResult",
+]
 
-
-class Base(DeclarativeBase):
-    pass
-
-
-# Import models exactly once so metadata is complete
-from .user import User  # noqa: F401,E402
-from .vacancy import Vacancy  # noqa: F401,E402
-from .cv import CandidateCV  # noqa: F401,E402
 
 
 
