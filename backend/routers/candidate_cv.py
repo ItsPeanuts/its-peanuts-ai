@@ -1,48 +1,30 @@
-# backend/routers/candidate_cv.py
 from __future__ import annotations
 
 import io
-from typing import Optional
-
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
 from backend import models
-from backend.routers.auth import get_current_user
+from backend.routers.auth import get_current_user, require_role
 
 import PyPDF2
-from docx import Document
-
+import docx
 
 router = APIRouter(prefix="/candidate", tags=["candidate-cv"])
 
 
-def _require_candidate(user: models.User) -> None:
-    if getattr(user, "role", None) != "candidate":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Candidate role required",
-        )
-
-
-def _extract_pdf_text(file_bytes: bytes) -> str:
-    reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
-    parts: list[str] = []
+def _extract_text_from_pdf(data: bytes) -> str:
+    reader = PyPDF2.PdfReader(io.BytesIO(data))
+    parts = []
     for page in reader.pages:
-        text = page.extract_text() or ""
-        if text.strip():
-            parts.append(text)
-    return "\n".join(parts).strip()
+        parts.append(page.extract_text() or "")
+    return "\n".join(p.strip() for p in parts if p.strip()).strip()
 
 
-def _extract_docx_text(file_bytes: bytes) -> str:
-    doc = Document(io.BytesIO(file_bytes))
-    parts: list[str] = []
-    for p in doc.paragraphs:
-        t = (p.text or "").strip()
-        if t:
-            parts.append(t)
+def _extract_text_from_docx(data: bytes) -> str:
+    document = docx.Document(io.BytesIO(data))
+    parts = [p.text for p in document.paragraphs if p.text and p.text.strip()]
     return "\n".join(parts).strip()
 
 
@@ -51,47 +33,36 @@ async def upload_cv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-) -> str:
-    _require_candidate(current_user)
+):
+    require_role(current_user, "candidate")
 
-    filename: Optional[str] = file.filename
-    content_type: str = (file.content_type or "").lower()
+    filename = (file.filename or "").lower()
+    content_type = (file.content_type or "").lower()
 
-    # Lees bytes één keer
-    file_bytes = await file.read()
-    if not file_bytes:
+    if not (filename.endswith(".pdf") or filename.endswith(".docx")):
+        raise HTTPException(status_code=400, detail="Unsupported file type. Upload a .pdf or .docx")
+
+    data = await file.read()
+    if not data:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    is_pdf = (filename or "").lower().endswith(".pdf") or "pdf" in content_type
-    is_docx = (filename or "").lower().endswith(".docx") or "wordprocessingml" in content_type
-
-    if not (is_pdf or is_docx):
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type. Upload a .pdf or .docx",
-        )
-
     try:
-        if is_pdf:
-            extracted_text = _extract_pdf_text(file_bytes)
+        if filename.endswith(".pdf") or content_type == "application/pdf":
+            extracted = _extract_text_from_pdf(data)
         else:
-            extracted_text = _extract_docx_text(file_bytes)
-    except Exception:
-        # Bewust generiek: parsing errors wil je niet “leaken” naar client
-        raise HTTPException(status_code=400, detail="Could not parse file")
+            extracted = _extract_text_from_docx(data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
 
-    # Sla op in DB
-    cv_row = models.CandidateCV(
-        user_id=current_user.id,
-        filename=filename,
-        content_type=file.content_type,
-        storage_key=None,
-        extracted_text=extracted_text,
+    cv = models.CandidateCV(
+        candidate_id=current_user.id,
+        source_filename=file.filename,
+        source_content_type=file.content_type,
+        extracted_text=extracted,
     )
-    db.add(cv_row)
+    db.add(cv)
     db.commit()
-    db.refresh(cv_row)
+    db.refresh(cv)
 
-    # Response blijft simpel (zoals je Swagger nu toont)
-    return extracted_text
+    return extracted
 
