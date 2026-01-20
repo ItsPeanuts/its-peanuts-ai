@@ -1,10 +1,9 @@
-# backend/models/vacancy.py
 from __future__ import annotations
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 
-from backend.models import Base
+from backend.models.base import Base
 
 
 class Vacancy(Base):
@@ -14,7 +13,7 @@ class Vacancy(Base):
     employer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     title = Column(String(255), nullable=False)
-    location = Column(String(255), nullable=False)
+    location = Column(String(255), nullable=True)
     hours_per_week = Column(String(50), nullable=True)
     salary_range = Column(String(100), nullable=True)
     description = Column(Text, nullable=True)
@@ -28,6 +27,7 @@ class Vacancy(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     employer = relationship("User", back_populates="vacancies", lazy="joined")
+
 
 
 
