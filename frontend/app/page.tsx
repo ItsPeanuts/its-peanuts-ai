@@ -1,122 +1,292 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { login, me } from "@/lib/api";
-import { setSession, type Role } from "@/lib/session";
+import { useEffect, useMemo, useState } from "react";
+import {
+  analyzeVacancy,
+  listCandidateVacancies,
+  login,
+  me,
+  uploadCV,
+} from "@/lib/api";
 
-export default function HomePage() {
-  const router = useRouter();
+type View = "home" | "login" | "dashboard";
 
-  const [role, setRole] = useState<Role>("candidate");
-  const [email, setEmail] = useState(role === "candidate" ? "candidate1@itspeanuts.ai" : "employer@itspeanuts.ai");
+export default function Page() {
+  const [view, setView] = useState<View>("home");
+
+  const [email, setEmail] = useState("candidate1@itspeanuts.ai");
   const [password, setPassword] = useState("Test123!123");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string>("");
 
-  // update default email if role changes (zonder je input te slopen als je al typt)
-  useMemo(() => {
-    if (email === "candidate1@itspeanuts.ai" || email === "employer@itspeanuts.ai") {
-      setEmail(role === "candidate" ? "candidate1@itspeanuts.ai" : "employer@itspeanuts.ai");
+  const [token, setToken] = useState<string>("");
+  const [meData, setMeData] = useState<any>(null);
+
+  const [vacancies, setVacancies] = useState<any[]>([]);
+  const [selectedVacancyId, setSelectedVacancyId] = useState<number>(1);
+
+  const [cvFile, setCvFile] = useState<File | null>(null);
+
+  const [result, setResult] = useState<any>(null);
+  const [busy, setBusy] = useState<string>("");
+
+  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    if (t) {
+      setToken(t);
+      setView("dashboard");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role]);
+  }, []);
 
-  async function onLogin() {
-    setErr("");
-    setLoading(true);
+  const canAnalyze = useMemo(() => !!token && !!selectedVacancyId, [token, selectedVacancyId]);
+
+  async function doLogin() {
+    setError("");
+    setBusy("Inloggen...");
     try {
-      const token = await login(email, password);
+      const r = await login(email, password);
+      localStorage.setItem("token", r.access_token);
+      setToken(r.access_token);
 
-      // rol checken via /auth/me zodat we zeker weten dat token klopt
-      const user = await me(token);
-      const userRole = (user.role || role) as Role;
+      const m = await me(r.access_token);
+      setMeData(m);
 
-      setSession(token, userRole);
-
-      router.push(userRole === "employer" ? "/employer" : "/candidate");
+      setView("dashboard");
+      await loadVacancies(r.access_token);
     } catch (e: any) {
-      setErr(e?.message || "Login failed");
+      setError(e?.message || "Login error");
     } finally {
-      setLoading(false);
+      setBusy("");
     }
   }
 
+  async function loadVacancies(t = token) {
+    setError("");
+    setBusy("Vacatures laden...");
+    try {
+      const list = await listCandidateVacancies(t);
+      setVacancies(list || []);
+      if (list?.length) setSelectedVacancyId(list[0].id);
+    } catch (e: any) {
+      setError(e?.message || "Vacancies error");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function doUploadCV() {
+    if (!cvFile) {
+      setError("Kies eerst een CV bestand (PDF).");
+      return;
+    }
+    setError("");
+    setBusy("CV uploaden...");
+    try {
+      await uploadCV(token, cvFile);
+    } catch (e: any) {
+      setError(e?.message || "CV upload error");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function doAnalyze() {
+    setError("");
+    setBusy("Analyseren...");
+    setResult(null);
+    try {
+      const r = await analyzeVacancy(token, Number(selectedVacancyId));
+      setResult(r);
+    } catch (e: any) {
+      setError(e?.message || "Analyze error");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setToken("");
+    setMeData(null);
+    setVacancies([]);
+    setResult(null);
+    setView("home");
+  }
+
   return (
-    <main style={{ maxWidth: 720, margin: "40px auto", padding: 16, fontFamily: "system-ui, -apple-system" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>It’s Peanuts AI — MVP</h1>
-      <p style={{ marginTop: 0, opacity: 0.8 }}>
-        Log in als Candidate of Employer. (Dit is alleen de UI-laag; backend draait al.)
-      </p>
+    <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700 }}>It’s Peanuts AI — Candidate</h1>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button
-          onClick={() => setRole("candidate")}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid #333",
-            background: role === "candidate" ? "#111" : "transparent",
-            color: role === "candidate" ? "#fff" : "#111",
-            cursor: "pointer",
-          }}
-        >
-          Candidate
-        </button>
-        <button
-          onClick={() => setRole("employer")}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid #333",
-            background: role === "employer" ? "#111" : "transparent",
-            color: role === "employer" ? "#fff" : "#111",
-            cursor: "pointer",
-          }}
-        >
-          Employer
-        </button>
-      </div>
-
-      <div style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 16 }}>
-        <label style={{ display: "block", fontSize: 12, opacity: 0.7 }}>Email</label>
-        <input
-          value={email}
-          onChange={(v) => setEmail(v.target.value)}
-          style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid #ccc", marginBottom: 12 }}
-        />
-
-        <label style={{ display: "block", fontSize: 12, opacity: 0.7 }}>Password</label>
-        <input
-          value={password}
-          type="password"
-          onChange={(v) => setPassword(v.target.value)}
-          style={{ width: "100%", padding: 10, borderRadius: 10, border: "1px solid #ccc", marginBottom: 12 }}
-        />
-
-        <button
-          onClick={onLogin}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 12,
-            border: "1px solid #111",
-            background: "#111",
-            color: "#fff",
-            cursor: "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-
-        {err ? <p style={{ color: "crimson", marginTop: 12 }}>{err}</p> : null}
-
-        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
-          Tip: standaard test accounts zijn al bekend (candidate1@itspeanuts.ai / employer@itspeanuts.ai).
+      {error ? (
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #ffb4b4", background: "#fff5f5" }}>
+          <b>Fout:</b> {error}
         </div>
-      </div>
+      ) : null}
+
+      {busy ? (
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", background: "#fafafa" }}>
+          {busy}
+        </div>
+      ) : null}
+
+      {view === "home" && (
+        <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
+          <button
+            onClick={() => setView("login")}
+            style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #222", background: "#111", color: "#fff" }}
+          >
+            Candidate Login
+          </button>
+          <button
+            onClick={() => setView("login")}
+            style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #222", background: "#fff", color: "#111" }}
+          >
+            Start (Demo)
+          </button>
+        </div>
+      )}
+
+      {view === "login" && (
+        <div style={{ marginTop: 20, border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700 }}>Inloggen</h2>
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Email</span>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ padding: 10, borderRadius: 10, border: "1px solid #ccc" }}
+              />
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Password</span>
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                type="password"
+                style={{ padding: 10, borderRadius: 10, border: "1px solid #ccc" }}
+              />
+            </label>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={doLogin}
+                style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #222", background: "#111", color: "#fff" }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setView("home")}
+                style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid #ccc", background: "#fff" }}
+              >
+                Terug
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === "dashboard" && (
+        <div style={{ marginTop: 20, display: "grid", gap: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 700 }}>Ingelogd</div>
+              <div style={{ opacity: 0.8, fontSize: 14 }}>
+                {meData ? `${meData.email} (${meData.role})` : "…"}
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ccc", background: "#fff" }}
+            >
+              Logout
+            </button>
+          </div>
+
+          <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>1) CV upload</h2>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+              />
+              <button
+                onClick={doUploadCV}
+                style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #222", background: "#111", color: "#fff" }}
+              >
+                Upload CV
+              </button>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
+              Tip: Kies je PDF en klik Upload.
+            </div>
+          </div>
+
+          <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700 }}>2) Vacature kiezen & analyze</h2>
+
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+              <button
+                onClick={() => loadVacancies()}
+                style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ccc", background: "#fff" }}
+              >
+                Vacatures laden
+              </button>
+
+              <select
+                value={selectedVacancyId}
+                onChange={(e) => setSelectedVacancyId(Number(e.target.value))}
+                style={{ padding: 10, borderRadius: 10, border: "1px solid #ccc", minWidth: 260 }}
+              >
+                {(vacancies.length ? vacancies : [{ id: 1, title: "Vacancy #1 (fallback)" }]).map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.id} — {v.title || "Vacature"}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                disabled={!canAnalyze}
+                onClick={doAnalyze}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  border: "1px solid #222",
+                  background: canAnalyze ? "#111" : "#888",
+                  color: "#fff",
+                  cursor: canAnalyze ? "pointer" : "not-allowed",
+                }}
+              >
+                Analyze
+              </button>
+            </div>
+
+            {result && (
+              <div style={{ marginTop: 14, padding: 12, borderRadius: 12, border: "1px solid #ddd", background: "#fafafa" }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Match score: {result.match_score}</div>
+                <div style={{ marginTop: 10 }}>
+                  <b>Summary</b>
+                  <div>{result.summary}</div>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <b>Strengths</b>
+                  <div>{result.strengths}</div>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <b>Gaps</b>
+                  <div>{result.gaps}</div>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <b>Suggested questions</b>
+                  <div>{result.suggested_questions}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
+
