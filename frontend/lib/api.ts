@@ -1,59 +1,53 @@
-const BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+// frontend/lib/api.ts
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ?? "https://its-peanuts-ai.onrender.com";
 
-function mustBase() {
-  if (!BASE) throw new Error("NEXT_PUBLIC_API_BASE ontbreekt. Zet dit in .env.local");
-  return BASE;
+export async function apiGet<T>(
+  path: string,
+  token?: string,
+  init?: RequestInit
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+    ...init,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API GET ${path} failed: ${res.status} ${text}`);
+  }
+  return (await res.json()) as T;
 }
 
-export function getApiBase() {
-  return mustBase();
-}
-
-export async function login(email: string, password: string) {
-  const url = `${mustBase()}/auth/login`;
-
-  const body = new URLSearchParams();
-  body.set("username", email);
-  body.set("password", password);
-
-  const res = await fetch(url, {
+export async function apiPost<T>(
+  path: string,
+  body?: any,
+  token?: string,
+  init?: RequestInit
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "accept": "application/json",
+      accept: "application/json",
+      "content-type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
     },
-    body,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    ...init,
+    cache: "no-store",
   });
 
-  const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Login failed (${res.status}): ${text}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`API POST ${path} failed: ${res.status} ${text}`);
   }
-
-  let json: any;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error(`Login response is geen JSON: ${text}`);
-  }
-
-  if (!json?.access_token) {
-    throw new Error(`Geen access_token in response: ${text}`);
-  }
-
-  return json.access_token as string;
+  return (await res.json()) as T;
 }
 
-export async function me(token: string) {
-  const url = `${mustBase()}/auth/me`;
-  const res = await fetch(url, {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "accept": "application/json",
-    },
-  });
-
-  const text = await res.text();
-  if (!res.ok) throw new Error(`GET /auth/me failed (${res.status}): ${text}`);
-  return JSON.parse(text);
-}
