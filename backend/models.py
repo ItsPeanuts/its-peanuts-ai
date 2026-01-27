@@ -1,18 +1,22 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Integer
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.sql import func
+
+from backend.database import Base
 
 
-class Base(DeclarativeBase):
-    pass
+class User(Base):
+    __tablename__ = "users"
 
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    full_name = Column(String, nullable=True)
 
-class Candidate(Base):
-    __tablename__ = "candidates"
+    # DB column is "hashed_password", but code uses attribute "password_hash"
+    password_hash = Column("hashed_password", String, nullable=False)
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role = Column(String, nullable=False, default="candidate")
+    plan = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 
