@@ -27,6 +27,17 @@ export async function login(email: string, password: string) {
   return data as { access_token: string; token_type: string };
 }
 
+export async function registerCandidate(email: string, password: string, fullName: string) {
+  const res = await fetch(`${BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Registration failed");
+  return data;
+}
+
 export async function me(token: string) {
   const res = await fetch(`${BASE}/auth/me`, {
     headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
@@ -42,8 +53,8 @@ export async function me(token: string) {
   };
 }
 
-export async function listCandidateVacancies(token: string) {
-  const res = await fetch(`${BASE}/candidate/vacancies`, {
+export async function candidateVacancies(token: string) {
+  const res = await fetch(`${BASE}/vacancies`, {
     headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
   });
   const data = await parseJson(res);
@@ -51,7 +62,43 @@ export async function listCandidateVacancies(token: string) {
   return data as any[];
 }
 
-export async function uploadCV(token: string, file: File) {
+export async function listCandidateVacancies(token: string) {
+  return candidateVacancies(token);
+}
+
+export async function employerVacancies(token: string) {
+  const res = await fetch(`${BASE}/employer/vacancies`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Employer vacancies failed");
+  return data as any[];
+}
+
+export async function createVacancy(
+  token: string,
+  vacancy: {
+    title: string;
+    location?: string;
+    hours_per_week?: string;
+    salary_range?: string;
+    description?: string;
+  }
+) {
+  const res = await fetch(`${BASE}/employer/vacancies`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(vacancy),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Create vacancy failed");
+  return data;
+}
+
+export async function uploadCv(token: string, file: File) {
   const fd = new FormData();
   fd.append("file", file);
 
@@ -64,6 +111,10 @@ export async function uploadCV(token: string, file: File) {
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "CV upload failed");
   return data;
+}
+
+export async function uploadCV(token: string, file: File) {
+  return uploadCv(token, file);
 }
 
 export async function analyzeVacancy(token: string, vacancyId: number) {
@@ -81,5 +132,47 @@ export async function analyzeVacancy(token: string, vacancyId: number) {
     gaps: string;
     suggested_questions: string;
   };
+}
+
+export async function applyToVacancy(token: string, vacancyId: number) {
+  const res = await fetch(`${BASE}/candidate/apply/${vacancyId}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Apply failed");
+  return data;
+}
+
+export async function myApplications(token: string) {
+  const res = await fetch(`${BASE}/candidate/applications`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Applications failed");
+  return data as any[];
+}
+
+export async function publicVacancies(search?: string, location?: string) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (location) params.set("location", location);
+  const qs = params.toString();
+
+  const res = await fetch(`${BASE}/vacancies${qs ? `?${qs}` : ""}`, {
+    headers: { accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Public vacancies failed");
+  return data as any[];
+}
+
+export async function publicVacancyDetail(vacancyId: number) {
+  const res = await fetch(`${BASE}/vacancies/${vacancyId}`, {
+    headers: { accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacancy not found");
+  return data;
 }
 

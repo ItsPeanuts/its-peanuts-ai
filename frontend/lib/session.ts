@@ -28,3 +28,13 @@ export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(KEY);
 }
+
+export function getToken(): string {
+  const s = getSession();
+  return s?.token || "";
+}
+
+export function getRole(): Role | null {
+  const s = getSession();
+  return s?.role || null;
+}
