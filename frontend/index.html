@@ -1,286 +1,79 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>It's Peanuts AI – Slim Solliciteren & Slim Werven</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Profile</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .profile-header {
+            border-bottom: 2px solid #0073b1;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        .profile-header h2 {
+            margin: 0;
+        }
+        .skill-set {
+            margin: 20px 0;
+        }
+        .skill {
+            display: inline-block;
+            background: #0073b1;
+            color: #fff;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <!-- HEADER / NAVIGATION -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo">
-          <span class="logo-icon">🥜</span>
-          <div>
-            <h1>It's Peanuts AI</h1>
-            <p class="tagline">Slim solliciteren & slim werven met AI</p>
-          </div>
+    <div class="container">
+        <div class="profile-header">
+            <h1>Your Name</h1>
+            <h2>Professional Title</h2>
         </div>
-
-        <nav class="nav-tabs">
-          <button id="navCandidate" class="nav-tab nav-tab-active">
-            <span class="icon">👤</span> Voor kandidaten
-          </button>
-          <button id="navEmployer" class="nav-tab">
-            <span class="icon">🏢</span> Voor werkgevers
-          </button>
-        </nav>
-      </div>
-    </header>
-
-    <!-- MAIN CONTENT -->
-    <main class="main">
-      <!-- ========== CANDIDATE VIEW ========== -->
-      <section id="candidateView" class="view-section">
-        <div class="container">
-          <!-- QUICK PROFILE SETUP -->
-          <section class="card card-featured">
-            <div class="card-header">
-              <h2>📋 Jouw kandidaatprofiel</h2>
-              <p class="card-description">Eenmalig invullen, overal gebruiken</p>
-            </div>
-
-            <div class="form-group">
-              <label>Volledige naam</label>
-              <input id="profileName" type="text" placeholder="Bijv. Jan de Vries" />
-            </div>
-
-            <div class="form-group">
-              <label>E-mailadres</label>
-              <input id="profileEmail" type="email" placeholder="Bijv. jan@example.com" />
-            </div>
-
-            <div class="form-group">
-              <label>Jouw CV (korte samenvatting)</label>
-              <textarea id="profileCv" placeholder="Plak hier je werk- en studieervaring..."></textarea>
-              <small>Dit wordt gebruikt voor AI-sollicitaties en matchings</small>
-            </div>
-
-            <button id="profileSaveBtn" class="btn btn-primary">💾 Profiel opslaan</button>
-            <div id="profileMessage" class="message-success"></div>
-          </section>
-
-          <!-- JOBS SECTION -->
-          <section class="card">
-            <div class="card-header">
-              <h2>🔍 Vacatures met AI matching</h2>
-              <p class="card-description">Vind passende banen en solliciteer met AI</p>
-            </div>
-            <a href="jobs.html" class="btn btn-secondary btn-full">Bekijk vacatures →</a>
-          </section>
-
-          <!-- AI FEATURES GRID -->
-          <div class="features-grid">
-            <!-- CV REWRITER -->
-            <section class="card">
-              <div class="card-header">
-                <h3>✨ CV herschrijven met AI</h3>
-              </div>
-
-              <div class="form-group">
-                <label>Je huidige CV</label>
-                <textarea id="cvInput" placeholder="Plak je CV hier of upload een .txt bestand..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label>Upload .txt bestand</label>
-                <input id="cvFileInput" type="file" accept=".txt" />
-              </div>
-
-              <div class="form-group">
-                <label>Gewenste functie (optioneel)</label>
-                <input id="targetRole" type="text" placeholder="Bijv. Product Manager" />
-              </div>
-
-              <button id="rewriteBtn" class="btn btn-primary btn-full">Herschrijf CV</button>
-
-              <div id="cvResultBox" class="result-box hidden">
-                <div class="result-header">
-                  <h4>Je verfijnde CV:</h4>
-                  <button class="btn-copy">📋 Kopieer</button>
-                </div>
-                <div id="cvResult" class="result-text"></div>
-              </div>
-              <div id="cvError" class="error-box hidden"></div>
-            </section>
-
-            <!-- MOTIVATION LETTER -->
-            <section class="card">
-              <div class="card-header">
-                <h3>💌 Motivatiebrief schrijven</h3>
-              </div>
-
-              <div class="form-group">
-                <label>Je CV</label>
-                <textarea id="letterCvInput" placeholder="Jouw CV..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label>Vacaturetekst</label>
-                <textarea id="jobDescriptionInput" placeholder="Plak hier de vacaturetekst..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label>Bedrijfsnaam (optioneel)</label>
-                <input id="companyNameInput" type="text" placeholder="Bijv. Google" />
-              </div>
-
-              <button id="letterBtn" class="btn btn-primary btn-full">Schrijf brief</button>
-
-              <div id="letterResultBox" class="result-box hidden">
-                <div class="result-header">
-                  <h4>Je motivatiebrief:</h4>
-                  <button class="btn-copy">📋 Kopieer</button>
-                </div>
-                <div id="letterResult" class="result-text"></div>
-              </div>
-              <div id="letterError" class="error-box hidden"></div>
-            </section>
-
-            <!-- MATCH SCORE -->
-            <section class="card">
-              <div class="card-header">
-                <h3>📊 Match score</h3>
-              </div>
-
-              <div class="form-group">
-                <label>Je CV</label>
-                <textarea id="matchCvInput" placeholder="Jouw CV..."></textarea>
-              </div>
-
-              <div class="form-group">
-                <label>Vacaturetekst</label>
-                <textarea id="matchJobInput" placeholder="Plak hier de vacaturetekst..."></textarea>
-              </div>
-
-              <button id="matchBtn" class="btn btn-primary btn-full">Bereken match</button>
-
-              <div id="matchResultBox" class="result-box hidden">
-                <div id="matchResult" class="result-text"></div>
-              </div>
-              <div id="matchError" class="error-box hidden"></div>
-            </section>
-          </div>
+        <div class="about">
+            <h3>About</h3>
+            <p>Professional summary goes here. A brief introduction about your experience and skills.</p>
         </div>
-      </section>
-
-      <!-- ========== EMPLOYER VIEW ========== -->
-      <section id="employerView" class="view-section hidden">
-        <div class="container">
-          <!-- ACCOUNT SETUP -->
-          <section class="card card-featured">
-            <div class="card-header">
-              <h2>🏢 Bedrijfsaccount aanmaken</h2>
-              <p class="card-description">Plaats vacatures en vind kandidaten</p>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Bedrijfsnaam</label>
-                <input id="empCompanyName" type="text" placeholder="Bijv. TechCorp BV" />
-              </div>
-              <div class="form-group">
-                <label>KvK-nummer</label>
-                <input id="empKvk" type="text" placeholder="Bijv. 12345678" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Contactpersoon</label>
-                <input id="empContactName" type="text" placeholder="Naam" />
-              </div>
-              <div class="form-group">
-                <label>E-mailadres</label>
-                <input id="empContactEmail" type="email" placeholder="contact@example.com" />
-              </div>
-            </div>
-
-            <button id="empSubmitBtn" class="btn btn-primary btn-full">Account aanmaken</button>
-            <div id="empResultBox" class="result-box hidden">
-              <div id="empResult" class="result-text"></div>
-            </div>
-            <div id="empError" class="error-box hidden"></div>
-          </section>
-
-          <!-- JOB POSTING -->
-          <section class="card">
-            <div class="card-header">
-              <h2>📝 Plaats een vacature</h2>
-            </div>
-
-            <div class="form-group">
-              <label>Functietitel</label>
-              <input id="jobTitleInput" type="text" placeholder="Bijv. Senior Developer" />
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Locatie</label>
-                <input id="jobLocationInput" type="text" placeholder="Amsterdam" />
-              </div>
-              <div class="form-group">
-                <label>Salarisindicatie</label>
-                <input id="jobSalaryInput" type="text" placeholder="€3.000 - €5.000" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Vacaturetekst</label>
-              <textarea id="jobDescriptionInputEmp" placeholder="Beschrijf de functie, vereisten..."></textarea>
-            </div>
-
-            <button id="jobSubmitBtn" class="btn btn-primary btn-full">Plaats vacature</button>
-            <div id="jobResultBox" class="result-box hidden">
-              <div id="jobResult" class="result-text"></div>
-            </div>
-            <div id="jobError" class="error-box hidden"></div>
-          </section>
-
-          <!-- CANDIDATE MANAGEMENT -->
-          <section class="card">
-            <div class="card-header">
-              <h2>👥 Kandidaten beheren</h2>
-            </div>
-
-            <div class="form-group">
-              <label>Selecteer vacature</label>
-              <select id="employerJobSelect">
-                <option value="">-- Kies een vacature --</option>
-              </select>
-            </div>
-
-            <div class="button-group">
-              <button id="employerLoadJobsBtn" class="btn btn-secondary">Laad vacatures</button>
-              <button id="employerLoadCandidatesBtn" class="btn btn-secondary">Laad kandidaten</button>
-              <button id="employerAIRankBtn" class="btn btn-secondary">AI Ranking</button>
-            </div>
-
-            <div id="employerDashboardError" class="error-box hidden"></div>
-
-            <div id="employerCandidatesBox" class="result-box hidden">
-              <h4>Kandidaten:</h4>
-              <div id="employerCandidates" class="result-text"></div>
-            </div>
-
-            <div id="employerAIRankBox" class="result-box hidden">
-              <h4>AI Ranking:</h4>
-              <div id="employerAIRank" class="result-text"></div>
-            </div>
-          </section>
+        <div class="contact-info">
+            <h3>Contact Information</h3>
+            <p>Email: your.email@example.com</p>
+            <p>Phone: (123) 456-7890</p>
         </div>
-      </section>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-      <p>&copy; 2025 It's Peanuts AI. Slim solliciteren & slim werven.</p>
-    </footer>
-  </div>
-
-  <script src="app.js"></script>
+        <div class="skill-set">
+            <h3>Skills</h3>
+            <span class="skill">Skill 1</span>
+            <span class="skill">Skill 2</span>
+            <span class="skill">Skill 3</span>
+            <span class="skill">Skill 4</span>
+            <span class="skill">Skill 5</span>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Your Name. All rights reserved.</p>
+        </div>
+    </div>
 </body>
 </html>
 
