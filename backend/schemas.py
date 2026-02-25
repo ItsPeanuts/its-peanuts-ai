@@ -51,6 +51,14 @@ class VacancyCreate(VacancyBase):
     pass
 
 
+class VacancyUpdate(BaseModel):
+    title: Optional[str] = None
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+    description: Optional[str] = None
+
+
 class VacancyOut(VacancyBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -61,6 +69,20 @@ class VacancyOut(VacancyBase):
     source_storage_key: Optional[str] = None
     source_content_type: Optional[str] = None
     extracted_text: Optional[str] = None
+
+
+class VacancyOutList(BaseModel):
+    items: List[VacancyOut] = []
+
+
+class VacancyPublicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+    description: Optional[str] = None
 
 
 # ----------------------------
@@ -129,6 +151,47 @@ class AIResultOut(BaseModel):
     strengths: Optional[str] = None
     gaps: Optional[str] = None
     suggested_questions: Optional[str] = None
+
+
+# ----------------------------
+# Interview Sessions
+# ----------------------------
+
+class InterviewSessionCreate(BaseModel):
+    application_id: int
+    interview_type: str = Field(default="ai_phone", pattern="^(ai_phone|ai_video|teams_live)$")
+    scheduled_at: Optional[str] = None
+
+
+class InterviewSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    application_id: int
+    status: str
+    interview_type: str
+    scheduled_at: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+
+class TranscriptOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    session_id: int
+    speaker: str
+    content: str
+    timestamp_offset: Optional[float] = None
+
+
+class CompetencyResultOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    session_id: int
+    competency_name: str
+    score: Optional[float] = None
+    confidence: Optional[float] = None
+    evidence: Optional[str] = None
+    risk_flags: Optional[str] = None
 
 
 

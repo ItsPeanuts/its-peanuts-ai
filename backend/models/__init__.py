@@ -5,6 +5,7 @@ from backend.models.candidate_cv import CandidateCV
 from backend.models.application import Application
 from backend.models.intake import IntakeQuestion, IntakeAnswer
 from backend.models.ai_result import AIResult
+from backend.models.interview import InterviewSession, Transcript, CompetencyResult
 
 __all__ = [
     "Base",
@@ -15,6 +16,9 @@ __all__ = [
     "IntakeQuestion",
     "IntakeAnswer",
     "AIResult",
+    "InterviewSession",
+    "Transcript",
+    "CompetencyResult",
 ]
 
 

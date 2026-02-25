@@ -10,6 +10,22 @@ from backend.routers.auth import get_current_user, require_role
 router = APIRouter(prefix="/candidate", tags=["candidate-applications"])
 
 
+@router.get("/vacancies", response_model=List[schemas.VacancyPublicOut])
+def candidate_list_vacancies(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "candidate")
+
+    rows = (
+        db.query(models.Vacancy)
+        .order_by(models.Vacancy.id.desc())
+        .limit(100)
+        .all()
+    )
+    return rows
+
+
 @router.post("/apply/{vacancy_id}", response_model=schemas.ApplicationOut)
 def apply(
     vacancy_id: int,
