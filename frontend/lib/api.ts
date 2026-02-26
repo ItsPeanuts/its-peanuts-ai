@@ -83,3 +83,107 @@ export async function analyzeVacancy(token: string, vacancyId: number) {
   };
 }
 
+// ----------------------------
+// Employer endpoints
+// ----------------------------
+
+export async function employerVacancies(token: string) {
+  const res = await fetch(`${BASE}/employer/vacancies`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacancies load failed");
+  return data as any[];
+}
+
+export async function createVacancy(
+  token: string,
+  payload: {
+    title: string;
+    location?: string;
+    hours_per_week?: string;
+    salary_range?: string;
+    description?: string;
+  }
+) {
+  const res = await fetch(`${BASE}/employer/vacancies`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Create vacancy failed");
+  return data;
+}
+
+// ----------------------------
+// Publieke vacature types
+// ----------------------------
+
+export type PublicVacancy = {
+  id: number;
+  title: string;
+  location: string | null;
+  hours_per_week: string | null;
+  salary_range: string | null;
+  description: string | null;
+  created_at: string;
+};
+
+export type IntakeQuestion = {
+  id: number;
+  qtype: string;
+  question: string;
+  options_json: string | null;
+};
+
+export type PublicVacancyDetail = PublicVacancy & {
+  intake_questions: IntakeQuestion[];
+};
+
+// ----------------------------
+// Publieke vacature endpoints
+// ----------------------------
+
+export async function listVacancies(params?: {
+  q?: string;
+  location?: string;
+}): Promise<PublicVacancy[]> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.location) sp.set("location", params.location);
+  const url = `${BASE}/vacancies${sp.size ? "?" + sp.toString() : ""}`;
+
+  const res = await fetch(url);
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon vacatures niet laden");
+  return data as PublicVacancy[];
+}
+
+export async function getVacancy(id: number): Promise<PublicVacancyDetail> {
+  const res = await fetch(`${BASE}/vacancies/${id}`);
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacature niet gevonden");
+  return data as PublicVacancyDetail;
+}
+
+export async function applyToVacancy(vacancyId: number, formData: FormData) {
+  const res = await fetch(`${BASE}/vacancies/${vacancyId}/apply`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Sollicitatie mislukt");
+  return data as {
+    application_id: number;
+    match_score: number;
+    explanation: string;
+    access_token: string;
+    token_type: string;
+  };
+}
+

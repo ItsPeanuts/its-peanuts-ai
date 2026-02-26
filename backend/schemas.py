@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
@@ -129,6 +130,41 @@ class AIResultOut(BaseModel):
     strengths: Optional[str] = None
     gaps: Optional[str] = None
     suggested_questions: Optional[str] = None
+
+
+# ----------------------------
+# Public Vacancies
+# ----------------------------
+
+class PublicVacancyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    location: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    salary_range: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime
+
+
+class IntakeQuestionPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    qtype: str
+    question: str
+    options_json: Optional[str] = None
+
+
+class PublicVacancyDetail(PublicVacancyOut):
+    intake_questions: List[IntakeQuestionPublic] = []
+
+
+class ApplyResponse(BaseModel):
+    application_id: int
+    match_score: int
+    explanation: str
+    access_token: str
+    token_type: str = "bearer"
 
 
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { candidateVacancies, uploadCv, analyzeVacancy, me } from "@/lib/api";
+import { listCandidateVacancies as candidateVacancies, uploadCV as uploadCv, analyzeVacancy, me } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
 type Vacancy = {
