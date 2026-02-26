@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import io
+from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
-from backend import models
+from backend import models, schemas
 from backend.routers.auth import get_current_user, require_role
 
 import PyPDF2
@@ -65,4 +66,34 @@ async def upload_cv(
     db.refresh(cv)
 
     return extracted
+
+
+@router.get("/cvs", response_model=List[schemas.CandidateCVOut])
+def list_cvs(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Lijst van alle geüploade CV's van de ingelogde kandidaat."""
+    require_role(current_user, "candidate")
+
+    rows = (
+        db.query(models.CandidateCV)
+        .filter(models.CandidateCV.candidate_id == current_user.id)
+        .order_by(models.CandidateCV.id.desc())
+        .all()
+    )
+
+    result = []
+    for cv in rows:
+        text = cv.extracted_text or ""
+        result.append(
+            schemas.CandidateCVOut(
+                id=cv.id,
+                source_filename=cv.source_filename,
+                source_content_type=cv.source_content_type,
+                created_at=cv.created_at,
+                text_preview=text[:200] if text else None,
+            )
+        )
+    return result
 

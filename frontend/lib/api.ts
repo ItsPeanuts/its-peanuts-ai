@@ -187,3 +187,74 @@ export async function applyToVacancy(vacancyId: number, formData: FormData) {
   };
 }
 
+// ----------------------------
+// Kandidaten portaal endpoints
+// ----------------------------
+
+export type ApplicationWithDetails = {
+  application_id: number;
+  vacancy_id: number;
+  vacancy_title: string;
+  vacancy_location: string | null;
+  status: string;
+  created_at: string;
+  match_score: number | null;
+  ai_summary: string | null;
+};
+
+export type AIResult = {
+  id: number;
+  application_id: number;
+  match_score: number | null;
+  summary: string | null;
+  strengths: string | null;
+  gaps: string | null;
+  suggested_questions: string | null;
+};
+
+export type CandidateCVOut = {
+  id: number;
+  source_filename: string | null;
+  source_content_type: string | null;
+  created_at: string;
+  text_preview: string | null;
+};
+
+export async function getMyApplications(token: string): Promise<ApplicationWithDetails[]> {
+  const res = await fetch(`${BASE}/candidate/my-applications`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon sollicitaties niet laden");
+  return data as ApplicationWithDetails[];
+}
+
+export async function getApplicationAIResult(token: string, appId: number): Promise<AIResult> {
+  const res = await fetch(`${BASE}/candidate/applications/${appId}/ai-result`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Geen AI-analyse beschikbaar");
+  return data as AIResult;
+}
+
+export async function getCandidateCVs(token: string): Promise<CandidateCVOut[]> {
+  const res = await fetch(`${BASE}/candidate/cvs`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon CV's niet laden");
+  return data as CandidateCVOut[];
+}
+
+export async function register(email: string, password: string, fullName: string) {
+  const res = await fetch(`${BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Registratie mislukt");
+  return data as { access_token: string; token_type: string };
+}
+

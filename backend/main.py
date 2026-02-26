@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 
 from backend.routers import auth, employer_vacancies
 from backend.routers import candidate_applications, employer_applications
+from backend.routers import candidate_cv, candidate_analyze
 from backend.routers import ai as ai_router
 from backend.routers.public_vacancies import router as public_router
 
@@ -23,6 +24,8 @@ app.include_router(auth.router)
 app.include_router(employer_vacancies.router)
 app.include_router(candidate_applications.router)
 app.include_router(employer_applications.router)
+app.include_router(candidate_cv.router)
+app.include_router(candidate_analyze.router)
 app.include_router(ai_router.router, prefix="/ai", tags=["ai"])
 app.include_router(public_router)
 

@@ -167,6 +167,31 @@ class ApplyResponse(BaseModel):
     token_type: str = "bearer"
 
 
+# ----------------------------
+# Kandidaten portaal
+# ----------------------------
+
+class ApplicationWithDetails(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    application_id: int
+    vacancy_id: int
+    vacancy_title: str
+    vacancy_location: Optional[str]
+    status: str
+    created_at: datetime
+    match_score: Optional[int] = None
+    ai_summary: Optional[str] = None
+
+
+class CandidateCVOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    source_filename: Optional[str] = None
+    source_content_type: Optional[str] = None
+    created_at: datetime
+    text_preview: Optional[str] = None
+
+
 
 
 
