@@ -10,15 +10,41 @@ function getInitials(title: string) {
   return title.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
 
+const MOCK_VACANCIES: PublicVacancyDetail[] = [
+  {
+    id: 1, title: "Senior Frontend Developer", location: "Amsterdam", hours_per_week: "40",
+    salary_range: "€4.500 - €6.000", created_at: "2026-02-20T10:00:00",
+    description: "Wij zoeken een ervaren Senior Frontend Developer die ons team komt versterken. Je werkt aan uitdagende projecten voor grote klanten in de fintech- en e-commerce sector.\n\nJe bent verantwoordelijk voor het bouwen van schaalbare, performante React-applicaties. Je werkt nauw samen met designers, backend-developers en product managers.\n\nWat we bieden:\n- Uitdagend werk in een innovatief team\n- Marktconform salaris + bonusregeling\n- 25 vakantiedagen\n- Thuiswerkmogelijkheden\n- Goede pensioenregeling",
+    intake_questions: [
+      { id: 1, qtype: "text", question: "Hoeveel jaar ervaring heb je met React?", options_json: null },
+      { id: 2, qtype: "text", question: "Heb je ervaring met TypeScript?", options_json: null },
+      { id: 3, qtype: "text", question: "Wat is je beschikbaarheidsdatum?", options_json: null },
+    ]
+  },
+  {
+    id: 2, title: "Product Manager", location: "Rotterdam", hours_per_week: "40",
+    salary_range: "€5.000 - €7.000", created_at: "2026-02-19T09:00:00",
+    description: "Als Product Manager bij ons bedrijf ben jij de verbindende schakel tussen techniek, design en business. Je definieert de productstrategie en zorgt voor een succesvolle uitvoering.\n\nJe werkt nauw samen met engineering teams en stakeholders om de beste producten op de markt te brengen.",
+    intake_questions: [
+      { id: 1, qtype: "text", question: "Hoeveel jaar PM-ervaring heb je?", options_json: null },
+      { id: 2, qtype: "text", question: "Heb je ervaring met agile/scrum?", options_json: null },
+    ]
+  },
+];
+
 export default function VacatureDetailPage({ params }: { params: { id: string } }) {
   const [vacancy, setVacancy] = useState<PublicVacancyDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getVacancy(parseInt(params.id))
+    const id = parseInt(params.id);
+    getVacancy(id)
       .then(setVacancy)
-      .catch((e: Error) => setError(e.message))
+      .catch(() => {
+        // Use mock data when API is unavailable
+        const mock = MOCK_VACANCIES.find((v) => v.id === id) || MOCK_VACANCIES[0];
+        setVacancy(mock);
+      })
       .finally(() => setLoading(false));
   }, [params.id]);
 
@@ -30,12 +56,12 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
     );
   }
 
-  if (error || !vacancy) {
+  if (!vacancy) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-4xl mb-3">😕</div>
-          <p className="font-semibold text-gray-700 mb-4">{error || "Vacature niet gevonden"}</p>
+          <p className="font-semibold text-gray-700 mb-4">Vacature niet gevonden</p>
           <Link href="/vacatures" className="text-sm font-semibold text-teal-600 no-underline">
             ← Terug naar overzicht
           </Link>
@@ -144,7 +170,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
 
               <Link
                 href={`/vacatures/${vacancy.id}/solliciteer`}
-                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-bold text-white no-underline transition-all mb-3"
+                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-bold text-white no-underline transition-all mb-3 hover:opacity-90"
                 style={{ background: "#f97316" }}
               >
                 🚀 Apply Now

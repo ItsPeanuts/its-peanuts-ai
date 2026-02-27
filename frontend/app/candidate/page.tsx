@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { me, getMyApplications, ApplicationWithDetails } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
@@ -16,32 +17,18 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_LABELS[status] ?? { label: status, color: "#374151", bg: "#f3f4f6" };
   return (
-    <span style={{
-      padding: "3px 10px",
-      borderRadius: 20,
-      fontSize: 12,
-      fontWeight: 600,
-      color: s.color,
-      background: s.bg,
-    }}>
+    <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: s.color, background: s.bg }}>
       {s.label}
     </span>
   );
 }
 
 function ScoreBadge({ score }: { score: number | null }) {
-  if (score === null) return <span style={{ fontSize: 12, color: "#9ca3af" }}>—</span>;
+  if (score === null) return <span className="text-xs text-gray-400">—</span>;
   const color = score >= 70 ? "#059669" : score >= 40 ? "#d97706" : "#dc2626";
+  const bg = score >= 70 ? "#d1fae5" : score >= 40 ? "#fef3c7" : "#fee2e2";
   return (
-    <span style={{
-      fontWeight: 700,
-      fontSize: 14,
-      color,
-      background: "#f9fafb",
-      padding: "3px 10px",
-      borderRadius: 20,
-      border: `1.5px solid ${color}`,
-    }}>
+    <span className="text-xs font-bold px-2.5 py-1 rounded-full border" style={{ color, background: bg, borderColor: color }}>
       {score}%
     </span>
   );
@@ -95,206 +82,156 @@ export default function CandidateDashboard() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontFamily: "system-ui" }}>
-        <div style={{ color: "#6b7280", fontSize: 16 }}>Laden...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-400 text-sm">Laden...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
-      {/* Top nav */}
-      <nav style={{
-        background: "#fff",
-        borderBottom: "1px solid #e5e7eb",
-        padding: "0 24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: 60,
-      }}>
-        <a href="/" style={{ fontWeight: 800, fontSize: 20, color: "#0A66C2", textDecoration: "none", letterSpacing: -0.5 }}>
-          ItsPeanuts AI
-        </a>
-        <div style={{ display: "flex", gap: 4 }}>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sub-nav */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-1">
           {[
             { label: "Dashboard", href: "/candidate" },
             { label: "Sollicitaties", href: "/candidate/sollicitaties" },
             { label: "CV Beheer", href: "/candidate/cv" },
             { label: "Vacatures", href: "/vacatures" },
           ].map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 500,
-                color: "#374151",
-                textDecoration: "none",
-                background: "transparent",
-              }}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 transition-colors no-underline"
             >
               {item.label}
-            </a>
+            </Link>
           ))}
-          <button
-            onClick={() => { clearSession(); router.push("/"); }}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#dc2626",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Uitloggen
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-sm text-gray-500">{userName}</span>
+            <button
+              onClick={() => { clearSession(); router.push("/"); }}
+              className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+            >
+              Uitloggen
+            </button>
+          </div>
         </div>
-      </nav>
+      </div>
 
-      <main style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px" }}>
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welkomst header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: "#111827", margin: 0 }}>
-            Welkom terug, {userName.split(" ")[0]}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welkom terug, {userName.split(" ")[0]} 👋
           </h1>
-          <p style={{ color: "#6b7280", margin: "6px 0 0", fontSize: 15 }}>
+          <p className="text-gray-500 mt-1 text-sm">
             Dit is je sollicitatie-dashboard. Hier zie je al je activiteit in een oogopslag.
           </p>
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+        <div className="grid grid-cols-4 gap-5 mb-8">
           {[
-            { label: "Totaal", value: stats.total, color: "#0A66C2", bg: "#eff6ff" },
-            { label: "In behandeling", value: stats.inProgress, color: "#d97706", bg: "#fffbeb" },
-            { label: "Interview", value: stats.interview, color: "#7c3aed", bg: "#f5f3ff" },
-            { label: "Gem. AI-score", value: stats.avgScore !== null ? `${stats.avgScore}%` : "—", color: "#059669", bg: "#ecfdf5" },
+            { label: "Totaal", value: stats.total, color: "#0DA89E", bg: "#e8f8f7", icon: "📋" },
+            { label: "In behandeling", value: stats.inProgress, color: "#d97706", bg: "#fffbeb", icon: "⏳" },
+            { label: "Interview", value: stats.interview, color: "#7c3aed", bg: "#f5f3ff", icon: "🎤" },
+            { label: "Gem. AI-score", value: stats.avgScore !== null ? `${stats.avgScore}%` : "—", color: "#059669", bg: "#ecfdf5", icon: "🤖" },
           ].map((stat) => (
-            <div key={stat.label} style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: "20px 22px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              borderLeft: `4px solid ${stat.color}`,
-            }}>
-              <div style={{ fontSize: 13, color: "#6b7280", fontWeight: 500, marginBottom: 8 }}>{stat.label}</div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: stat.color }}>{stat.value}</div>
+            <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">{stat.icon}</span>
+                <span className="text-sm text-gray-500">{stat.label}</span>
+              </div>
+              <div className="text-3xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+        <div className="grid grid-cols-3 gap-6">
           {/* Recente sollicitaties */}
-          <div style={{ background: "#fff", borderRadius: 16, padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>Recente sollicitaties</h2>
-              <a href="/candidate/sollicitaties" style={{ fontSize: 13, color: "#0A66C2", textDecoration: "none", fontWeight: 600 }}>
+          <div className="col-span-2 bg-white rounded-xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-bold text-gray-900">Recente sollicitaties</h2>
+              <Link href="/candidate/sollicitaties" className="text-xs text-teal-600 font-semibold no-underline hover:text-teal-700">
                 Alle bekijken →
-              </a>
+              </Link>
             </div>
 
             {applications.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af" }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-                <div style={{ fontSize: 15, fontWeight: 500 }}>Nog geen sollicitaties</div>
-                <div style={{ fontSize: 13, marginTop: 6 }}>Bekijk openstaande vacatures en solliciteer!</div>
+              <div className="py-10 text-center">
+                <div className="text-4xl mb-3">📋</div>
+                <p className="font-semibold text-gray-700 mb-1">Nog geen sollicitaties</p>
+                <p className="text-sm text-gray-400 mb-4">Bekijk openstaande vacatures en solliciteer!</p>
+                <Link
+                  href="/vacatures"
+                  className="inline-block px-5 py-2 rounded-xl text-sm font-bold text-white no-underline hover:opacity-90"
+                  style={{ background: "#0DA89E" }}
+                >
+                  Zoek vacatures
+                </Link>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {applications.slice(0, 3).map((app) => (
-                  <a
+              <div className="space-y-3">
+                {applications.slice(0, 4).map((app) => (
+                  <Link
                     key={app.application_id}
                     href={`/candidate/sollicitaties/${app.application_id}`}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "14px 16px",
-                      background: "#f8fafc",
-                      borderRadius: 12,
-                      textDecoration: "none",
-                      border: "1px solid #e5e7eb",
-                      transition: "background 0.1s",
-                    }}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl no-underline border border-transparent hover:border-teal-100 hover:bg-teal-50/30 transition-all group"
                   >
                     <div>
-                      <div style={{ fontWeight: 600, color: "#111827", fontSize: 14 }}>{app.vacancy_title}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
+                      <div className="font-semibold text-gray-900 text-sm group-hover:text-teal-700 transition-colors">{app.vacancy_title}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
                         {app.vacancy_location || "Locatie onbekend"} · {new Date(app.created_at).toLocaleDateString("nl-NL")}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div className="flex items-center gap-2">
                       <ScoreBadge score={app.match_score} />
                       <StatusBadge status={app.status} />
                     </div>
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Snelle acties */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ background: "#fff", borderRadius: 16, padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: "0 0 16px" }}>Snelle acties</h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <a
+          {/* Acties sidebar */}
+          <div className="space-y-5">
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h2 className="font-bold text-gray-900 mb-4">Snelle acties</h2>
+              <div className="space-y-3">
+                <Link
                   href="/vacatures"
-                  style={{
-                    display: "block",
-                    padding: "13px 16px",
-                    background: "linear-gradient(135deg, #0A66C2, #0952a0)",
-                    color: "#fff",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textAlign: "center",
-                    boxShadow: "0 2px 10px rgba(10,102,194,0.25)",
-                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90 transition-all"
+                  style={{ background: "#0DA89E" }}
                 >
-                  Zoek vacatures
-                </a>
-                <a
+                  <span>🔍</span> Zoek vacatures
+                </Link>
+                <Link
                   href="/candidate/cv"
-                  style={{
-                    display: "block",
-                    padding: "13px 16px",
-                    background: "#fff",
-                    color: "#0A66C2",
-                    border: "1.5px solid #0A66C2",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textAlign: "center",
-                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 no-underline transition-colors"
                 >
-                  Upload CV
-                </a>
+                  <span>📄</span> Upload CV
+                </Link>
+                <Link
+                  href="/candidate/sollicitaties"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 no-underline transition-colors"
+                >
+                  <span>📋</span> Alle sollicitaties
+                </Link>
               </div>
             </div>
 
-            <div style={{
-              background: "linear-gradient(135deg, #0A66C2 0%, #7c3aed 100%)",
-              borderRadius: 16,
-              padding: "20px",
-              color: "#fff",
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.85, marginBottom: 8 }}>AI-gestuurde matching</div>
-              <div style={{ fontSize: 13, opacity: 0.8, lineHeight: 1.5 }}>
-                Onze AI analyseert jouw CV en matcht het met vacatures voor de beste kansen.
+            {/* AI Banner */}
+            <div className="rounded-xl p-5 text-white" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+              <div className="text-sm font-bold mb-2">🤖 AI-matching actief</div>
+              <div className="text-xs opacity-85 leading-relaxed">
+                Onze AI analyseert jouw CV en matcht het automatisch met de beste vacatures voor jou.
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

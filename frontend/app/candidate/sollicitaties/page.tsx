@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getMyApplications, ApplicationWithDetails } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
@@ -16,15 +17,7 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_MAP[status] ?? { label: status, color: "#374151", bg: "#f3f4f6" };
   return (
-    <span style={{
-      padding: "4px 12px",
-      borderRadius: 20,
-      fontSize: 12,
-      fontWeight: 600,
-      color: s.color,
-      background: s.bg,
-      whiteSpace: "nowrap",
-    }}>
+    <span className="px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap" style={{ color: s.color, background: s.bg }}>
       {s.label}
     </span>
   );
@@ -33,19 +26,7 @@ function StatusBadge({ status }: { status: string }) {
 function ScoreCircle({ score }: { score: number | null }) {
   if (score === null) {
     return (
-      <div style={{
-        width: 48,
-        height: 48,
-        borderRadius: "50%",
-        background: "#f3f4f6",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 13,
-        color: "#9ca3af",
-        fontWeight: 600,
-        flexShrink: 0,
-      }}>
+      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-400 font-semibold flex-shrink-0">
         —
       </div>
     );
@@ -53,20 +34,7 @@ function ScoreCircle({ score }: { score: number | null }) {
   const color = score >= 70 ? "#059669" : score >= 40 ? "#d97706" : "#dc2626";
   const bg = score >= 70 ? "#d1fae5" : score >= 40 ? "#fef3c7" : "#fee2e2";
   return (
-    <div style={{
-      width: 48,
-      height: 48,
-      borderRadius: "50%",
-      background: bg,
-      border: `2.5px solid ${color}`,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 13,
-      color,
-      fontWeight: 800,
-      flexShrink: 0,
-    }}>
+    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 border-2" style={{ color, background: bg, borderColor: color }}>
       {score}
     </div>
   );
@@ -99,135 +67,97 @@ export default function SollicitatiePage() {
   }, [router, token, role]);
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
-      {/* Nav */}
-      <nav style={{
-        background: "#fff",
-        borderBottom: "1px solid #e5e7eb",
-        padding: "0 24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: 60,
-      }}>
-        <a href="/" style={{ fontWeight: 800, fontSize: 20, color: "#0A66C2", textDecoration: "none" }}>ItsPeanuts AI</a>
-        <div style={{ display: "flex", gap: 4 }}>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sub-nav */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-1">
           {[
             { label: "Dashboard", href: "/candidate" },
             { label: "Sollicitaties", href: "/candidate/sollicitaties" },
             { label: "CV Beheer", href: "/candidate/cv" },
             { label: "Vacatures", href: "/vacatures" },
           ].map((item) => (
-            <a key={item.href} href={item.href} style={{
-              padding: "8px 14px", borderRadius: 8, fontSize: 14, fontWeight: 500,
-              color: item.href === "/candidate/sollicitaties" ? "#0A66C2" : "#374151",
-              textDecoration: "none",
-              background: item.href === "/candidate/sollicitaties" ? "#eff6ff" : "transparent",
-            }}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`px-4 py-2 rounded-lg text-sm font-medium no-underline transition-colors ${
+                item.href === "/candidate/sollicitaties"
+                  ? "text-teal-600 bg-teal-50"
+                  : "text-gray-600 hover:text-teal-600 hover:bg-teal-50"
+              }`}
+            >
               {item.label}
-            </a>
+            </Link>
           ))}
-          <button onClick={() => { clearSession(); router.push("/"); }} style={{
-            padding: "8px 14px", borderRadius: 8, fontSize: 14, fontWeight: 500,
-            color: "#dc2626", background: "transparent", border: "none", cursor: "pointer",
-          }}>
-            Uitloggen
-          </button>
+          <div className="ml-auto">
+            <button
+              onClick={() => { clearSession(); router.push("/"); }}
+              className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+            >
+              Uitloggen
+            </button>
+          </div>
         </div>
-      </nav>
+      </div>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "#111827", margin: 0 }}>Mijn sollicitaties</h1>
-          <p style={{ color: "#6b7280", margin: "6px 0 0", fontSize: 15 }}>
-            Overzicht van al je ingediende sollicitaties
-          </p>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Mijn sollicitaties</h1>
+          <p className="text-gray-500 text-sm mt-1">Overzicht van al je ingediende sollicitaties</p>
         </div>
 
         {loading && (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>Laden...</div>
+          <div className="flex items-center justify-center py-16 text-gray-400 text-sm">Laden...</div>
         )}
 
         {error && (
-          <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
-            {error}
-          </div>
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5">{error}</div>
         )}
 
         {!loading && apps.length === 0 && !error && (
-          <div style={{
-            background: "#fff",
-            borderRadius: 16,
-            padding: "60px 24px",
-            textAlign: "center",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
-              Nog geen sollicitaties
-            </div>
-            <div style={{ color: "#9ca3af", marginBottom: 24 }}>
-              Solliciteer op vacatures om ze hier te zien verschijnen.
-            </div>
-            <a href="/vacatures" style={{
-              display: "inline-block",
-              padding: "12px 24px",
-              background: "#0A66C2",
-              color: "#fff",
-              borderRadius: 12,
-              textDecoration: "none",
-              fontWeight: 600,
-            }}>
+          <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
+            <div className="text-5xl mb-4">📋</div>
+            <div className="text-lg font-semibold text-gray-700 mb-2">Nog geen sollicitaties</div>
+            <div className="text-gray-400 text-sm mb-6">Solliciteer op vacatures om ze hier te zien verschijnen.</div>
+            <Link
+              href="/vacatures"
+              className="inline-block px-6 py-3 rounded-xl text-sm font-bold text-white no-underline hover:opacity-90"
+              style={{ background: "#0DA89E" }}
+            >
               Zoek vacatures
-            </a>
+            </Link>
           </div>
         )}
 
         {!loading && apps.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="space-y-3">
             {apps.map((app) => (
-              <a
+              <Link
                 key={app.application_id}
                 href={`/candidate/sollicitaties/${app.application_id}`}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  background: "#fff",
-                  borderRadius: 16,
-                  padding: "18px 22px",
-                  textDecoration: "none",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                  border: "1px solid #e5e7eb",
-                  gap: 16,
-                  transition: "box-shadow 0.15s",
-                }}
+                className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 px-5 py-4 no-underline hover:border-teal-100 hover:shadow-sm transition-all group"
               >
-                <div style={{ display: "flex", gap: 14, alignItems: "center", flex: 1, minWidth: 0 }}>
-                  <ScoreCircle score={app.match_score} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {app.vacancy_title}
-                    </div>
-                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>
-                      {app.vacancy_location || "Locatie onbekend"} · {new Date(app.created_at).toLocaleDateString("nl-NL")}
-                    </div>
-                    {app.ai_summary && (
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {app.ai_summary}
-                      </div>
-                    )}
+                <ScoreCircle score={app.match_score} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 text-sm group-hover:text-teal-700 transition-colors">
+                    {app.vacancy_title}
                   </div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {app.vacancy_location || "Locatie onbekend"} · {new Date(app.created_at).toLocaleDateString("nl-NL")}
+                  </div>
+                  {app.ai_summary && (
+                    <div className="text-xs text-gray-400 mt-1 line-clamp-1">{app.ai_summary}</div>
+                  )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <StatusBadge status={app.status} />
-                  <span style={{ color: "#9ca3af", fontSize: 18 }}>›</span>
+                  <span className="text-gray-300 text-lg">›</span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

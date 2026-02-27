@@ -1,6 +1,7 @@
 services:
+  # Backend API
   - type: web
-    name: its-peanuts-ai
+    name: its-peanuts-backend
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -8,3 +9,20 @@ services:
     envVars:
       - key: DATABASE_URL
         value: sqlite:///./its_peanuts.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BOOTSTRAP_TOKEN
+        generateValue: true
+
+  # Frontend (Next.js)
+  - type: web
+    name: its-peanuts-frontend
+    env: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE
+        value: https://its-peanuts-backend.onrender.com
+      - key: PORT
+        value: "3000"

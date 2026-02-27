@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { login, register, me } from "@/lib/api";
 import { setSession } from "@/lib/session";
 
@@ -9,11 +10,9 @@ export default function CandidateLoginPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"login" | "register">("login");
 
-  // Login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Register state
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
@@ -34,8 +33,8 @@ export default function CandidateLoginPage() {
       }
       setSession({ token: access_token, role: "candidate", email: user.email });
       router.push("/candidate");
-    } catch (err: any) {
-      setError(err?.message || "Inloggen mislukt");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Inloggen mislukt");
     } finally {
       setLoading(false);
     }
@@ -50,197 +49,160 @@ export default function CandidateLoginPage() {
       const user = await me(access_token);
       setSession({ token: access_token, role: "candidate", email: user.email });
       router.push("/candidate");
-    } catch (err: any) {
-      setError(err?.message || "Registratie mislukt");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registratie mislukt");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      padding: 16,
-    }}>
-      <div style={{
-        background: "#fff",
-        borderRadius: 20,
-        boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
-        padding: "40px 36px",
-        width: "100%",
-        maxWidth: 420,
-      }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ fontSize: 32, fontWeight: 800, color: "#0A66C2", letterSpacing: -1 }}>
-            ItsPeanuts AI
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-3 no-underline">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0DA89E" }}>
+              P
+            </div>
+            <div className="text-left">
+              <div className="font-bold text-gray-900 text-lg leading-tight">It&apos;s Peanuts AI</div>
+              <div className="text-xs text-gray-400">Slim solliciteren & werven</div>
+            </div>
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <h1 className="text-xl font-bold text-gray-900 mb-1">
+            {tab === "login" ? "Inloggen" : "Account aanmaken"}
+          </h1>
+          <p className="text-sm text-gray-500 mb-6">
+            {tab === "login" ? "Log in op je kandidatenportaal" : "Maak gratis een account aan"}
+          </p>
+
+          {/* Tab switcher */}
+          <div className="flex bg-gray-100 rounded-xl p-1 mb-6 gap-1">
+            {(["login", "register"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setTab(t); setError(""); }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                  tab === t
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t === "login" ? "Inloggen" : "Registreren"}
+              </button>
+            ))}
           </div>
-          <div style={{ fontSize: 14, color: "#666", marginTop: 4 }}>
-            Kandidatenportaal
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5">
+              {error}
+            </div>
+          )}
+
+          {tab === "login" ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mailadres</label>
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="naam@voorbeeld.nl"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Wachtwoord</label>
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
+                style={{ background: "#0DA89E" }}
+              >
+                {loading ? "Bezig..." : "Inloggen"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Volledige naam</label>
+                <input
+                  type="text"
+                  required
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  placeholder="Voornaam Achternaam"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mailadres</label>
+                <input
+                  type="email"
+                  required
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="naam@voorbeeld.nl"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Wachtwoord</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  placeholder="Minimaal 8 tekens"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
+                style={{ background: "#0DA89E" }}
+              >
+                {loading ? "Bezig..." : "Account aanmaken"}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500">
+              Geen account nodig?{" "}
+              <Link href="/vacatures" className="text-teal-600 font-semibold no-underline hover:text-teal-700">
+                Bekijk vacatures
+              </Link>
+            </p>
           </div>
         </div>
 
-        {/* Tab switcher */}
-        <div style={{
-          display: "flex",
-          background: "#f4f6fb",
-          borderRadius: 12,
-          padding: 4,
-          marginBottom: 28,
-          gap: 4,
-        }}>
-          {(["login", "register"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => { setTab(t); setError(""); }}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                border: "none",
-                borderRadius: 10,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                background: tab === t ? "#fff" : "transparent",
-                color: tab === t ? "#0A66C2" : "#666",
-                boxShadow: tab === t ? "0 1px 6px rgba(0,0,0,0.10)" : "none",
-                transition: "all 0.15s",
-              }}
-            >
-              {t === "login" ? "Inloggen" : "Registreren"}
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div style={{
-            background: "#fff0f0",
-            border: "1px solid #fca5a5",
-            borderRadius: 10,
-            padding: "10px 14px",
-            color: "#dc2626",
-            fontSize: 14,
-            marginBottom: 18,
-          }}>
-            {error}
-          </div>
-        )}
-
-        {tab === "login" ? (
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>
-                E-mailadres
-              </label>
-              <input
-                type="email"
-                required
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="naam@voorbeeld.nl"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>
-                Wachtwoord
-              </label>
-              <input
-                type="password"
-                required
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                style={inputStyle}
-              />
-            </div>
-            <button type="submit" disabled={loading} style={primaryBtn}>
-              {loading ? "Bezig..." : "Inloggen"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>
-                Volledige naam
-              </label>
-              <input
-                type="text"
-                required
-                value={regName}
-                onChange={(e) => setRegName(e.target.value)}
-                placeholder="Voornaam Achternaam"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>
-                E-mailadres
-              </label>
-              <input
-                type="email"
-                required
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                placeholder="naam@voorbeeld.nl"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, color: "#374151", display: "block", marginBottom: 6 }}>
-                Wachtwoord
-              </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="Minimaal 8 tekens"
-                style={inputStyle}
-              />
-            </div>
-            <button type="submit" disabled={loading} style={primaryBtn}>
-              {loading ? "Bezig..." : "Account aanmaken"}
-            </button>
-          </form>
-        )}
-
-        <div style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#666" }}>
-          Geen account nodig?{" "}
-          <a href="/vacatures" style={{ color: "#0A66C2", textDecoration: "none", fontWeight: 600 }}>
-            Bekijk vacatures
-          </a>
+        {/* Employer link */}
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-400">
+            Bent u werkgever?{" "}
+            <Link href="/employer" className="text-teal-600 font-semibold no-underline hover:text-teal-700">
+              Werkgeversportaal
+            </Link>
+          </p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "11px 14px",
-  border: "1.5px solid #e5e7eb",
-  borderRadius: 10,
-  fontSize: 14,
-  outline: "none",
-  boxSizing: "border-box",
-  transition: "border-color 0.15s",
-};
-
-const primaryBtn: React.CSSProperties = {
-  padding: "13px 0",
-  background: "linear-gradient(135deg, #0A66C2, #0952a0)",
-  color: "#fff",
-  border: "none",
-  borderRadius: 12,
-  fontSize: 15,
-  fontWeight: 700,
-  cursor: "pointer",
-  boxShadow: "0 2px 12px rgba(10,102,194,0.25)",
-  transition: "opacity 0.15s",
-};
