@@ -101,7 +101,7 @@ def rewrite_cv(payload: RewriteCVRequest) -> RewriteCVResponse:
 
     try:
         resp = c.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
@@ -151,7 +151,7 @@ def motivation_letter(payload: MotivationLetterRequest) -> MotivationLetterRespo
 
     try:
         resp = c.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
@@ -197,7 +197,7 @@ def match_job(payload: MatchJobRequest) -> MatchJobResponse:
 
     try:
         resp = c.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
