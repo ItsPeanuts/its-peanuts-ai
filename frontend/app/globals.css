@@ -2,17 +2,42 @@
 
 @theme {
   --color-primary: #0DA89E;
-  --color-primary-50: #e6f7f7;
-  --color-primary-100: #b3e8e6;
+  --color-primary-50: #e8f8f7;
+  --color-primary-100: #b3e9e7;
   --color-primary-600: #0a8f86;
   --color-primary-700: #087870;
   --color-accent: #F97316;
-  --color-accent-50: #fff7ed;
   --color-accent-600: #ea6c0c;
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: #f5f6fa;
+  color: #1a202c;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tailwind v4 does not have line-clamp by default */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Remove link underlines globally for tailwind no-underline */
+a.no-underline {
+  text-decoration: none;
 }
