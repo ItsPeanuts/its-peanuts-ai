@@ -53,6 +53,12 @@ export default function RootLayout({
                 Werkgevers
               </Link>
               <Link
+                href="/ai-test"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline"
+              >
+                🤖 AI Test
+              </Link>
+              <Link
                 href="/candidate/login"
                 className="ml-3 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-600 transition-colors no-underline"
               >
