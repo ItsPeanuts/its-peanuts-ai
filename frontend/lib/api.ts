@@ -308,3 +308,107 @@ export async function updateApplicationStatus(
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Status bijwerken mislukt");
 }
 
+// ----------------------------
+// Recruiter chat endpoints
+// ----------------------------
+
+export type ChatMessage = {
+  id: number;
+  role: "recruiter" | "candidate";
+  content: string;
+  created_at: string;
+};
+
+export async function getChatMessages(token: string, appId: number): Promise<ChatMessage[]> {
+  const res = await fetch(`${BASE}/ai/recruiter/${appId}/messages`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon chatberichten niet laden");
+  return data as ChatMessage[];
+}
+
+// ----------------------------
+// Interview scheduler endpoints
+// ----------------------------
+
+export type InterviewSession = {
+  id: number;
+  application_id: number;
+  scheduled_at: string;
+  duration_minutes: number;
+  interview_type: "teams" | "phone" | "in_person";
+  teams_join_url: string | null;
+  teams_organizer_email: string | null;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  candidate_name: string | null;
+  candidate_email: string | null;
+  vacancy_title: string | null;
+};
+
+export async function scheduleInterview(
+  token: string,
+  payload: {
+    application_id: number;
+    scheduled_at: string;
+    duration_minutes?: number;
+    interview_type?: string;
+    notes?: string;
+  }
+): Promise<InterviewSession> {
+  const res = await fetch(`${BASE}/interviews/schedule`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Interview inplannen mislukt");
+  return data as InterviewSession;
+}
+
+export async function getInterviewsForApplication(
+  token: string,
+  appId: number
+): Promise<InterviewSession[]> {
+  const res = await fetch(`${BASE}/interviews/application/${appId}`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Interviews laden mislukt");
+  return data as InterviewSession[];
+}
+
+export async function getMyInterviews(token: string): Promise<InterviewSession[]> {
+  const res = await fetch(`${BASE}/interviews/my`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Mijn gesprekken laden mislukt");
+  return data as InterviewSession[];
+}
+
+// ----------------------------
+// CRM integratie endpoints
+// ----------------------------
+
+export async function syncCandidateToCRM(
+  token: string,
+  candidateId: number,
+  applicationId?: number
+): Promise<{ sync_status: string; crm_contact_id?: string }> {
+  const url = `${BASE}/crm/sync/${candidateId}${applicationId ? `?application_id=${applicationId}` : ""}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "CRM sync mislukt");
+  return data;
+}
+

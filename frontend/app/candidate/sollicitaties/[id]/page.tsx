@@ -179,6 +179,73 @@ export default function SollicitatieDetailPage() {
               </div>
             </div>
 
+            {/* Chat met Lisa CTA */}
+            <div style={{
+              background: "linear-gradient(135deg, #0DA89E18, #0891b218)",
+              border: "1px solid #0DA89E50",
+              borderRadius: 16,
+              padding: "20px 24px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontWeight: 800,
+                    fontSize: 16,
+                    flexShrink: 0,
+                  }}>L</div>
+                  <div style={{
+                    position: "absolute",
+                    bottom: -2,
+                    right: -2,
+                    width: 12,
+                    height: 12,
+                    background: "#4ade80",
+                    borderRadius: "50%",
+                    border: "2px solid #fff",
+                  }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
+                    Lisa · AI HR-Recruiter
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                    Doe een kort gesprek met Lisa om je sollicitatie te versterken.
+                  </div>
+                </div>
+              </div>
+              <a
+                href={`/candidate/sollicitaties/${appId}/chat`}
+                style={{
+                  background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                  color: "#fff",
+                  padding: "10px 20px",
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                  display: "inline-block",
+                }}
+              >
+                Chat met Lisa →
+              </a>
+            </div>
+
             {/* AI Analyse */}
             {aiResult ? (
               <div style={{

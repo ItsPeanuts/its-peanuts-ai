@@ -6,7 +6,8 @@ import Link from "next/link";
 import {
   createVacancy, employerVacancies, me,
   getEmployerApplications, updateApplicationStatus,
-  ApplicationWithCandidate,
+  getChatMessages, scheduleInterview, syncCandidateToCRM,
+  ApplicationWithCandidate, ChatMessage, InterviewSession,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
@@ -59,6 +60,25 @@ export default function EmployerPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+
+  // Chat transcript state
+  const [chatMessages, setChatMessages] = useState<Record<number, ChatMessage[]>>({});
+  const [chatLoading, setChatLoading] = useState<Record<number, boolean>>({});
+  const [chatOpen, setChatOpen] = useState<Record<number, boolean>>({});
+
+  // Interview modal state
+  const [interviewModal, setInterviewModal] = useState<ApplicationWithCandidate | null>(null);
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("10:00");
+  const [interviewDuration, setInterviewDuration] = useState(30);
+  const [interviewType, setInterviewType] = useState<"teams" | "phone" | "in_person">("teams");
+  const [interviewNotes, setInterviewNotes] = useState("");
+  const [interviewSaving, setInterviewSaving] = useState(false);
+  const [scheduledInterviews, setScheduledInterviews] = useState<Record<number, InterviewSession>>({});
+
+  // CRM sync state
+  const [crmSyncing, setCrmSyncing] = useState<Record<number, boolean>>({});
+  const [crmSynced, setCrmSynced] = useState<Record<number, boolean>>({});
 
   // Create vacancy form
   const [title, setTitle] = useState("");
@@ -113,6 +133,68 @@ export default function EmployerPage() {
       setTimeout(() => setMsg(""), 3000);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Status bijwerken mislukt");
+    }
+  }
+
+  async function handleScheduleInterview(e: React.FormEvent) {
+    e.preventDefault();
+    if (!interviewModal || !token) return;
+    setInterviewSaving(true);
+    try {
+      const scheduledAt = `${interviewDate}T${interviewTime}:00`;
+      const session = await scheduleInterview(token, {
+        application_id: interviewModal.id,
+        scheduled_at: scheduledAt,
+        duration_minutes: interviewDuration,
+        interview_type: interviewType,
+        notes: interviewNotes || undefined,
+      });
+      setScheduledInterviews((prev) => ({ ...prev, [interviewModal.id]: session }));
+      setMsg(
+        interviewType === "teams" && session.teams_join_url
+          ? "Teams gesprek ingepland! Meeting link verstuurd naar kandidaat."
+          : "Gesprek ingepland!"
+      );
+      setInterviewModal(null);
+      setInterviewDate("");
+      setInterviewTime("10:00");
+      setInterviewNotes("");
+      setTimeout(() => setMsg(""), 4000);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Inplannen mislukt");
+    } finally {
+      setInterviewSaving(false);
+    }
+  }
+
+  async function handleCrmSync(app: ApplicationWithCandidate) {
+    if (!token) return;
+    setCrmSyncing((prev) => ({ ...prev, [app.candidate_id]: true }));
+    try {
+      await syncCandidateToCRM(token, app.candidate_id, app.id);
+      setCrmSynced((prev) => ({ ...prev, [app.candidate_id]: true }));
+      setMsg(`${app.candidate_name} gesynchroniseerd naar CRM.`);
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "CRM sync mislukt");
+    } finally {
+      setCrmSyncing((prev) => ({ ...prev, [app.candidate_id]: false }));
+    }
+  }
+
+  async function toggleChat(appId: number) {
+    const nowOpen = !chatOpen[appId];
+    setChatOpen((prev) => ({ ...prev, [appId]: nowOpen }));
+    if (nowOpen && !chatMessages[appId]) {
+      setChatLoading((prev) => ({ ...prev, [appId]: true }));
+      try {
+        const msgs = await getChatMessages(token!, appId);
+        setChatMessages((prev) => ({ ...prev, [appId]: msgs }));
+      } catch {
+        setChatMessages((prev) => ({ ...prev, [appId]: [] }));
+      } finally {
+        setChatLoading((prev) => ({ ...prev, [appId]: false }));
+      }
     }
   }
 
@@ -423,6 +505,76 @@ export default function EmployerPage() {
                               </div>
                             </details>
                           )}
+
+                          {/* Lisa chat transcript */}
+                          <div className="mt-2">
+                            <button
+                              onClick={() => toggleChat(app.id)}
+                              className="text-xs font-medium cursor-pointer hover:opacity-80 flex items-center gap-1"
+                              style={{ color: "#0DA89E", background: "none", border: "none", padding: 0 }}
+                            >
+                              <span style={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: "50%",
+                                background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#fff",
+                                fontSize: 9,
+                                fontWeight: 800,
+                              }}>L</span>
+                              Lisa gesprek {chatOpen[app.id] ? "▴" : "▾"}
+                            </button>
+
+                            {chatOpen[app.id] && (
+                              <div className="mt-2 border border-gray-100 rounded-xl overflow-hidden">
+                                {chatLoading[app.id] ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                ) : !chatMessages[app.id]?.length ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">
+                                    Nog geen gesprek gevoerd met Lisa.
+                                  </div>
+                                ) : (
+                                  <div className="max-h-64 overflow-y-auto p-3 space-y-2 bg-gray-50">
+                                    {chatMessages[app.id].map((msg) => (
+                                      <div
+                                        key={msg.id}
+                                        className={`flex gap-2 ${msg.role === "candidate" ? "flex-row-reverse" : ""}`}
+                                      >
+                                        {msg.role === "recruiter" && (
+                                          <div style={{
+                                            width: 20,
+                                            height: 20,
+                                            borderRadius: "50%",
+                                            background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            color: "#fff",
+                                            fontSize: 8,
+                                            fontWeight: 800,
+                                            flexShrink: 0,
+                                            marginTop: 2,
+                                          }}>L</div>
+                                        )}
+                                        <div
+                                          className="text-xs px-3 py-2 rounded-xl max-w-xs leading-relaxed"
+                                          style={msg.role === "candidate"
+                                            ? { background: "#0DA89E", color: "#fff", borderTopRightRadius: 4 }
+                                            : { background: "#fff", color: "#374151", border: "1px solid #e5e7eb", borderTopLeftRadius: 4 }
+                                          }
+                                        >
+                                          {msg.content}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Status + acties */}
@@ -447,6 +599,48 @@ export default function EmployerPage() {
                               })}
                             </div>
                           )}
+
+                          {/* Interview plannen knop */}
+                          <button
+                            onClick={() => {
+                              setInterviewModal(app);
+                              setInterviewDate("");
+                              setInterviewTime("10:00");
+                              setInterviewDuration(30);
+                              setInterviewType("teams");
+                              setInterviewNotes("");
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+                            style={{ background: "#0DA89E18", color: "#0DA89E", border: "1px solid #0DA89E40" }}
+                          >
+                            📅 {scheduledInterviews[app.id] ? "Nieuw gesprek" : "Plan gesprek"}
+                          </button>
+
+                          {/* Toon Teams link als beschikbaar */}
+                          {scheduledInterviews[app.id]?.teams_join_url && (
+                            <a
+                              href={scheduledInterviews[app.id].teams_join_url!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              🔗 Teams link
+                            </a>
+                          )}
+
+                          {/* CRM sync knop */}
+                          <button
+                            onClick={() => handleCrmSync(app)}
+                            disabled={crmSyncing[app.candidate_id]}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80 disabled:opacity-50"
+                            style={
+                              crmSynced[app.candidate_id]
+                                ? { background: "#f0fdf4", color: "#059669", border: "1px solid #bbf7d0" }
+                                : { background: "#f8fafc", color: "#6b7280", border: "1px solid #e5e7eb" }
+                            }
+                          >
+                            {crmSyncing[app.candidate_id] ? "Syncing..." : crmSynced[app.candidate_id] ? "✓ CRM" : "↗ CRM Sync"}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -517,6 +711,148 @@ export default function EmployerPage() {
           </>
         )}
       </main>
+
+      {/* ── Interview plannen modal ── */}
+      {interviewModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setInterviewModal(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal header */}
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Gesprek inplannen</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{interviewModal.candidate_name}</p>
+              </div>
+              <button
+                onClick={() => setInterviewModal(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >×</button>
+            </div>
+
+            <form onSubmit={handleScheduleInterview} className="px-6 py-5 space-y-4">
+              {/* Type gesprek */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                  Type gesprek
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: "teams", label: "🖥 Teams", desc: "Online via Teams" },
+                    { value: "phone", label: "📞 Telefoon", desc: "Telefonisch" },
+                    { value: "in_person", label: "🤝 Live", desc: "Op locatie" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setInterviewType(opt.value)}
+                      className="py-2.5 px-3 rounded-xl text-xs font-semibold border-2 transition-all text-center"
+                      style={interviewType === opt.value
+                        ? { borderColor: "#0DA89E", background: "#0DA89E10", color: "#0DA89E" }
+                        : { borderColor: "#e5e7eb", background: "#fff", color: "#6b7280" }
+                      }
+                    >
+                      <div>{opt.label}</div>
+                      <div className="font-normal text-gray-400 mt-0.5" style={{ fontSize: 10 }}>{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Datum + tijd */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Datum *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={interviewDate}
+                    onChange={(e) => setInterviewDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Tijd *
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={interviewTime}
+                    onChange={(e) => setInterviewTime(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Duur */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Duur
+                </label>
+                <select
+                  value={interviewDuration}
+                  onChange={(e) => setInterviewDuration(Number(e.target.value))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 transition"
+                >
+                  <option value={15}>15 minuten</option>
+                  <option value={30}>30 minuten</option>
+                  <option value={45}>45 minuten</option>
+                  <option value={60}>60 minuten</option>
+                  <option value={90}>90 minuten</option>
+                </select>
+              </div>
+
+              {/* Notities */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Notities (optioneel)
+                </label>
+                <textarea
+                  value={interviewNotes}
+                  onChange={(e) => setInterviewNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Bijv. voorbereiding, locatie, agendapunten..."
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                />
+              </div>
+
+              {/* Teams info banner */}
+              {interviewType === "teams" && (
+                <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
+                  <strong>Teams meeting</strong> — Er wordt automatisch een Microsoft Teams meeting aangemaakt
+                  en een agenda-uitnodiging verstuurd naar kandidaat en werkgever.
+                  Vereist MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET in Render.
+                </div>
+              )}
+
+              {/* Knoppen */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={interviewSaving}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90 transition"
+                  style={{ background: "#0DA89E" }}
+                >
+                  {interviewSaving ? "Bezig..." : interviewType === "teams" ? "📅 Plan Teams gesprek" : "📅 Plan gesprek"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInterviewModal(null)}
+                  className="px-5 py-3 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

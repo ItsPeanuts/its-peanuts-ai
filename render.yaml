@@ -14,6 +14,37 @@ services:
       - key: BOOTSTRAP_TOKEN
         generateValue: true
 
+      # OpenAI (Lisa AI recruiter)
+      - key: OPENAI_API_KEY
+        sync: false   # Handmatig invullen in Render dashboard
+
+      # Microsoft Graph API (Teams meeting + agenda uitnodigingen)
+      # Aanmaken via: https://portal.azure.com → Azure Active Directory → App registrations
+      - key: MS_TENANT_ID
+        sync: false
+      - key: MS_CLIENT_ID
+        sync: false
+      - key: MS_CLIENT_SECRET
+        sync: false
+      - key: MS_ORGANIZER_EMAIL
+        sync: false   # bijv. lisa@jouwbedrijf.nl
+
+      # Microsoft Teams Bot (virtuele HR recruiter in Teams)
+      # Aanmaken via: https://dev.botframework.com of Azure Bot Service
+      - key: TEAMS_BOT_APP_ID
+        sync: false
+      - key: TEAMS_BOT_APP_PASSWORD
+        sync: false
+
+      # CRM Integratie (HubSpot standaard, ook Salesforce/Pipedrive mogelijk)
+      # HubSpot: https://app.hubspot.com/private-apps → nieuwe Private App → token kopiëren
+      - key: CRM_PROVIDER
+        value: hubspot
+      - key: CRM_API_KEY
+        sync: false   # HubSpot Private App token
+      - key: CRM_PORTAL_ID
+        sync: false   # HubSpot portal ID (voor directe contact-links)
+
   # Frontend (Next.js)
   - type: web
     name: its-peanuts-frontend

@@ -387,6 +387,60 @@ export default function SolliciteerPage({
                 ingediend. De werkgever neemt contact op via {email}.
               </div>
 
+              {/* Chat met Lisa CTA */}
+              <div style={{
+                background: "linear-gradient(135deg, #0DA89E15, #0891b215)",
+                border: "1px solid #0DA89E40",
+                borderRadius: 16,
+                padding: "20px 24px",
+                marginBottom: 24,
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontWeight: 800,
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}>L</div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
+                      Lisa wil je leren kennen
+                    </div>
+                    <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                      Doe een kort AI-gesprek (±5 min) om je kansen te vergroten.
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href={`/candidate/sollicitaties/${result.application_id}/chat`}
+                  style={{
+                    background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                    color: "#fff",
+                    padding: "10px 20px",
+                    borderRadius: 12,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  Chat met Lisa →
+                </Link>
+              </div>
+
               <div
                 style={{
                   display: "flex",

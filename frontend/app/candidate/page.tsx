@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { me, getMyApplications, ApplicationWithDetails } from "@/lib/api";
+import { me, getMyApplications, getMyInterviews, ApplicationWithDetails, InterviewSession } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -41,6 +41,7 @@ export default function CandidateDashboard() {
 
   const [userName, setUserName] = useState("");
   const [applications, setApplications] = useState<ApplicationWithDetails[]>([]);
+  const [interviews, setInterviews] = useState<InterviewSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +61,12 @@ export default function CandidateDashboard() {
         ]);
         setUserName(user.full_name || user.email);
         setApplications(apps);
+        try {
+          const myInterviews = await getMyInterviews(token);
+          setInterviews(myInterviews);
+        } catch {
+          // Geen gesprekken — dat is oké
+        }
       } catch {
         clearSession();
         router.replace("/candidate/login");
@@ -147,6 +154,52 @@ export default function CandidateDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Geplande gesprekken banner */}
+        {interviews.length > 0 && (
+          <div className="mb-6 space-y-3">
+            {interviews.map((iv) => {
+              const dt = new Date(iv.scheduled_at);
+              const isTeams = iv.interview_type === "teams";
+              const typeLabel = { teams: "Teams gesprek", phone: "Telefonisch", in_person: "Live gesprek" }[iv.interview_type] || iv.interview_type;
+              return (
+                <div
+                  key={iv.id}
+                  className="bg-white rounded-xl border border-teal-100 px-5 py-4 flex items-center justify-between gap-4"
+                  style={{ boxShadow: "0 0 0 2px #0DA89E20" }}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="text-2xl">{isTeams ? "🖥" : iv.interview_type === "phone" ? "📞" : "🤝"}</div>
+                    <div>
+                      <div className="font-semibold text-gray-900 text-sm">{typeLabel} — {iv.vacancy_title || "Gesprek"}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {dt.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" })}
+                        {" · "}{dt.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}
+                        {" · "}{iv.duration_minutes} min
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">
+                      Ingepland
+                    </span>
+                    {iv.teams_join_url && (
+                      <a
+                        href={iv.teams_join_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-white no-underline hover:opacity-90 transition"
+                        style={{ background: "#0078d4" }}
+                      >
+                        🔗 Deelnemen
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-6">
           {/* Recente sollicitaties */}
