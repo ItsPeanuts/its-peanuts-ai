@@ -47,7 +47,7 @@ export default function RootLayout({
                 Kandidaten
               </Link>
               <Link
-                href="/employer"
+                href="/employer/login"
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline"
               >
                 Werkgevers

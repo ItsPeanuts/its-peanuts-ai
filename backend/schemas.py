@@ -85,6 +85,23 @@ class ApplicationStatusUpdate(BaseModel):
     status: str = Field(pattern="^(applied|shortlisted|interview|rejected|hired)$")
 
 
+class ApplicationWithCandidateOut(BaseModel):
+    """Werkgever-view: applicatie + kandidaat info + AI score."""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    vacancy_id: int
+    status: str
+    created_at: datetime
+    candidate_id: int
+    candidate_name: str
+    candidate_email: str
+    match_score: Optional[int] = None
+    ai_summary: Optional[str] = None
+    ai_strengths: Optional[str] = None
+    ai_gaps: Optional[str] = None
+    ai_suggested_questions: Optional[str] = None
+
+
 # ----------------------------
 # Intake
 # ----------------------------

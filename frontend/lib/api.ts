@@ -258,3 +258,53 @@ export async function register(email: string, password: string, fullName: string
   return data as { access_token: string; token_type: string };
 }
 
+// ----------------------------
+// Werkgever applicatie endpoints
+// ----------------------------
+
+export type ApplicationWithCandidate = {
+  id: number;
+  vacancy_id: number;
+  status: string;
+  created_at: string;
+  candidate_id: number;
+  candidate_name: string;
+  candidate_email: string;
+  match_score: number | null;
+  ai_summary: string | null;
+  ai_strengths: string | null;
+  ai_gaps: string | null;
+  ai_suggested_questions: string | null;
+};
+
+export async function getEmployerApplications(
+  token: string,
+  vacancy_id?: number
+): Promise<ApplicationWithCandidate[]> {
+  const url = `${BASE}/employer/applications${vacancy_id !== undefined ? `?vacancy_id=${vacancy_id}` : ""}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon sollicitaties niet laden");
+  return data as ApplicationWithCandidate[];
+}
+
+export async function updateApplicationStatus(
+  token: string,
+  applicationId: number,
+  status: string
+): Promise<void> {
+  const res = await fetch(`${BASE}/employer/applications/${applicationId}/status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Status bijwerken mislukt");
+}
+

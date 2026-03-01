@@ -10,7 +10,7 @@ from backend.routers.auth import get_current_user, require_role
 router = APIRouter(prefix="/employer", tags=["employer-applications"])
 
 
-@router.get("/applications", response_model=List[schemas.ApplicationOut])
+@router.get("/applications", response_model=List[schemas.ApplicationWithCandidateOut])
 def list_applications(
     vacancy_id: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
@@ -28,7 +28,28 @@ def list_applications(
         q = q.filter(models.Application.vacancy_id == vacancy_id)
 
     rows = q.order_by(models.Application.id.desc()).all()
-    return rows
+
+    result = []
+    for app in rows:
+        candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
+        ai = db.query(models.AIResult).filter(models.AIResult.application_id == app.id).first()
+
+        result.append(schemas.ApplicationWithCandidateOut(
+            id=app.id,
+            vacancy_id=app.vacancy_id,
+            status=app.status,
+            created_at=app.created_at,
+            candidate_id=app.candidate_id,
+            candidate_name=candidate.full_name if candidate else "Onbekend",
+            candidate_email=candidate.email if candidate else "",
+            match_score=ai.match_score if ai else None,
+            ai_summary=ai.summary if ai else None,
+            ai_strengths=ai.strengths if ai else None,
+            ai_gaps=ai.gaps if ai else None,
+            ai_suggested_questions=ai.suggested_questions if ai else None,
+        ))
+
+    return result
 
 
 @router.patch("/applications/{application_id}/status", response_model=schemas.ApplicationOut)
