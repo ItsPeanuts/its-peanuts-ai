@@ -12,7 +12,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: BOOTSTRAP_TOKEN
-        generateValue: true
+        value: Peanuts-Setup-2025!
 
       # OpenAI (Lisa AI recruiter)
       - key: OPENAI_API_KEY
