@@ -91,7 +91,7 @@ function JobCard({ vacancy }: { vacancy: PublicVacancy }) {
           className="px-4 py-1.5 rounded-lg text-xs font-bold text-white no-underline transition-all hover:opacity-90"
           style={{ background: "#f97316" }}
         >
-          Apply Now
+          Nu solliciteren
         </Link>
       </div>
     </div>
