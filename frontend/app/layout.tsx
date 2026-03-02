@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import "../styles.css";
 
 export const metadata: Metadata = {
   title: "It's Peanuts AI — Slim solliciteren & slim werven",

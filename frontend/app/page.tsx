@@ -5,26 +5,20 @@ import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
 
 const CATEGORIES = [
-  { icon: "💻", label: "IT & Software",    count: 142 },
-  { icon: "📊", label: "Finance",           count: 89  },
-  { icon: "🎨", label: "Design",            count: 54  },
-  { icon: "📱", label: "Marketing",         count: 98  },
-  { icon: "🏗️", label: "Engineering",      count: 113 },
-  { icon: "👥", label: "HR & Recruitment",  count: 45  },
+  "IT & Software", "Finance", "Design", "Marketing", "Engineering", "HR",
 ];
 
 const CARD_COLORS = [
-  "bg-teal-500", "bg-blue-500", "bg-violet-500",
-  "bg-pink-500", "bg-orange-500", "bg-emerald-500",
+  "#0f766e", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669",
 ];
-const getColor   = (id: number) => CARD_COLORS[id % CARD_COLORS.length];
-const getInitials = (t: string) =>
+const getColor    = (id: number) => CARD_COLORS[id % CARD_COLORS.length];
+const getInitials = (t: string)  =>
   t.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
 
 export default function HomePage() {
   const [vacancies, setVacancies] = useState<PublicVacancy[]>([]);
-  const [query,    setQuery]    = useState("");
-  const [location, setLocation] = useState("");
+  const [query,     setQuery]     = useState("");
+  const [location,  setLocation]  = useState("");
 
   useEffect(() => {
     listVacancies().then(setVacancies).catch(() => {});
@@ -39,156 +33,173 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div>
 
       {/* ── HERO ── */}
-      <section className="bg-white border-b border-gray-100 py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
-            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full" />
-            AI-powered recruitment
-          </div>
+      <section className="bg-white py-20 border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6" style={{ textAlign: "center" }}>
 
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
-            Vind jouw perfecte baan<br />
-            <span className="text-teal-600">met AI-matching</span>
+          <p className="text-sm font-medium text-teal-700 mb-4">
+            AI-powered recruitment platform
+          </p>
+
+          <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            Vind jouw perfecte baan
           </h1>
-
-          <p className="text-gray-500 text-base mb-8 max-w-md mx-auto leading-relaxed">
-            Upload je CV en ontvang direct een persoonlijke matchscore voor elke vacature.
+          <p className="text-gray-500 text-base mb-8 leading-relaxed">
+            Upload je CV en ontvang direct een AI-matchscore voor elke vacature.
           </p>
 
           {/* Zoekbalk */}
-          <form onSubmit={handleSearch} className="flex gap-2 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm max-w-2xl mx-auto">
-            <div className="flex-1 relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Functietitel of trefwoord..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm text-gray-800 bg-transparent focus:outline-none"
-              />
-            </div>
-            <div className="w-40 relative border-l border-gray-200">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              </svg>
-              <input
-                type="text" value={location} onChange={e => setLocation(e.target.value)}
-                placeholder="Stad of regio..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm text-gray-800 bg-transparent focus:outline-none"
-              />
-            </div>
+          <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 6, maxWidth: 560, margin: "0 auto", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Functietitel of trefwoord..."
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent" }}
+            />
+            <div style={{ width: 1, background: "#e5e7eb", margin: "4px 0" }} />
+            <input
+              type="text"
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="Stad of regio"
+              style={{ width: 140, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent" }}
+            />
             <button
               type="submit"
-              className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
+              style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Zoeken
             </button>
           </form>
 
           {/* Stats */}
-          <div className="flex justify-center gap-8 mt-8 text-sm text-gray-400">
-            <span><strong className="text-gray-700">{vacancies.length > 0 ? `${vacancies.length}+` : "14.780+"}</strong> vacatures</span>
-            <span><strong className="text-gray-700">200+</strong> bedrijven</span>
-            <span><strong className="text-gray-700">5.000+</strong> kandidaten</span>
+          <div style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 24 }}>
+            {[
+              { n: vacancies.length > 0 ? `${vacancies.length}+` : "14.780+", label: "vacatures" },
+              { n: "200+", label: "bedrijven" },
+              { n: "5.000+", label: "kandidaten" },
+            ].map(s => (
+              <span key={s.label} style={{ fontSize: 13, color: "#6b7280" }}>
+                <strong style={{ color: "#111827", fontWeight: 700 }}>{s.n}</strong> {s.label}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── CATEGORIEËN ── */}
-      <section className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-5">Verken per categorie</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {CATEGORIES.map(cat => (
+      <section style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6", padding: "40px 0" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+            Categorieën
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {CATEGORIES.map(cat => (
+              <Link
+                key={cat}
+                href={`/vacatures?q=${encodeURIComponent(cat)}`}
+                style={{
+                  display: "inline-block",
+                  padding: "7px 16px",
+                  borderRadius: 100,
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "#374151",
+                  textDecoration: "none",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#0f766e"; (e.currentTarget as HTMLElement).style.color = "#0f766e"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; (e.currentTarget as HTMLElement).style.color = "#374151"; }}
+              >
+                {cat}
+              </Link>
+            ))}
             <Link
-              key={cat.label}
-              href={`/vacatures?q=${encodeURIComponent(cat.label)}`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-100 hover:border-teal-300 hover:shadow-sm transition-all no-underline text-center group"
+              href="/vacatures"
+              style={{ display: "inline-block", padding: "7px 16px", borderRadius: 100, border: "1px solid transparent", background: "transparent", fontSize: 13, fontWeight: 600, color: "#0f766e", textDecoration: "none" }}
             >
-              <span className="text-2xl">{cat.icon}</span>
-              <span className="text-xs font-semibold text-gray-700 group-hover:text-teal-700 leading-tight">{cat.label}</span>
-              <span className="text-xs text-gray-400">{cat.count}</span>
+              Alle categorieën →
             </Link>
-          ))}
+          </div>
         </div>
       </section>
 
       {/* ── VACATURES ── */}
-      <section className="max-w-5xl mx-auto px-6 pb-12">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Nieuwste vacatures</h2>
-          <Link href="/vacatures" className="text-sm font-semibold text-teal-600 hover:text-teal-700 no-underline">
-            Alle vacatures →
-          </Link>
-        </div>
+      <section style={{ background: "#f9fafb", padding: "40px 0 60px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Nieuwste vacatures
+            </p>
+            <Link href="/vacatures" style={{ fontSize: 13, fontWeight: 600, color: "#0f766e", textDecoration: "none" }}>
+              Alle vacatures →
+            </Link>
+          </div>
 
-        <div className="space-y-2">
-          {vacancies.length === 0
-            ? [...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 animate-pulse flex gap-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 bg-gray-200 rounded w-1/2" />
-                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {vacancies.length === 0
+              ? [...Array(5)].map((_, i) => (
+                  <div key={i} style={{ background: "#fff", borderRadius: 10, border: "1px solid #f3f4f6", padding: "14px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: "#f3f4f6", flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: 12, background: "#f3f4f6", borderRadius: 6, width: "45%", marginBottom: 7 }} />
+                      <div style={{ height: 10, background: "#f9fafb", borderRadius: 6, width: "30%" }} />
+                    </div>
                   </div>
-                </div>
-              ))
-            : vacancies.slice(0, 6).map(v => (
-                <Link
-                  key={v.id}
-                  href={`/vacatures/${v.id}`}
-                  className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 px-5 py-4 hover:border-teal-200 hover:shadow-sm transition-all no-underline group"
-                >
-                  <div className={`${getColor(v.id)} w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0`}>
-                    {getInitials(v.title)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 group-hover:text-teal-700 transition-colors">{v.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{v.location || "Locatie onbekend"}</div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {v.salary_range && (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-gray-50 text-gray-600 font-medium border border-gray-200">
-                        {v.salary_range}
-                      </span>
-                    )}
-                    {v.hours_per_week && (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">
-                        {v.hours_per_week}u
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400">
-                      {new Date(v.created_at).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
-                    </span>
-                  </div>
-                </Link>
-              ))
-          }
+                ))
+              : vacancies.slice(0, 8).map(v => (
+                  <Link
+                    key={v.id}
+                    href={`/vacatures/${v.id}`}
+                    style={{ display: "flex", alignItems: "center", gap: 14, background: "#fff", borderRadius: 10, border: "1px solid #f3f4f6", padding: "14px 16px", textDecoration: "none", transition: "border-color 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "#d1fae5"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "#f3f4f6"}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                      {getInitials(v.title)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.title}</div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || "Locatie onbekend"}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      {v.salary_range && (
+                        <span style={{ fontSize: 12, color: "#374151", padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                          {v.salary_range}
+                        </span>
+                      )}
+                      {v.hours_per_week && (
+                        <span style={{ fontSize: 12, color: "#0f766e", padding: "3px 10px", borderRadius: 100, background: "#f0fdfa", fontWeight: 500 }}>
+                          {v.hours_per_week}u
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))
+            }
+          </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="max-w-5xl mx-auto px-6 pb-16">
-        <div className="bg-teal-600 rounded-2xl px-10 py-10 flex items-center justify-between gap-8">
-          <div>
-            <h2 className="text-xl font-bold text-white mb-2">Klaar om te solliciteren?</h2>
-            <p className="text-teal-100 text-sm leading-relaxed max-w-sm">
-              Maak een gratis account, upload je CV en ontvang AI-matches op maat.
-            </p>
-          </div>
-          <div className="flex gap-3 flex-shrink-0">
-            <Link
-              href="/candidate/login"
-              className="bg-white text-teal-700 hover:bg-gray-50 px-6 py-3 rounded-xl text-sm font-bold no-underline transition-colors"
-            >
-              Start gratis
+      <section style={{ background: "#fff", borderTop: "1px solid #f3f4f6", padding: "60px 24px" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
+            Klaar om te starten?
+          </h2>
+          <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 24 }}>
+            Maak een gratis account, upload je CV en ontvang AI-matches op maat.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <Link href="/candidate/login" style={{ background: "#0f766e", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+              Maak account aan
             </Link>
-            <Link
-              href="/vacatures"
-              className="bg-teal-500 hover:bg-teal-400 text-white px-6 py-3 rounded-xl text-sm font-semibold no-underline transition-colors"
-            >
+            <Link href="/vacatures" style={{ background: "#f9fafb", color: "#374151", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none", border: "1px solid #e5e7eb" }}>
               Bekijk vacatures
             </Link>
           </div>
