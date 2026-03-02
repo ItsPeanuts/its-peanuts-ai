@@ -412,3 +412,31 @@ export async function syncCandidateToCRM(
   return data;
 }
 
+// ----------------------------
+// Integraties status
+// ----------------------------
+
+export type IntegrationStatus = {
+  name: string;
+  configured: boolean;
+  ok: boolean;
+  message: string;
+  details?: string | null;
+};
+
+export type IntegrationsStatusResponse = {
+  openai: IntegrationStatus;
+  microsoft_graph: IntegrationStatus;
+  teams_bot: IntegrationStatus;
+  crm: IntegrationStatus;
+};
+
+export async function getIntegrationsStatus(token: string): Promise<IntegrationsStatusResponse> {
+  const res = await fetch(`${BASE}/integrations/status`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Status ophalen mislukt");
+  return data as IntegrationsStatusResponse;
+}
+
