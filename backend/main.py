@@ -4,6 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+from backend.db import engine
+from backend.models import Base
+
+Base.metadata.create_all(bind=engine)
+
 from backend.routers import auth, employer_vacancies
 from backend.routers import candidate_applications, employer_applications
 from backend.routers import candidate_cv, candidate_analyze
