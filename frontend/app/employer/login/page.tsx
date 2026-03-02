@@ -80,7 +80,7 @@ export default function EmployerLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0DA89E" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0f766e" }}>
               P
             </div>
             <div className="text-left">
@@ -135,7 +135,7 @@ export default function EmployerLoginPage() {
               </div>
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
-                style={{ background: "#0DA89E" }}>
+                style={{ background: "#0f766e" }}>
                 {loading ? "Bezig..." : "Inloggen"}
               </button>
             </form>
@@ -170,7 +170,7 @@ export default function EmployerLoginPage() {
               </div>
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
-                style={{ background: "#0DA89E" }}>
+                style={{ background: "#0f766e" }}>
                 {loading ? "Bezig..." : "Account aanmaken"}
               </button>
             </form>

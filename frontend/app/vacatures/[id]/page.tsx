@@ -171,9 +171,9 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
               <Link
                 href={`/vacatures/${vacancy.id}/solliciteer`}
                 className="block w-full text-center py-3 px-4 rounded-xl text-sm font-bold text-white no-underline transition-all mb-3 hover:opacity-90"
-                style={{ background: "#f97316" }}
+                style={{ background: "#0f766e" }}
               >
-                🚀 Apply Now
+                Nu solliciteren
               </Link>
 
               <Link
