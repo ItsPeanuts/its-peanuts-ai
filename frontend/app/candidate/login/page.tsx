@@ -27,12 +27,11 @@ export default function CandidateLoginPage() {
     try {
       const { access_token } = await login(loginEmail, loginPassword);
       const user = await me(access_token);
-      if (user.role !== "candidate") {
-        setError("Dit account is geen kandidaat-account.");
-        return;
-      }
-      setSession({ token: access_token, role: "candidate", email: user.email });
-      router.push("/candidate");
+      const role = user.role as "candidate" | "employer" | "admin";
+      setSession({ token: access_token, role, email: user.email });
+      if (role === "admin") router.push("/admin");
+      else if (role === "employer") router.push("/employer");
+      else router.push("/candidate");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Inloggen mislukt");
     } finally {
