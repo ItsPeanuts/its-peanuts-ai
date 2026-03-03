@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 import os
 import json
+import requests as _requests
+from bs4 import BeautifulSoup
 
 from backend.db import get_db
 from backend import models
@@ -256,6 +258,7 @@ class MotivationForVacancyResponse(BaseModel):
 
 class GenerateVacancyRequest(BaseModel):
     prompt: str  # korte beschrijving van de werkgever
+    website_url: Optional[str] = None  # optioneel: bedrijfswebsite
 
 
 class GenerateVacancyResponse(BaseModel):
@@ -322,6 +325,23 @@ def motivation_letter_for_vacancy(
 # Endpoint: Vacature genereren
 # =========================
 
+def _scrape_website(url: str, max_chars: int = 3000) -> str:
+    """Haal tekst op van een website. Geeft lege string terug bij fouten."""
+    try:
+        resp = _requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        # Verwijder scripts, styles en nav
+        for tag in soup(["script", "style", "nav", "footer", "header"]):
+            tag.decompose()
+        text = soup.get_text(separator=" ", strip=True)
+        # Normaliseer witruimte
+        text = " ".join(text.split())
+        return text[:max_chars]
+    except Exception:
+        return ""
+
+
 @router.post("/generate-vacancy", response_model=GenerateVacancyResponse)
 def generate_vacancy(
     payload: GenerateVacancyRequest,
@@ -332,6 +352,18 @@ def generate_vacancy(
         raise HTTPException(status_code=403, detail="Alleen werkgevers kunnen vacatures genereren")
 
     c = ensure_client()
+
+    # Bedrijfscontext ophalen van de website (optioneel)
+    company_context = ""
+    if payload.website_url:
+        company_context = _scrape_website(payload.website_url)
+
+    company_block = (
+        f"\n\nBEDRIJFSINFO VAN {payload.website_url}:\n{company_context}"
+        if company_context
+        else ""
+    )
+
     try:
         resp = c.chat.completions.create(
             model="gpt-4.1-mini",
@@ -341,6 +373,7 @@ def generate_vacancy(
                     "content": (
                         "Je bent een Nederlandse recruitment-copywriter. "
                         "Je krijgt een korte omschrijving van een werkgever en maakt daar een complete vacature van. "
+                        "Als er bedrijfsinformatie beschikbaar is, gebruik je de toon, cultuur en waarden van dat bedrijf. "
                         "Geef ALLEEN een JSON-object terug met deze keys:\n"
                         "- title (string): de functietitel\n"
                         "- location (string): locatie, leeg als onbekend\n"
@@ -353,7 +386,10 @@ def generate_vacancy(
                 },
                 {
                     "role": "user",
-                    "content": f"Maak een vacature op basis van deze omschrijving:\n{payload.prompt}",
+                    "content": (
+                        f"Maak een vacature op basis van deze omschrijving:\n{payload.prompt}"
+                        f"{company_block}"
+                    ),
                 },
             ],
             response_format={"type": "json_object"},

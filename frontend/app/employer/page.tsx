@@ -90,6 +90,7 @@ export default function EmployerPage() {
 
   // AI vacature generator
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiWebsite, setAiWebsite] = useState("");
   const [aiGenerating, setAiGenerating] = useState(false);
 
   useEffect(() => {
@@ -207,7 +208,7 @@ export default function EmployerPage() {
     setAiGenerating(true);
     setErr("");
     try {
-      const v = await generateVacancy(token, aiPrompt);
+      const v = await generateVacancy(token, aiPrompt, aiWebsite || undefined);
       setTitle(v.title);
       setLocation(v.location);
       setHours(v.hours_per_week);
@@ -695,26 +696,35 @@ export default function EmployerPage() {
                 <span className="text-sm font-bold text-gray-800">AI schrijft de vacature voor jou</span>
               </div>
               <p className="text-xs text-gray-500 mb-3">Beschrijf de functie in één of twee zinnen. AI vult de rest in.</p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <input
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAiGenerate()}
                   placeholder='bijv. "Python developer, 3 jaar ervaring, Amsterdam, hybride, fintech startup"'
-                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
                 />
-                <button
-                  type="button"
-                  onClick={handleAiGenerate}
-                  disabled={aiGenerating || !aiPrompt.trim()}
-                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 whitespace-nowrap"
-                  style={{ background: "#0f766e" }}
-                >
-                  {aiGenerating ? "Genereren..." : "Genereer"}
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    value={aiWebsite}
+                    onChange={(e) => setAiWebsite(e.target.value)}
+                    placeholder="Bedrijfswebsite (optioneel) — bijv. https://itspeanuts.nl"
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={aiGenerating || !aiPrompt.trim()}
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 whitespace-nowrap"
+                    style={{ background: "#0f766e" }}
+                  >
+                    {aiGenerating ? "Genereren..." : "Genereer"}
+                  </button>
+                </div>
               </div>
               {aiGenerating && (
-                <p className="text-xs text-teal-600 mt-2 animate-pulse">AI schrijft je vacature...</p>
+                <p className="text-xs text-teal-600 mt-2 animate-pulse">
+                  {aiWebsite ? "AI leest website en schrijft vacature..." : "AI schrijft je vacature..."}
+                </p>
               )}
             </div>
 

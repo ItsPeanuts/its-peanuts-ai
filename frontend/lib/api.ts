@@ -213,12 +213,13 @@ export async function applyToVacancyAuthenticated(
 
 export async function generateVacancy(
   token: string,
-  prompt: string
+  prompt: string,
+  website_url?: string
 ): Promise<{ title: string; location: string; hours_per_week: string; salary_range: string; description: string }> {
   const res = await fetch(`${BASE}/ai/generate-vacancy`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, website_url }),
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Genereren mislukt");
