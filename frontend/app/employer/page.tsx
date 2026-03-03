@@ -110,7 +110,7 @@ export default function EmployerPage() {
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
-    if (role && role !== "employer") { router.push("/candidate"); return; }
+    if (role && role !== "employer" && role !== "admin") { router.push("/candidate"); return; }
 
     (async () => {
       try {
