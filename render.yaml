@@ -8,7 +8,9 @@ services:
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///./its_peanuts.db
+        fromDatabase:
+          name: its-peanuts-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: BOOTSTRAP_TOKEN
@@ -54,6 +56,13 @@ services:
         sync: false   # HubSpot Private App token
       - key: CRM_PORTAL_ID
         sync: false   # HubSpot portal ID (voor directe contact-links)
+
+databases:
+  # PostgreSQL database (free tier: 1GB, 90 dagen op free plan)
+  - name: its-peanuts-db
+    plan: free
+    databaseName: its_peanuts
+    user: its_peanuts_user
 
   # Frontend (Next.js)
   - type: web

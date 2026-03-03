@@ -9,46 +9,13 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://its-peanuts-backend.onrender.com";
 
+const WS_BASE = BASE.replace(/^https?/, (p) => (p === "https" ? "wss" : "ws"));
+
 type Message = {
   id: number;
   role: "recruiter" | "candidate";
   content: string;
-  created_at: string;
 };
-
-async function startChat(token: string, appId: number): Promise<Message> {
-  const res = await fetch(`${BASE}/ai/recruiter/${appId}/start`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.detail || "Kon chat niet starten");
-  return data as Message;
-}
-
-async function fetchMessages(token: string, appId: number): Promise<Message[]> {
-  const res = await fetch(`${BASE}/ai/recruiter/${appId}/messages`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.detail || "Kon berichten niet laden");
-  return data as Message[];
-}
-
-async function sendMessage(token: string, appId: number, content: string): Promise<Message> {
-  const res = await fetch(`${BASE}/ai/recruiter/${appId}/message`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify({ content }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.detail || "Bericht sturen mislukt");
-  return data as Message;
-}
 
 export default function RecruiterChatPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -61,63 +28,98 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [chatEnded, setChatEnded] = useState(false);
+  const [connected, setConnected] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const seenIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
 
-    (async () => {
+    const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setConnected(true);
+    };
+
+    ws.onmessage = (event) => {
       try {
-        // Start de chat (of haal bestaande chat op)
-        await startChat(token, appId);
-        const msgs = await fetchMessages(token, appId);
-        setMessages(msgs);
-        // Check if chat is ended (4+ recruiter messages)
-        const recruiterCount = msgs.filter((m) => m.role === "recruiter").length;
-        if (recruiterCount >= 4) setChatEnded(true);
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Fout bij laden");
-      } finally {
+        const data = JSON.parse(event.data);
+
+        if (data.error) {
+          if (data.ended) {
+            setChatEnded(true);
+          } else {
+            setError(data.error);
+          }
+          return;
+        }
+
+        // Deduplicate by id
+        if (data.id && seenIds.current.has(data.id)) return;
+        if (data.id) seenIds.current.add(data.id);
+
+        const msg: Message = {
+          id: data.id ?? Date.now(),
+          role: data.role as "recruiter" | "candidate",
+          content: data.content,
+        };
+
+        setMessages((prev) => [...prev, msg]);
+
+        if (data.role === "recruiter") setSending(false);
+        if (data.ended) setChatEnded(true);
+
         setLoading(false);
+      } catch {
+        // ignore malformed frames
       }
-    })();
+    };
+
+    ws.onerror = () => {
+      setError("Verbinding mislukt. Ververs de pagina.");
+      setLoading(false);
+    };
+
+    ws.onclose = (e) => {
+      setConnected(false);
+      if (e.code === 4001) {
+        router.replace("/candidate/login");
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, [router, token, appId]);
+
+  // Trigger loading=false after connection if no messages arrive within 1s
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, sending]);
 
-  async function handleSend(e: React.FormEvent) {
+  function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || sending || chatEnded) return;
+    const content = input.trim();
+    if (!content || sending || chatEnded || !connected) return;
 
-    const userMsg: Message = {
-      id: Date.now(),
-      role: "candidate",
-      content: input.trim(),
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    // Optimistically add candidate message
+    const tempId = Date.now();
+    seenIds.current.add(tempId);
+    setMessages((prev) => [...prev, { id: tempId, role: "candidate", content }]);
     setInput("");
     setSending(true);
     setError("");
 
-    try {
-      const aiReply = await sendMessage(token!, appId, userMsg.content);
-      setMessages((prev) => [...prev.filter((m) => m.id !== userMsg.id), userMsg, aiReply]);
-
-      // Check if chat is now ended
-      const allMsgs = await fetchMessages(token!, appId);
-      setMessages(allMsgs);
-      const recruiterCount = allMsgs.filter((m) => m.role === "recruiter").length;
-      if (recruiterCount >= 4) setChatEnded(true);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Fout bij versturen");
-      setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
-    } finally {
-      setSending(false);
-    }
+    wsRef.current?.send(JSON.stringify({ content }));
   }
 
   return (
@@ -133,7 +135,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
               L
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${connected ? "bg-green-400" : "bg-gray-300"}`} />
           </div>
           <div>
             <div className="font-semibold text-gray-900 text-sm">Lisa</div>
@@ -185,9 +187,6 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                   >
                     {msg.content}
                   </div>
-                  <span className="text-xs text-gray-300 mt-1 mx-1">
-                    {new Date(msg.created_at).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
                 </div>
               </div>
             ))}
@@ -247,13 +246,13 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Typ je antwoord..."
-                disabled={sending || loading}
+                disabled={sending || loading || !connected}
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition disabled:opacity-50"
                 autoFocus
               />
               <button
                 type="submit"
-                disabled={!input.trim() || sending || loading}
+                disabled={!input.trim() || sending || loading || !connected}
                 className="px-5 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 hover:opacity-90 flex items-center gap-2"
                 style={{ background: "#0DA89E" }}
               >
