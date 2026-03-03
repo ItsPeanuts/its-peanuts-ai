@@ -5,13 +5,29 @@ import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.security import OAuth2PasswordBearer
 from openai import OpenAI
 from sqlalchemy.orm import Session
+from jose import jwt, JWTError
 
 from backend import models, schemas
 from backend.db import get_db
-from backend.security import create_access_token, hash_password
+from backend.security import create_access_token, hash_password, SECRET_KEY, ALGORITHM
 from backend.services.text_extract import extract_text
+
+oauth2_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+def _get_optional_user(token: str | None = Depends(oauth2_optional), db: Session = Depends(get_db)):
+    """Geeft de ingelogde User terug, of None als er geen geldig token is."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub", 0))
+        return db.query(models.User).filter(models.User.id == user_id).first()
+    except (JWTError, ValueError):
+        return None
 
 router = APIRouter(prefix="/vacancies", tags=["public-vacancies"])
 
@@ -205,6 +221,123 @@ async def apply_to_vacancy(
     db.commit()
 
     access_token = create_access_token(subject=str(candidate.id))
+
+    return schemas.ApplyResponse(
+        application_id=application.id,
+        match_score=match_score,
+        explanation=explanation,
+        access_token=access_token,
+    )
+
+
+@router.post("/{vacancy_id}/apply-authenticated", response_model=schemas.ApplyResponse)
+async def apply_authenticated(
+    vacancy_id: int,
+    motivation_letter: str = Form(default=""),
+    intake_answers_json: str = Form(default="[]"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(_get_optional_user),
+):
+    """Solliciteren als ingelogde kandidaat — gebruikt bestaand account + meest recente CV."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Niet ingelogd")
+    if current_user.role != "candidate":
+        raise HTTPException(status_code=403, detail="Alleen kandidaten kunnen solliciteren")
+
+    # Vacature ophalen
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+
+    # Controleer of kandidaat al gesolliciteerd heeft
+    existing_app = (
+        db.query(models.Application)
+        .filter(
+            models.Application.candidate_id == current_user.id,
+            models.Application.vacancy_id == vacancy_id,
+        )
+        .first()
+    )
+    if existing_app:
+        raise HTTPException(status_code=409, detail="Je hebt al gesolliciteerd op deze vacature")
+
+    # Meest recente CV ophalen
+    cv_record = (
+        db.query(models.CandidateCV)
+        .filter(models.CandidateCV.candidate_id == current_user.id)
+        .order_by(models.CandidateCV.id.desc())
+        .first()
+    )
+    cv_text = cv_record.extracted_text if cv_record else ""
+
+    # Sollicitatie aanmaken
+    application = models.Application(
+        candidate_id=current_user.id,
+        vacancy_id=vacancy_id,
+        status="applied",
+    )
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+
+    # Intake-antwoorden opslaan
+    try:
+        answers_data = json.loads(intake_answers_json)
+        for item in answers_data:
+            if item.get("answer"):
+                db.add(models.IntakeAnswer(
+                    application_id=application.id,
+                    question_id=int(item["question_id"]),
+                    answer=str(item["answer"]),
+                ))
+        db.commit()
+    except Exception:
+        pass
+
+    # AI pre-screening
+    match_score = 0
+    explanation = "AI analyse niet beschikbaar."
+    job_text = (vacancy.extracted_text or vacancy.description or "").strip()
+    combined_cv = (cv_text or "") + ("\n\nMOTIVATIE:\n" + motivation_letter if motivation_letter else "")
+
+    if _client and combined_cv.strip() and job_text:
+        try:
+            resp = _client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Je bent een ervaren recruiter. "
+                            "Geef een matchscore (0-100) en een korte uitleg in het Nederlands. "
+                            "Geef ALLEEN een JSON-object terug met keys "
+                            "'match_score' (int) en 'explanation' (string)."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"KANDIDAAT CV + MOTIVATIE:\n{combined_cv[:3500]}\n\n"
+                            f"VACATURE:\n{job_text[:2000]}"
+                        ),
+                    },
+                ],
+                response_format={"type": "json_object"},
+            )
+            data = json.loads(resp.choices[0].message.content)
+            match_score = max(0, min(100, int(data.get("match_score", 0))))
+            explanation = data.get("explanation", "").strip() or explanation
+        except Exception as exc:
+            explanation = f"AI analyse mislukt: {exc}"
+
+    db.add(models.AIResult(
+        application_id=application.id,
+        match_score=match_score,
+        summary=explanation,
+    ))
+    db.commit()
+
+    access_token = create_access_token(subject=str(current_user.id))
 
     return schemas.ApplyResponse(
         application_id=application.id,

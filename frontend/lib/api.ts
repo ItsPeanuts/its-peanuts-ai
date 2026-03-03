@@ -187,6 +187,43 @@ export async function applyToVacancy(vacancyId: number, formData: FormData) {
   };
 }
 
+export async function applyToVacancyAuthenticated(
+  token: string,
+  vacancyId: number,
+  payload: { motivation_letter?: string; intake_answers_json?: string }
+) {
+  const fd = new FormData();
+  if (payload.motivation_letter) fd.append("motivation_letter", payload.motivation_letter);
+  fd.append("intake_answers_json", payload.intake_answers_json ?? "[]");
+
+  const res = await fetch(`${BASE}/vacancies/${vacancyId}/apply-authenticated`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Sollicitatie mislukt");
+  return data as {
+    application_id: number;
+    match_score: number;
+    explanation: string;
+    access_token: string;
+  };
+}
+
+export async function generateMotivationLetter(
+  token: string,
+  vacancyId: number
+): Promise<string> {
+  const res = await fetch(`${BASE}/ai/motivation-letter-for-vacancy/${vacancyId}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Genereren mislukt");
+  return data.letter as string;
+}
+
 // ----------------------------
 // Kandidaten portaal endpoints
 // ----------------------------

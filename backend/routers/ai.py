@@ -1,9 +1,28 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from openai import OpenAI
+from sqlalchemy.orm import Session
+from jose import jwt, JWTError
 import os
 import json
+
+from backend.db import get_db
+from backend import models
+from backend.security import SECRET_KEY, ALGORITHM
+
+_oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+def _optional_user(token: str | None = Depends(_oauth2), db: Session = Depends(get_db)):
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        uid = int(payload.get("sub", 0))
+        return db.query(models.User).filter(models.User.id == uid).first()
+    except (JWTError, ValueError):
+        return None
 
 router = APIRouter()
 
@@ -225,3 +244,63 @@ def match_job(payload: MatchJobRequest) -> MatchJobResponse:
             f"Technische fout: {str(e)}"
         )
         return MatchJobResponse(match_score=0, explanation=fallback_explanation)
+
+
+# =========================
+# Endpoint: Motivatiebrief voor vacature (ingelogde kandidaat)
+# =========================
+
+class MotivationForVacancyResponse(BaseModel):
+    letter: str
+
+
+@router.post("/motivation-letter-for-vacancy/{vacancy_id}", response_model=MotivationForVacancyResponse)
+def motivation_letter_for_vacancy(
+    vacancy_id: int,
+    current_user: models.User = Depends(_optional_user),
+    db: Session = Depends(get_db),
+) -> MotivationForVacancyResponse:
+    """Genereer een motivatiebrief op basis van het CV en de vacature van de ingelogde kandidaat."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Niet ingelogd")
+
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+
+    cv = (
+        db.query(models.CandidateCV)
+        .filter(models.CandidateCV.candidate_id == current_user.id)
+        .order_by(models.CandidateCV.id.desc())
+        .first()
+    )
+    cv_text = cv.extracted_text if cv else ""
+    job_text = vacancy.description or vacancy.extracted_text or ""
+
+    if not cv_text:
+        raise HTTPException(status_code=400, detail="Geen CV gevonden. Upload eerst je CV.")
+
+    c = ensure_client()
+    try:
+        resp = c.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Je bent een Nederlandse recruitment-copywriter. "
+                        "Schrijf een sterke, persoonlijke motivatiebrief in de ik-vorm. "
+                        "Professioneel, concreet, max 3/4 A4. "
+                        "Opbouw: intro, waarom deze functie/organisatie, wat breng ik mee, call-to-action."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"CV:\n{cv_text[:3000]}\n\nVACATURE:\n{job_text[:2000]}",
+                },
+            ],
+        )
+        letter = resp.choices[0].message.content.strip()
+        return MotivationForVacancyResponse(letter=letter)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"AI fout: {exc}")
