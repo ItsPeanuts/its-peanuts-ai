@@ -35,7 +35,7 @@ router = APIRouter(prefix="/ai/recruiter", tags=["recruiter-chat"])
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-MAX_QUESTIONS = 4  # AI stopt na maximaal 4 vragen
+MAX_QUESTIONS = 3  # Lisa stelt 3 vragen, bericht 4 is het sluitingsbericht
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ JOUW TAAK:
 3. Stel maximaal {MAX_QUESTIONS} vragen in totaal
 4. Stel ALTIJD slechts 1 vraag per bericht
 5. Luister naar antwoorden en reageer empathisch
-6. Sluit de chat na {MAX_QUESTIONS} vragen af met een positieve samenvatting
+6. Sluit de chat na {MAX_QUESTIONS} vragen af met een positieve samenvatting ZONDER nieuwe vragen
 
 STIJLREGELS:
 - Maximaal 3 zinnen per bericht
@@ -260,8 +260,9 @@ def send_message(
     # Sluit af na MAX_QUESTIONS recruiter berichten
     if recruiter_count >= MAX_QUESTIONS:
         closing = (
-            f"Bedank {ctx['candidate_name']} hartelijk, zeg dat je alle antwoorden hebt ontvangen "
-            f"en dat de werkgever zo snel mogelijk contact opneemt. Sluit vriendelijk af."
+            f"Dit is je LAATSTE bericht. Bedank {ctx['candidate_name']} hartelijk voor de antwoorden. "
+            f"Zeg dat de werkgever zo snel mogelijk contact opneemt. Sluit vriendelijk af. "
+            f"BELANGRIJK: Stel ABSOLUUT GEEN nieuwe vragen meer. Eindig het gesprek definitief."
         )
         history.append({"role": "user", "content": closing})
 
