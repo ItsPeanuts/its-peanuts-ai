@@ -80,10 +80,11 @@ def bootstrap_admin(payload: BootstrapRequest, db: Session = Depends(get_db)):
 
     existing = db.query(models.User).filter(models.User.email == payload.email.lower()).first()
     if existing:
-        if existing.role == "admin":
-            raise HTTPException(status_code=409, detail="Admin bestaat al")
-        # Promoveer bestaande gebruiker
+        # Promoveer of reset wachtwoord van bestaande gebruiker
         existing.role = "admin"
+        existing.hashed_password = hash_password(payload.password)
+        if payload.full_name:
+            existing.full_name = payload.full_name
         db.commit()
         db.refresh(existing)
         return existing
