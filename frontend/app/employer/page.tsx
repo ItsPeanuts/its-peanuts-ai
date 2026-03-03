@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  createVacancy, employerVacancies, me,
+  createVacancy, employerVacancies, me, generateVacancy,
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   ApplicationWithCandidate, ChatMessage, InterviewSession,
@@ -87,6 +87,10 @@ export default function EmployerPage() {
   const [salary, setSalary] = useState("");
   const [desc, setDesc] = useState("");
   const [creating, setCreating] = useState(false);
+
+  // AI vacature generator
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
@@ -195,6 +199,24 @@ export default function EmployerPage() {
       } finally {
         setChatLoading((prev) => ({ ...prev, [appId]: false }));
       }
+    }
+  }
+
+  async function handleAiGenerate() {
+    if (!aiPrompt.trim() || !token) return;
+    setAiGenerating(true);
+    setErr("");
+    try {
+      const v = await generateVacancy(token, aiPrompt);
+      setTitle(v.title);
+      setLocation(v.location);
+      setHours(v.hours_per_week);
+      setSalary(v.salary_range);
+      setDesc(v.description);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "AI genereren mislukt");
+    } finally {
+      setAiGenerating(false);
     }
   }
 
@@ -661,6 +683,39 @@ export default function EmployerPage() {
                 ← Terug
               </button>
               <h1 className="text-2xl font-bold text-gray-900">Nieuwe vacature plaatsen</h1>
+            </div>
+
+            {/* AI-assistent blok */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl mb-4"
+              style={{ borderLeft: "4px solid #0f766e" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 8v4l3 3"/></svg>
+                </div>
+                <span className="text-sm font-bold text-gray-800">AI schrijft de vacature voor jou</span>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">Beschrijf de functie in één of twee zinnen. AI vult de rest in.</p>
+              <div className="flex gap-2">
+                <input
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAiGenerate()}
+                  placeholder='bijv. "Python developer, 3 jaar ervaring, Amsterdam, hybride, fintech startup"'
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                />
+                <button
+                  type="button"
+                  onClick={handleAiGenerate}
+                  disabled={aiGenerating || !aiPrompt.trim()}
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 whitespace-nowrap"
+                  style={{ background: "#0f766e" }}
+                >
+                  {aiGenerating ? "Genereren..." : "Genereer"}
+                </button>
+              </div>
+              {aiGenerating && (
+                <p className="text-xs text-teal-600 mt-2 animate-pulse">AI schrijft je vacature...</p>
+              )}
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">

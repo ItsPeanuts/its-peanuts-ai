@@ -254,6 +254,18 @@ class MotivationForVacancyResponse(BaseModel):
     letter: str
 
 
+class GenerateVacancyRequest(BaseModel):
+    prompt: str  # korte beschrijving van de werkgever
+
+
+class GenerateVacancyResponse(BaseModel):
+    title: str
+    location: str
+    hours_per_week: str
+    salary_range: str
+    description: str
+
+
 @router.post("/motivation-letter-for-vacancy/{vacancy_id}", response_model=MotivationForVacancyResponse)
 def motivation_letter_for_vacancy(
     vacancy_id: int,
@@ -302,5 +314,57 @@ def motivation_letter_for_vacancy(
         )
         letter = resp.choices[0].message.content.strip()
         return MotivationForVacancyResponse(letter=letter)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"AI fout: {exc}")
+
+
+# =========================
+# Endpoint: Vacature genereren
+# =========================
+
+@router.post("/generate-vacancy", response_model=GenerateVacancyResponse)
+def generate_vacancy(
+    payload: GenerateVacancyRequest,
+    current_user: models.User = Depends(_optional_user),
+) -> GenerateVacancyResponse:
+    """Genereer een complete vacaturetekst op basis van een korte omschrijving."""
+    if not current_user or current_user.role != "employer":
+        raise HTTPException(status_code=403, detail="Alleen werkgevers kunnen vacatures genereren")
+
+    c = ensure_client()
+    try:
+        resp = c.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Je bent een Nederlandse recruitment-copywriter. "
+                        "Je krijgt een korte omschrijving van een werkgever en maakt daar een complete vacature van. "
+                        "Geef ALLEEN een JSON-object terug met deze keys:\n"
+                        "- title (string): de functietitel\n"
+                        "- location (string): locatie, leeg als onbekend\n"
+                        "- hours_per_week (string): bijv. '40 uur' of '32-40 uur'\n"
+                        "- salary_range (string): bijv. '€3.500 - €5.000 per maand', leeg als onbekend\n"
+                        "- description (string): volledige vacaturetekst met kopjes: "
+                        "Wat ga je doen?, Wat breng je mee?, Wat bieden wij? "
+                        "Gebruik markdown (**, bulletpoints). Max 400 woorden."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Maak een vacature op basis van deze omschrijving:\n{payload.prompt}",
+                },
+            ],
+            response_format={"type": "json_object"},
+        )
+        data = json.loads(resp.choices[0].message.content)
+        return GenerateVacancyResponse(
+            title=data.get("title", "").strip(),
+            location=data.get("location", "").strip(),
+            hours_per_week=data.get("hours_per_week", "").strip(),
+            salary_range=data.get("salary_range", "").strip(),
+            description=data.get("description", "").strip(),
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"AI fout: {exc}")
