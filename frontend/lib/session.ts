@@ -1,7 +1,7 @@
 // frontend/lib/session.ts
 const KEY = "peanuts.session";
 
-export type Role = "candidate" | "employer";
+export type Role = "candidate" | "employer" | "admin";
 export type Session = {
   token: string;
   role: Role;
