@@ -91,6 +91,7 @@ export default function CandidateDashboard() {
             { label: "Dashboard",      href: "/candidate" },
             { label: "Sollicitaties",  href: "/candidate/sollicitaties" },
             { label: "CV Beheer",      href: "/candidate/cv" },
+            { label: "Profiel",        href: "/candidate/profiel" },
             { label: "Vacatures",      href: "/vacatures" },
           ].map((item) => (
             <Link
