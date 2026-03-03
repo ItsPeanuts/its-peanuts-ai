@@ -37,7 +37,7 @@ export async function me(token: string) {
     id: number;
     email: string;
     full_name: string;
-    role: "candidate" | "employer";
+    role: "candidate" | "employer" | "admin";
     plan?: string | null;
   };
 }

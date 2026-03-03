@@ -34,12 +34,14 @@ export default function EmployerLoginPage() {
     try {
       const { access_token } = await login(loginEmail, loginPassword);
       const user = await me(access_token);
-      if (user.role !== "employer") {
-        setError("Dit account is geen werkgeversaccount. Gebruik het kandidatenportaal.");
+      const role = user.role as "candidate" | "employer" | "admin";
+      if (role === "candidate") {
+        setError("Dit account is een kandidaatsaccount. Gebruik het kandidatenportaal.");
         return;
       }
-      setSession({ token: access_token, role: "employer", email: user.email });
-      router.push("/employer");
+      setSession({ token: access_token, role, email: user.email });
+      if (role === "admin") router.push("/admin");
+      else router.push("/employer");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Inloggen mislukt");
     } finally {
