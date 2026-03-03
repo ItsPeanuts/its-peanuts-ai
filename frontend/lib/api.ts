@@ -299,6 +299,26 @@ export async function getCandidateCVs(token: string): Promise<CandidateCVOut[]> 
   return data as CandidateCVOut[];
 }
 
+export async function getCVFullText(token: string, cvId: number): Promise<string> {
+  const res = await fetch(`${BASE}/candidate/cv/${cvId}/text`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "CV tekst laden mislukt");
+  return data.extracted_text as string;
+}
+
+export async function updateCVText(token: string, cvId: number, extractedText: string): Promise<CandidateCVOut> {
+  const res = await fetch(`${BASE}/candidate/cv/${cvId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ extracted_text: extractedText }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Opslaan mislukt");
+  return data as CandidateCVOut;
+}
+
 export async function register(email: string, password: string, fullName: string) {
   const res = await fetch(`${BASE}/auth/register`, {
     method: "POST",

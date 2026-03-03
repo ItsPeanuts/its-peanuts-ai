@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   me, getCandidateCVs, uploadCV, getMyApplications,
+  getCVFullText, updateCVText,
   CandidateCVOut, ApplicationWithDetails,
 } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -43,6 +44,12 @@ export default function ProfielPage() {
   const [uploadMsg, setUploadMsg]   = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [cvExpanded, setCvExpanded] = useState(false);
 
+  // CV bewerken
+  const [editing, setEditing]       = useState(false);
+  const [editText, setEditText]     = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [saving, setSaving]         = useState(false);
+
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
     if (role && role !== "candidate") { router.replace("/employer"); return; }
@@ -64,6 +71,36 @@ export default function ProfielPage() {
       }
     })();
   }, [router, token, role]);
+
+  async function handleStartEdit() {
+    if (!latestCv || !token) return;
+    setEditLoading(true);
+    try {
+      const fullText = await getCVFullText(token, latestCv.id);
+      setEditText(fullText);
+      setEditing(true);
+    } catch (err: unknown) {
+      setUploadMsg({ type: "err", text: (err as Error)?.message || "Laden mislukt" });
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  async function handleSaveEdit() {
+    if (!latestCv || !token) return;
+    setSaving(true);
+    try {
+      await updateCVText(token, latestCv.id, editText);
+      const updated = await getCandidateCVs(token);
+      setCvs(updated);
+      setEditing(false);
+      setUploadMsg({ type: "ok", text: "CV tekst opgeslagen." });
+    } catch (err: unknown) {
+      setUploadMsg({ type: "err", text: (err as Error)?.message || "Opslaan mislukt" });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -174,15 +211,55 @@ export default function ProfielPage() {
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>Mijn CV</h2>
-              {cvs.length > 1 && (
-                <Link href="/candidate/cv" style={{ fontSize: 12, color: "#0f766e", textDecoration: "none" }}>
-                  Alle {cvs.length} CV's
-                </Link>
-              )}
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {latestCv && !editing && (
+                  <button
+                    onClick={handleStartEdit}
+                    disabled={editLoading}
+                    style={{ fontSize: 12, color: "#0f766e", background: "none", border: "1px solid #0f766e", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontWeight: 500 }}
+                  >
+                    {editLoading ? "Laden..." : "Bewerken"}
+                  </button>
+                )}
+                {cvs.length > 1 && (
+                  <Link href="/candidate/cv" style={{ fontSize: 12, color: "#6b7280", textDecoration: "none" }}>
+                    Alle {cvs.length} CV's
+                  </Link>
+                )}
+              </div>
             </div>
 
-            {/* Meest recente CV */}
-            {latestCv ? (
+            {/* Edit modus */}
+            {editing ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  rows={14}
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    padding: "12px", border: "1px solid #d1d5db", borderRadius: 10,
+                    fontSize: 12, lineHeight: 1.7, color: "#374151",
+                    fontFamily: "monospace", resize: "vertical", outline: "none",
+                  }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving}
+                    style={{ padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: saving ? "#e5e7eb" : "#0f766e", color: saving ? "#9ca3af" : "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+                  >
+                    {saving ? "Opslaan..." : "Opslaan"}
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    style={{ padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: "#f3f4f6", color: "#374151", border: "none", cursor: "pointer" }}
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            ) : latestCv ? (
               <div style={{ background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb", padding: "14px 16px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                   <div style={{ minWidth: 0 }}>

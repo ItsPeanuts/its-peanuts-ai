@@ -209,6 +209,15 @@ class CandidateCVOut(BaseModel):
     text_preview: Optional[str] = None
 
 
+class CandidateCVText(BaseModel):
+    id: int
+    extracted_text: str
+
+
+class CandidateCVUpdate(BaseModel):
+    extracted_text: str
+
+
 
 
 

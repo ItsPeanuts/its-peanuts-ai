@@ -68,6 +68,51 @@ async def upload_cv(
     return extracted
 
 
+@router.get("/cv/{cv_id}/text", response_model=schemas.CandidateCVText)
+def get_cv_full_text(
+    cv_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Geeft de volledige geëxtraheerde tekst van één CV terug."""
+    require_role(current_user, "candidate")
+    cv = db.query(models.CandidateCV).filter(
+        models.CandidateCV.id == cv_id,
+        models.CandidateCV.candidate_id == current_user.id,
+    ).first()
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV niet gevonden")
+    return schemas.CandidateCVText(id=cv.id, extracted_text=cv.extracted_text or "")
+
+
+@router.patch("/cv/{cv_id}", response_model=schemas.CandidateCVOut)
+def update_cv_text(
+    cv_id: int,
+    payload: schemas.CandidateCVUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Overschrijf de geëxtraheerde tekst van een CV (handmatig bewerken)."""
+    require_role(current_user, "candidate")
+    cv = db.query(models.CandidateCV).filter(
+        models.CandidateCV.id == cv_id,
+        models.CandidateCV.candidate_id == current_user.id,
+    ).first()
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV niet gevonden")
+    cv.extracted_text = payload.extracted_text
+    db.commit()
+    db.refresh(cv)
+    text = cv.extracted_text or ""
+    return schemas.CandidateCVOut(
+        id=cv.id,
+        source_filename=cv.source_filename,
+        source_content_type=cv.source_content_type,
+        created_at=cv.created_at,
+        text_preview=text[:200] if text else None,
+    )
+
+
 @router.get("/cvs", response_model=List[schemas.CandidateCVOut])
 def list_cvs(
     db: Session = Depends(get_db),
