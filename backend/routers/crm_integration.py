@@ -1,5 +1,5 @@
 """
-CRM Integratie — HubSpot (primair) + uitbreidbaar naar Salesforce / Pipedrive
+CRM Integratie — HubSpot + Pipedrive + uitbreidbaar naar Salesforce
 
 Synchroniseert kandidaten, sollicitaties en activiteiten naar een extern CRM systeem.
 Ondersteunt ook het aanmaken van CRM-deals, taken en afspraken.
@@ -221,6 +221,106 @@ def _hubspot_create_meeting(contact_id: str, title: str, scheduled_at_iso: str, 
     return str(resp.json().get("engagement", {}).get("id", ""))
 
 
+# ── Pipedrive helpers ─────────────────────────────────────────────────────────
+
+PIPEDRIVE_BASE = "https://api.pipedrive.com/v1"
+
+
+def _pipedrive_params() -> dict:
+    if not CRM_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="CRM niet geconfigureerd. Stel CRM_API_KEY in als omgevingsvariabele (Pipedrive API token).",
+        )
+    return {"api_token": CRM_API_KEY}
+
+
+def _pipedrive_upsert_person(candidate: models.User) -> str:
+    """Maak een Pipedrive person aan of update een bestaande op basis van e-mail."""
+    params = _pipedrive_params()
+
+    search_resp = requests.get(
+        f"{PIPEDRIVE_BASE}/persons/search",
+        params={**params, "term": candidate.email, "fields": "email", "exact_match": "true"},
+        timeout=10,
+    )
+    if search_resp.ok:
+        items = search_resp.json().get("data", {}).get("items", [])
+        if items:
+            person_id = items[0]["item"]["id"]
+            requests.put(
+                f"{PIPEDRIVE_BASE}/persons/{person_id}",
+                params=params,
+                json={"name": candidate.full_name or candidate.email},
+                timeout=10,
+            )
+            return str(person_id)
+
+    create_resp = requests.post(
+        f"{PIPEDRIVE_BASE}/persons",
+        params=params,
+        json={
+            "name": candidate.full_name or candidate.email,
+            "email": [{"value": candidate.email, "primary": True}],
+        },
+        timeout=10,
+    )
+    if not create_resp.ok:
+        raise HTTPException(status_code=502, detail=f"Pipedrive person aanmaken mislukt: {create_resp.text}")
+    return str(create_resp.json()["data"]["id"])
+
+
+def _pipedrive_create_deal(person_id: str, vacancy: models.Vacancy) -> str:
+    """Maak een Pipedrive deal aan voor de sollicitatie."""
+    params = _pipedrive_params()
+    deal_resp = requests.post(
+        f"{PIPEDRIVE_BASE}/deals",
+        params=params,
+        json={
+            "title": f"Sollicitatie: {vacancy.title}",
+            "person_id": int(person_id),
+            "status": "open",
+        },
+        timeout=10,
+    )
+    if not deal_resp.ok:
+        raise HTTPException(status_code=502, detail=f"Pipedrive deal aanmaken mislukt: {deal_resp.text}")
+    return str(deal_resp.json()["data"]["id"])
+
+
+def _pipedrive_add_note(person_id: str, deal_id: Optional[str], content: str) -> str:
+    """Voeg een notitie toe aan een person/deal in Pipedrive."""
+    params = _pipedrive_params()
+    body: dict = {"content": content, "person_id": int(person_id)}
+    if deal_id:
+        body["deal_id"] = int(deal_id)
+    note_resp = requests.post(f"{PIPEDRIVE_BASE}/notes", params=params, json=body, timeout=10)
+    if not note_resp.ok:
+        return ""
+    return str(note_resp.json().get("data", {}).get("id", ""))
+
+
+def _pipedrive_create_activity(person_id: str, deal_id: Optional[str], subject: str, scheduled_at_iso: str) -> str:
+    """Maak een activiteit (afspraak) aan in Pipedrive."""
+    params = _pipedrive_params()
+    dt = datetime.fromisoformat(scheduled_at_iso)
+    body: dict = {
+        "subject": subject,
+        "type": "meeting",
+        "due_date": dt.strftime("%Y-%m-%d"),
+        "due_time": dt.strftime("%H:%M"),
+        "duration": "00:30",
+        "person_id": int(person_id),
+        "done": 0,
+    }
+    if deal_id:
+        body["deal_id"] = int(deal_id)
+    resp = requests.post(f"{PIPEDRIVE_BASE}/activities", params=params, json=body, timeout=10)
+    if not resp.ok:
+        return ""
+    return str(resp.json().get("data", {}).get("id", ""))
+
+
 # ── Salesforce helpers (stub — uitbreidbaar) ──────────────────────────────────
 
 def _salesforce_upsert_lead(candidate: models.User, vacancy_title: str) -> str:
@@ -304,6 +404,14 @@ def sync_candidate_to_crm(
             if vacancy and not sync_record.crm_deal_id:
                 app = db.query(models.Application).filter(models.Application.id == application_id).first()
                 deal_id = _hubspot_create_deal(contact_id, vacancy, app)
+                sync_record.crm_deal_id = deal_id
+
+        elif CRM_PROVIDER == "pipedrive":
+            person_id = _pipedrive_upsert_person(candidate)
+            sync_record.crm_contact_id = person_id
+
+            if vacancy and not sync_record.crm_deal_id:
+                deal_id = _pipedrive_create_deal(person_id, vacancy)
                 sync_record.crm_deal_id = deal_id
 
         elif CRM_PROVIDER == "salesforce":
@@ -410,6 +518,25 @@ def log_crm_activity(
                 sync_record.crm_activity_id = activity_id
                 db.commit()
 
+        elif CRM_PROVIDER == "pipedrive":
+            if payload.activity_type == "interview_scheduled" and payload.scheduled_at:
+                activity_id = _pipedrive_create_activity(
+                    person_id=sync_record.crm_contact_id,
+                    deal_id=sync_record.crm_deal_id,
+                    subject=f"Interview: {candidate.full_name if candidate else 'Kandidaat'} — {vacancy.title if vacancy else 'Vacature'}",
+                    scheduled_at_iso=payload.scheduled_at or "",
+                )
+            else:
+                activity_id = _pipedrive_add_note(
+                    person_id=sync_record.crm_contact_id,
+                    deal_id=sync_record.crm_deal_id,
+                    content=f"[{payload.activity_type.upper()}] {payload.description}",
+                )
+
+            if activity_id:
+                sync_record.crm_activity_id = activity_id
+                db.commit()
+
     except HTTPException:
         raise
     except Exception as e:
@@ -447,6 +574,9 @@ def get_crm_contact(
     contact_url = None
     if CRM_PROVIDER == "hubspot" and sync.crm_contact_id and CRM_PORTAL_ID:
         contact_url = f"https://app.hubspot.com/contacts/{CRM_PORTAL_ID}/contact/{sync.crm_contact_id}"
+    elif CRM_PROVIDER == "pipedrive" and sync.crm_contact_id:
+        domain = CRM_PORTAL_ID or "app"
+        contact_url = f"https://{domain}.pipedrive.com/person/{sync.crm_contact_id}"
 
     return {
         "synced": sync.sync_status == "synced",

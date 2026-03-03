@@ -243,6 +243,29 @@ def _check_crm() -> IntegrationStatus:
                     message="API token ongeldig of verlopen.",
                     details=err,
                 )
+        elif provider == "pipedrive":
+            resp = http.get(
+                "https://api.pipedrive.com/v1/users/me",
+                params={"api_token": api_key},
+                timeout=8,
+            )
+            if resp.ok and resp.json().get("success"):
+                user_name = resp.json().get("data", {}).get("name", "")
+                return IntegrationStatus(
+                    name="CRM (Pipedrive)",
+                    configured=True,
+                    ok=True,
+                    message=f"Verbinding geslaagd. Ingelogd als: {user_name}.",
+                )
+            else:
+                err = resp.json().get("error", resp.text)
+                return IntegrationStatus(
+                    name="CRM (Pipedrive)",
+                    configured=True,
+                    ok=False,
+                    message="API token ongeldig of verlopen.",
+                    details=str(err),
+                )
         else:
             return IntegrationStatus(
                 name=f"CRM ({provider.title()})",

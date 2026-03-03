@@ -107,15 +107,28 @@ const SETUP_GUIDES: Record<string, { title: string; steps: string[]; link: strin
     title: "HubSpot CRM instellen",
     steps: [
       "Ga naar https://app.hubspot.com/private-apps",
-      "Klik 'Create a private app'",
-      "Geef naam: 'ItsPeanuts AI'",
+      "Klik 'Create a private app' → geef naam: 'ItsPeanuts AI'",
       "Ga naar Scopes → voeg toe: crm.objects.contacts.write + crm.objects.deals.write + crm.objects.notes.write",
       "Klik 'Create app' → kopieer het token",
+      "Stel in Render in: CRM_PROVIDER = hubspot",
       "Stel in Render in: CRM_API_KEY = [token]",
       "Optioneel: CRM_PORTAL_ID = jouw HubSpot account ID (voor directe contact-links)",
     ],
     link: "https://app.hubspot.com/private-apps",
     linkLabel: "HubSpot Private Apps →",
+  },
+  crm_pipedrive: {
+    title: "Pipedrive CRM instellen",
+    steps: [
+      "Ga naar https://app.pipedrive.com/settings/api",
+      "Kopieer jouw persoonlijke API token",
+      "Stel in Render in: CRM_PROVIDER = pipedrive",
+      "Stel in Render in: CRM_API_KEY = [api token]",
+      "Optioneel: CRM_PORTAL_ID = jouw Pipedrive bedrijfsdomein (bijv. mijnbedrijf) voor directe contact-links",
+      "Kandidaten worden automatisch als 'Person' aangemaakt, sollicitaties als 'Deal'",
+    ],
+    link: "https://app.pipedrive.com/settings/api",
+    linkLabel: "Pipedrive API instellingen →",
   },
 };
 
@@ -132,7 +145,7 @@ export default function IntegratiesPage() {
 
   useEffect(() => {
     if (!token) { router.replace("/employer/login"); return; }
-    if (role && role !== "employer") { router.replace("/candidate"); return; }
+    if (role && role !== "employer" && role !== "admin") { router.replace("/candidate"); return; }
     loadStatus();
   }, [token, role, router]);
 
@@ -254,43 +267,48 @@ export default function IntegratiesPage() {
                 <IntegrationCard integration={data} onRetest={handleRetest} />
 
                 {/* Setup gids — uitklapbaar */}
-                {!data.ok && SETUP_GUIDES[key] && (
-                  <div className="ml-4 mt-1">
-                    <button
-                      onClick={() => setOpenGuide(openGuide === key ? null : key)}
-                      className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1"
-                    >
-                      {openGuide === key ? "▴" : "▾"} {SETUP_GUIDES[key].title}
-                    </button>
+                {!data.ok && (() => {
+                  const guideKeys = key === "crm"
+                    ? ["crm", "crm_pipedrive"]
+                    : [key];
+                  return guideKeys.filter((k) => SETUP_GUIDES[k]).map((guideKey) => (
+                    <div key={guideKey} className="ml-4 mt-1">
+                      <button
+                        onClick={() => setOpenGuide(openGuide === guideKey ? null : guideKey)}
+                        className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                      >
+                        {openGuide === guideKey ? "▴" : "▾"} {SETUP_GUIDES[guideKey].title}
+                      </button>
 
-                    {openGuide === key && (
-                      <div className="mt-2 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                        <ol className="space-y-2 mb-4">
-                          {SETUP_GUIDES[key].steps.map((step, idx) => (
-                            <li key={idx} className="flex gap-3 text-sm text-gray-700">
-                              <span
-                                className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
-                                style={{ background: "#0DA89E" }}
-                              >
-                                {idx + 1}
-                              </span>
-                              <span className="leading-relaxed">{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                        <a
-                          href={SETUP_GUIDES[key].link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90 transition"
-                          style={{ background: "#0DA89E" }}
-                        >
-                          {SETUP_GUIDES[key].linkLabel}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      {openGuide === guideKey && (
+                        <div className="mt-2 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                          <ol className="space-y-2 mb-4">
+                            {SETUP_GUIDES[guideKey].steps.map((step, idx) => (
+                              <li key={idx} className="flex gap-3 text-sm text-gray-700">
+                                <span
+                                  className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
+                                  style={{ background: "#0DA89E" }}
+                                >
+                                  {idx + 1}
+                                </span>
+                                <span className="leading-relaxed">{step}</span>
+                              </li>
+                            ))}
+                          </ol>
+                          <a
+                            href={SETUP_GUIDES[guideKey].link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90 transition"
+                            style={{ background: "#0DA89E" }}
+                          >
+                            {SETUP_GUIDES[guideKey].linkLabel}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ));
+                })()}
               </div>
             ))}
           </div>
