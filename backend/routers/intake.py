@@ -63,6 +63,30 @@ def list_questions(
     return rows
 
 
+@router.delete("/vacancies/{vacancy_id}/questions/{question_id}", status_code=204)
+def delete_question(
+    vacancy_id: int,
+    question_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "employer")
+    q = (
+        db.query(models.IntakeQuestion)
+        .join(models.Vacancy, models.IntakeQuestion.vacancy_id == models.Vacancy.id)
+        .filter(
+            models.IntakeQuestion.id == question_id,
+            models.IntakeQuestion.vacancy_id == vacancy_id,
+            models.Vacancy.employer_id == current_user.id,
+        )
+        .first()
+    )
+    if not q:
+        raise HTTPException(status_code=404, detail="Vraag niet gevonden")
+    db.delete(q)
+    db.commit()
+
+
 # Candidate: antwoorden invullen per application
 @router.post("/applications/{application_id}/answers", response_model=List[schemas.IntakeAnswerOut])
 def submit_answers(

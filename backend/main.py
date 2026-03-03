@@ -22,6 +22,7 @@ from backend.routers import interview_scheduler
 from backend.routers import teams_bot
 from backend.routers import crm_integration
 from backend.routers import integrations_status
+from backend.routers import intake as intake_router
 
 app = FastAPI(title="ItsPeanuts AI", version="1.0.0")
 
@@ -45,6 +46,7 @@ app.include_router(interview_scheduler.router)
 app.include_router(teams_bot.router)
 app.include_router(crm_integration.router)
 app.include_router(integrations_status.router)
+app.include_router(intake_router.router)
 app.include_router(public_router)
 
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")

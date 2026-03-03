@@ -331,6 +331,53 @@ export async function register(email: string, password: string, fullName: string
 }
 
 // ----------------------------
+// Intakevragen endpoints
+// ----------------------------
+
+export type IntakeQuestionOut = {
+  id: number;
+  vacancy_id: number;
+  qtype: string;
+  question: string;
+  options_json: string | null;
+};
+
+export async function listIntakeQuestions(token: string, vacancyId: number): Promise<IntakeQuestionOut[]> {
+  const res = await fetch(`${BASE}/intake/vacancies/${vacancyId}/questions`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Laden mislukt");
+  return data as IntakeQuestionOut[];
+}
+
+export async function createIntakeQuestion(
+  token: string,
+  vacancyId: number,
+  payload: { qtype: string; question: string; options_json?: string }
+): Promise<IntakeQuestionOut> {
+  const res = await fetch(`${BASE}/intake/vacancies/${vacancyId}/questions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Aanmaken mislukt");
+  return data as IntakeQuestionOut;
+}
+
+export async function deleteIntakeQuestion(token: string, vacancyId: number, questionId: number): Promise<void> {
+  const res = await fetch(`${BASE}/intake/vacancies/${vacancyId}/questions/${questionId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new Error(data?.detail || "Verwijderen mislukt");
+  }
+}
+
+// ----------------------------
 // Werkgever applicatie endpoints
 // ----------------------------
 

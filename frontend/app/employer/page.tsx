@@ -7,7 +7,8 @@ import {
   createVacancy, employerVacancies, me, generateVacancy,
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
-  ApplicationWithCandidate, ChatMessage, InterviewSession,
+  listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion,
+  ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
@@ -56,7 +57,7 @@ export default function EmployerPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
-  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy">("vacancies");
+  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions">("vacancies");
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -92,6 +93,15 @@ export default function EmployerPage() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiWebsite, setAiWebsite] = useState("");
   const [aiGenerating, setAiGenerating] = useState(false);
+
+  // Intakevragen state
+  const [questions, setQuestions] = useState<IntakeQuestionOut[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [questionsVacancyId, setQuestionsVacancyId] = useState<number | null>(null);
+  const [newQType, setNewQType] = useState("text");
+  const [newQText, setNewQText] = useState("");
+  const [newQOptions, setNewQOptions] = useState("");
+  const [qSaving, setQSaving] = useState(false);
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
@@ -218,6 +228,52 @@ export default function EmployerPage() {
       setErr(e instanceof Error ? e.message : "AI genereren mislukt");
     } finally {
       setAiGenerating(false);
+    }
+  }
+
+  async function handleOpenQuestions(v: Vacancy) {
+    setQuestionsVacancyId(v.id);
+    setSelectedVacancy(v.id);
+    setView("questions");
+    setQuestionsLoading(true);
+    try {
+      const qs = await listIntakeQuestions(token!, v.id);
+      setQuestions(qs);
+    } catch {
+      setQuestions([]);
+    } finally {
+      setQuestionsLoading(false);
+    }
+  }
+
+  async function handleAddQuestion() {
+    if (!newQText.trim() || !questionsVacancyId || !token) return;
+    setQSaving(true);
+    try {
+      const opts = newQOptions ? newQOptions.split(",").map((s) => s.trim()).filter(Boolean) : [];
+      await createIntakeQuestion(token, questionsVacancyId, {
+        question: newQText.trim(),
+        qtype: newQType,
+        options_json: opts.length ? JSON.stringify(opts) : undefined,
+      });
+      const qs = await listIntakeQuestions(token, questionsVacancyId);
+      setQuestions(qs);
+      setNewQText("");
+      setNewQOptions("");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Vraag toevoegen mislukt");
+    } finally {
+      setQSaving(false);
+    }
+  }
+
+  async function handleDeleteQuestion(qId: number) {
+    if (!questionsVacancyId || !token) return;
+    try {
+      await deleteIntakeQuestion(token, questionsVacancyId, qId);
+      setQuestions((prev) => prev.filter((q) => q.id !== qId));
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Vraag verwijderen mislukt");
     }
   }
 
@@ -421,7 +477,13 @@ export default function EmployerPage() {
                               onClick={() => handleVacancyClick(v)}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors"
                             >
-                              Bekijk sollicitanten
+                              Sollicitanten
+                            </button>
+                            <button
+                              onClick={() => handleOpenQuestions(v)}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
+                            >
+                              Intakevragen
                             </button>
                             <Link
                               href={`/vacatures/${v.id}`}
@@ -774,6 +836,112 @@ export default function EmployerPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </>
+        )}
+        {/* === INTAKEVRAGEN === */}
+        {view === "questions" && (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={() => setView("vacancies")} className="text-sm text-gray-500 hover:text-gray-700">
+                ← Terug
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Intakevragen</h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  {vacancies.find((v) => v.id === questionsVacancyId)?.title ?? ""}
+                </p>
+              </div>
+            </div>
+
+            {/* Bestaande vragen */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl mb-4">
+              <h2 className="text-sm font-bold text-gray-700 mb-4">Huidige vragen</h2>
+              {questionsLoading ? (
+                <p className="text-xs text-gray-400">Laden...</p>
+              ) : questions.length === 0 ? (
+                <p className="text-xs text-gray-400">Nog geen vragen toegevoegd. Voeg hieronder je eerste vraag toe.</p>
+              ) : (
+                <div className="space-y-2">
+                  {questions.map((q, i) => (
+                    <div key={q.id} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-50">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <span className="text-xs font-bold text-gray-400 mt-0.5 w-5 flex-shrink-0">{i + 1}.</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-800">{q.question}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">
+                              {q.qtype}
+                            </span>
+                            {q.options_json && (
+                              <span className="text-xs text-gray-400">
+                                {(JSON.parse(q.options_json) as string[]).join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteQuestion(q.id)}
+                        className="text-xs font-semibold text-red-500 hover:text-red-700 flex-shrink-0 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        Verwijder
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Nieuwe vraag toevoegen */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">
+              <h2 className="text-sm font-bold text-gray-700 mb-4">Vraag toevoegen</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Type</label>
+                  <select
+                    value={newQType}
+                    onChange={(e) => setNewQType(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  >
+                    <option value="text">Tekst (open vraag)</option>
+                    <option value="yes_no">Ja / Nee</option>
+                    <option value="single_choice">Enkele keuze</option>
+                    <option value="multi_choice">Meerdere keuzes</option>
+                    <option value="number">Getal</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Vraag *</label>
+                  <input
+                    value={newQText}
+                    onChange={(e) => setNewQText(e.target.value)}
+                    placeholder='bijv. "Hoeveel jaar ervaring heb je met React?"'
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  />
+                </div>
+                {(newQType === "single_choice" || newQType === "multi_choice") && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Opties (kommagescheiden)
+                    </label>
+                    <input
+                      value={newQOptions}
+                      onChange={(e) => setNewQOptions(e.target.value)}
+                      placeholder='bijv. "0-2 jaar, 2-5 jaar, 5+ jaar"'
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    />
+                  </div>
+                )}
+                <button
+                  onClick={handleAddQuestion}
+                  disabled={qSaving || !newQText.trim()}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90"
+                  style={{ background: "#0f766e" }}
+                >
+                  {qSaving ? "Opslaan..." : "Vraag toevoegen"}
+                </button>
+              </div>
             </div>
           </>
         )}
