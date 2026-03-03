@@ -14,6 +14,7 @@ from backend import models, schemas
 from backend.db import get_db
 from backend.security import create_access_token, hash_password, SECRET_KEY, ALGORITHM
 from backend.services.text_extract import extract_text
+from backend.services.email import send_application_confirmation, send_new_applicant_notification
 
 oauth2_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
@@ -220,6 +221,23 @@ async def apply_to_vacancy(
     )
     db.commit()
 
+    # E-mail notificaties (fouten worden gelogd, niet doorgegooid)
+    employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+    send_application_confirmation(
+        candidate_email=candidate.email,
+        candidate_name=candidate.full_name or candidate.email,
+        vacancy_title=vacancy.title,
+        match_score=match_score,
+    )
+    if employer:
+        send_new_applicant_notification(
+            employer_email=employer.email,
+            candidate_name=candidate.full_name or candidate.email,
+            candidate_email=candidate.email,
+            vacancy_title=vacancy.title,
+            match_score=match_score,
+        )
+
     access_token = create_access_token(subject=str(candidate.id))
 
     return schemas.ApplyResponse(
@@ -336,6 +354,23 @@ async def apply_authenticated(
         summary=explanation,
     ))
     db.commit()
+
+    # E-mail notificaties
+    employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+    send_application_confirmation(
+        candidate_email=current_user.email,
+        candidate_name=current_user.full_name or current_user.email,
+        vacancy_title=vacancy.title,
+        match_score=match_score,
+    )
+    if employer:
+        send_new_applicant_notification(
+            employer_email=employer.email,
+            candidate_name=current_user.full_name or current_user.email,
+            candidate_email=current_user.email,
+            vacancy_title=vacancy.title,
+            match_score=match_score,
+        )
 
     access_token = create_access_token(subject=str(current_user.id))
 

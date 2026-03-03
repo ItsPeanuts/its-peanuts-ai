@@ -18,6 +18,16 @@ services:
       - key: OPENAI_API_KEY
         sync: false   # Handmatig invullen in Render dashboard
 
+      # E-mail notificaties via Resend (resend.com)
+      # Aanmaken via: https://resend.com → API Keys
+      # Domein verifiëren via: Resend → Domains (of gebruik onboarding@resend.dev voor testen)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: ItsPeanuts AI <onboarding@resend.dev>  # Verander naar eigen domein na verificatie
+      - key: FRONTEND_URL
+        value: https://its-peanuts-frontend.onrender.com
+
       # Microsoft Graph API (Teams meeting + agenda uitnodigingen)
       # Aanmaken via: https://portal.azure.com → Azure Active Directory → App registrations
       - key: MS_TENANT_ID
