@@ -9,6 +9,9 @@ from backend.models import Base
 
 Base.metadata.create_all(bind=engine)
 
+from backend.seed import seed_test_data
+seed_test_data()
+
 from backend.routers import auth, employer_vacancies
 from backend.routers import candidate_applications, employer_applications
 from backend.routers import candidate_cv, candidate_analyze
