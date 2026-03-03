@@ -21,17 +21,14 @@ services:
         sync: false   # Handmatig invullen in Render dashboard
 
       # E-mail notificaties via Resend (resend.com)
-      # Aanmaken via: https://resend.com → API Keys
-      # Domein verifiëren via: Resend → Domains (of gebruik onboarding@resend.dev voor testen)
       - key: RESEND_API_KEY
         sync: false
       - key: FROM_EMAIL
-        value: ItsPeanuts AI <onboarding@resend.dev>  # Verander naar eigen domein na verificatie
+        value: ItsPeanuts AI <onboarding@resend.dev>
       - key: FRONTEND_URL
         value: https://its-peanuts-frontend.onrender.com
 
       # Microsoft Graph API (Teams meeting + agenda uitnodigingen)
-      # Aanmaken via: https://portal.azure.com → Azure Active Directory → App registrations
       - key: MS_TENANT_ID
         sync: false
       - key: MS_CLIENT_ID
@@ -39,30 +36,21 @@ services:
       - key: MS_CLIENT_SECRET
         sync: false
       - key: MS_ORGANIZER_EMAIL
-        sync: false   # bijv. lisa@jouwbedrijf.nl
+        sync: false
 
-      # Microsoft Teams Bot (virtuele HR recruiter in Teams)
-      # Aanmaken via: https://dev.botframework.com of Azure Bot Service
+      # Microsoft Teams Bot
       - key: TEAMS_BOT_APP_ID
         sync: false
       - key: TEAMS_BOT_APP_PASSWORD
         sync: false
 
-      # CRM Integratie (HubSpot standaard, ook Salesforce/Pipedrive mogelijk)
-      # HubSpot: https://app.hubspot.com/private-apps → nieuwe Private App → token kopiëren
+      # CRM Integratie (HubSpot standaard)
       - key: CRM_PROVIDER
         value: hubspot
       - key: CRM_API_KEY
-        sync: false   # HubSpot Private App token
+        sync: false
       - key: CRM_PORTAL_ID
-        sync: false   # HubSpot portal ID (voor directe contact-links)
-
-databases:
-  # PostgreSQL database (free tier: 1GB, 90 dagen op free plan)
-  - name: its-peanuts-db
-    plan: free
-    databaseName: its_peanuts
-    user: its_peanuts_user
+        sync: false
 
   # Frontend (Next.js)
   - type: web
@@ -74,3 +62,10 @@ databases:
     envVars:
       - key: NEXT_PUBLIC_API_BASE
         value: https://its-peanuts-backend.onrender.com
+
+databases:
+  # PostgreSQL database (free tier: 1GB, 90 dagen op free plan)
+  - name: its-peanuts-db
+    plan: free
+    databaseName: its_peanuts
+    user: its_peanuts_user
