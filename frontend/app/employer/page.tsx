@@ -7,8 +7,8 @@ import {
   createVacancy, employerVacancies, me, generateVacancy,
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
-  listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion,
-  ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut,
+  listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
+  ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
@@ -57,7 +57,7 @@ export default function EmployerPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
-  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions">("vacancies");
+  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions" | "analytics">("vacancies");
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -102,6 +102,11 @@ export default function EmployerPage() {
   const [newQText, setNewQText] = useState("");
   const [newQOptions, setNewQOptions] = useState("");
   const [qSaving, setQSaving] = useState(false);
+
+  // Intake antwoorden per sollicitatie
+  const [appAnswers, setAppAnswers] = useState<Record<number, { question: string; answer: string }[]>>({});
+  const [appAnswersLoading, setAppAnswersLoading] = useState<Record<number, boolean>>({});
+  const [appAnswersOpen, setAppAnswersOpen] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
@@ -277,6 +282,29 @@ export default function EmployerPage() {
     }
   }
 
+  async function toggleAnswers(app: ApplicationWithCandidate) {
+    const nowOpen = !appAnswersOpen[app.id];
+    setAppAnswersOpen((prev) => ({ ...prev, [app.id]: nowOpen }));
+    if (nowOpen && appAnswers[app.id] === undefined) {
+      setAppAnswersLoading((prev) => ({ ...prev, [app.id]: true }));
+      try {
+        const [answers, qs] = await Promise.all([
+          getApplicationAnswers(token!, app.id),
+          listIntakeQuestions(token!, app.vacancy_id),
+        ]);
+        const paired = answers.map((a: IntakeAnswerOut) => ({
+          question: qs.find((q) => q.id === a.question_id)?.question ?? `Vraag ${a.question_id}`,
+          answer: a.answer,
+        }));
+        setAppAnswers((prev) => ({ ...prev, [app.id]: paired }));
+      } catch {
+        setAppAnswers((prev) => ({ ...prev, [app.id]: [] }));
+      } finally {
+        setAppAnswersLoading((prev) => ({ ...prev, [app.id]: false }));
+      }
+    }
+  }
+
   async function doCreateVacancy(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
@@ -349,6 +377,15 @@ export default function EmployerPage() {
             }`}
           >
             + Vacature plaatsen
+          </button>
+
+          <button
+            onClick={() => setView("analytics")}
+            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              view === "analytics" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Analytics
           </button>
 
           <Link
@@ -662,6 +699,40 @@ export default function EmployerPage() {
                               </div>
                             )}
                           </div>
+
+                          {/* Intake antwoorden */}
+                          <div className="mt-2">
+                            <button
+                              onClick={() => toggleAnswers(app)}
+                              className="text-xs font-medium cursor-pointer hover:opacity-80 flex items-center gap-1"
+                              style={{ color: "#7c3aed", background: "none", border: "none", padding: 0 }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                              </svg>
+                              Intakevragen {appAnswersOpen[app.id] ? "▴" : "▾"}
+                            </button>
+                            {appAnswersOpen[app.id] && (
+                              <div className="mt-2 border border-purple-100 rounded-xl overflow-hidden">
+                                {appAnswersLoading[app.id] ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                ) : !appAnswers[app.id]?.length ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">
+                                    Kandidaat heeft geen antwoorden ingediend.
+                                  </div>
+                                ) : (
+                                  <div className="p-3 space-y-2 bg-purple-50">
+                                    {appAnswers[app.id].map((qa, i) => (
+                                      <div key={i} className="bg-white rounded-lg p-2.5">
+                                        <div className="text-xs font-semibold text-purple-700">{qa.question}</div>
+                                        <div className="text-xs text-gray-700 mt-1">{qa.answer}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Status + acties */}
@@ -945,6 +1016,130 @@ export default function EmployerPage() {
             </div>
           </>
         )}
+
+        {/* === ANALYTICS === */}
+        {view === "analytics" && (() => {
+          const statusCounts = {
+            applied:     applications.filter((a) => a.status === "applied").length,
+            shortlisted: applications.filter((a) => a.status === "shortlisted").length,
+            interview:   applications.filter((a) => a.status === "interview").length,
+            hired:       applications.filter((a) => a.status === "hired").length,
+            rejected:    applications.filter((a) => a.status === "rejected").length,
+          };
+          const maxAppCount = Math.max(...vacancies.map((v) => applications.filter((a) => a.vacancy_id === v.id).length), 1);
+          const scored = applications.filter((a) => a.match_score !== null);
+          const avgScore = scored.length ? Math.round(scored.reduce((s, a) => s + (a.match_score ?? 0), 0) / scored.length) : null;
+          const scoreColor = avgScore !== null ? (avgScore >= 70 ? "#059669" : avgScore >= 40 ? "#d97706" : "#dc2626") : "#9ca3af";
+          return (
+            <>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+                <p className="text-sm text-gray-500 mt-1">Overzicht van alle recruitmentactiviteit</p>
+              </div>
+
+              {/* KPI stats */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Vacatures",        value: vacancies.length,       color: "#0f766e" },
+                  { label: "Sollicitaties",     value: applications.length,    color: "#3b82f6" },
+                  { label: "In interview",      value: statusCounts.interview, color: "#d97706" },
+                  { label: "Gem. matchscore",   value: avgScore !== null ? `${avgScore}%` : "—", color: scoreColor },
+                ].map((s) => (
+                  <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{s.label}</div>
+                    <div className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-5 mb-5">
+                {/* Sollicitaties per vacature */}
+                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Sollicitaties per vacature</h2>
+                  {vacancies.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen vacatures.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {vacancies.map((v) => {
+                        const count = applications.filter((a) => a.vacancy_id === v.id).length;
+                        const pct = Math.round((count / maxAppCount) * 100);
+                        return (
+                          <div key={v.id}>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs text-gray-600 truncate pr-2">{v.title}</span>
+                              <span className="text-xs font-bold text-gray-800 flex-shrink-0">{count}</span>
+                            </div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#0f766e" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status verdeling */}
+                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Status verdeling</h2>
+                  {applications.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen sollicitaties.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {Object.entries(statusCounts).map(([status, count]) => {
+                        const cfg = STATUS_CONFIG[status];
+                        const pct = applications.length ? Math.round((count / applications.length) * 100) : 0;
+                        return (
+                          <div key={status}>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+                              <span className="text-xs font-bold text-gray-700">{count} ({pct}%)</span>
+                            </div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cfg.color }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* AI matchscores per vacature */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h2 className="text-sm font-bold text-gray-700 mb-4">Gem. AI matchscore per vacature</h2>
+                {vacancies.length === 0 ? (
+                  <p className="text-xs text-gray-400">Nog geen vacatures.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {vacancies.map((v) => {
+                      const vacApps = applications.filter((a) => a.vacancy_id === v.id && a.match_score !== null);
+                      const avg = vacApps.length ? Math.round(vacApps.reduce((s, a) => s + (a.match_score ?? 0), 0) / vacApps.length) : null;
+                      const col = avg !== null ? (avg >= 70 ? "#059669" : avg >= 40 ? "#d97706" : "#dc2626") : "#9ca3af";
+                      return (
+                        <div key={v.id} className="flex items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-600 truncate mb-1">{v.title}</div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: avg !== null ? `${avg}%` : "0%", background: col }} />
+                            </div>
+                          </div>
+                          <div className="text-sm font-bold w-12 text-right flex-shrink-0" style={{ color: col }}>
+                            {avg !== null ? `${avg}%` : "—"}
+                          </div>
+                          <div className="text-xs text-gray-400 flex-shrink-0 w-16 text-right">
+                            {vacApps.length} score{vacApps.length !== 1 ? "s" : ""}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
       </main>
 
       {/* ── Interview plannen modal ── */}

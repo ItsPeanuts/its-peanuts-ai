@@ -47,19 +47,23 @@ export default function CandidateDashboard() {
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
     if (role && role !== "candidate") { router.replace("/employer"); return; }
-    (async () => {
+
+    const loadData = async (initial = false) => {
       try {
         const [user, apps] = await Promise.all([me(token), getMyApplications(token)]);
         setUserName(user.full_name || user.email);
         setApplications(apps);
         try { setInterviews(await getMyInterviews(token)); } catch { /* geen gesprekken */ }
       } catch {
-        clearSession();
-        router.replace("/candidate/login");
+        if (initial) { clearSession(); router.replace("/candidate/login"); }
       } finally {
-        setLoading(false);
+        if (initial) setLoading(false);
       }
-    })();
+    };
+
+    loadData(true);
+    const interval = setInterval(() => loadData(false), 30_000);
+    return () => clearInterval(interval);
   }, [router, token, role]);
 
   const stats = {

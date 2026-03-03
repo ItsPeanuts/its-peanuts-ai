@@ -377,6 +377,22 @@ export async function deleteIntakeQuestion(token: string, vacancyId: number, que
   }
 }
 
+export type IntakeAnswerOut = {
+  id: number;
+  application_id: number;
+  question_id: number;
+  answer: string;
+};
+
+export async function getApplicationAnswers(token: string, applicationId: number): Promise<IntakeAnswerOut[]> {
+  const res = await fetch(`${BASE}/intake/applications/${applicationId}/answers`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Laden mislukt");
+  return data as IntakeAnswerOut[];
+}
+
 // ----------------------------
 // Werkgever applicatie endpoints
 // ----------------------------

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getMyApplications, getApplicationAIResult, ApplicationWithDetails, AIResult } from "@/lib/api";
+import { getMyApplications, getApplicationAIResult, getApplicationAnswers, getVacancy, ApplicationWithDetails, AIResult, IntakeAnswerOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -30,6 +30,7 @@ export default function SollicitatieDetailPage() {
 
   const [app, setApp] = useState<ApplicationWithDetails | null>(null);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [intakeAnswers, setIntakeAnswers] = useState<{ question: string; answer: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -53,6 +54,20 @@ export default function SollicitatieDetailPage() {
           setAiResult(ai);
         } catch {
           // Geen AI-resultaat beschikbaar, dat is oké
+        }
+
+        try {
+          const [answers, vacancy] = await Promise.all([
+            getApplicationAnswers(token, appId),
+            getVacancy(found.vacancy_id),
+          ]);
+          const paired = (answers as IntakeAnswerOut[]).map((a) => ({
+            question: vacancy.intake_questions.find((q) => q.id === a.question_id)?.question ?? `Vraag ${a.question_id}`,
+            answer: a.answer,
+          }));
+          setIntakeAnswers(paired);
+        } catch {
+          // Geen intake antwoorden
         }
       } catch (e: unknown) {
         if ((e as Error)?.message?.includes("401") || (e as Error)?.message?.includes("403")) {
@@ -326,6 +341,26 @@ export default function SollicitatieDetailPage() {
                 <div style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Nog geen AI-analyse</div>
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>
                   De AI-analyse wordt uitgevoerd zodra je sollicitatie is verwerkt.
+                </div>
+              </div>
+            )}
+            {/* Intakevragen antwoorden */}
+            {intakeAnswers.length > 0 && (
+              <div style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: "28px",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                marginBottom: 20,
+              }}>
+                <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: "0 0 16px" }}>Jouw antwoorden</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {intakeAnswers.map((qa, i) => (
+                    <div key={i} style={{ background: "#f5f3ff", borderRadius: 10, padding: "12px 16px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginBottom: 6 }}>{qa.question}</div>
+                      <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.5 }}>{qa.answer}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
