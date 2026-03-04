@@ -261,6 +261,50 @@ export default function SollicitatieDetailPage() {
               </a>
             </div>
 
+            {/* Video Interview CTA (premium) */}
+            <div style={{
+              background: "linear-gradient(135deg, #7c3aed18, #6d28d918)",
+              border: "1px solid #7c3aed40",
+              borderRadius: 16,
+              padding: "20px 24px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontSize: 20, flexShrink: 0,
+                }}>🎥</div>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
+                    Video Interview met Lisa
+                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#7c3aed", background: "#ede9fe", padding: "2px 8px", borderRadius: 20 }}>PREMIUM</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                    Doe een video interview met Lisa als realistische AI avatar.
+                  </div>
+                </div>
+              </div>
+              <a
+                href={`/candidate/interview/${appId}`}
+                style={{
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                  color: "#fff", padding: "10px 20px",
+                  borderRadius: 12, fontWeight: 700, fontSize: 14,
+                  textDecoration: "none", whiteSpace: "nowrap",
+                  flexShrink: 0, display: "inline-block",
+                }}
+              >
+                Video interview →
+              </a>
+            </div>
+
             {/* AI Analyse */}
             {aiResult ? (
               <div style={{

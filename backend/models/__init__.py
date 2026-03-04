@@ -8,6 +8,7 @@ from backend.models.ai_result import AIResult
 from backend.models.recruiter_chat import RecruiterChatMessage
 from backend.models.interview_session import InterviewSession
 from backend.models.crm_sync import CRMSync
+from backend.models.virtual_interview import VirtualInterviewSession
 
 __all__ = [
     "Base",
@@ -21,6 +22,7 @@ __all__ = [
     "RecruiterChatMessage",
     "InterviewSession",
     "CRMSync",
+    "VirtualInterviewSession",
 ]
 
 

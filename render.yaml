@@ -50,6 +50,14 @@ services:
       - key: CRM_API_KEY
         sync: false
 
+      # Virtuele AI Recruiter — D-ID Avatar (premium feature)
+      - key: DID_API_KEY
+        sync: false   # Aanmaken op d-id.com
+      - key: DID_PRESENTER_URL
+        sync: false   # Publieke URL van Lisa's foto
+      - key: VIRTUAL_INTERVIEW_THRESHOLD
+        value: "60"   # Minimumscore voor auto-plan 2e gesprek
+
   # Frontend (Next.js)
   - type: web
     name: its-peanuts-frontend

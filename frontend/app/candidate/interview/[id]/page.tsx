@@ -1,0 +1,576 @@
+"use client";
+
+/**
+ * Virtuele AI Recruiter — Video Interview Pagina
+ *
+ * Flow:
+ * 1. Browser verbindt via WebRTC met D-ID (avatar video stream)
+ * 2. Avatar stelt intro + vragen (TTS via D-ID)
+ * 3. Kandidaat antwoordt via microfoon (Web Speech API STT)
+ * 4. Na MAX_QUESTIONS: AI scoort, eventueel 2e gesprek ingepland
+ */
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { getToken } from "@/lib/session";
+
+const BASE =
+  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
+  "https://its-peanuts-backend.onrender.com";
+
+type InterviewStage =
+  | "idle"
+  | "connecting"
+  | "intro"
+  | "listening"
+  | "speaking"
+  | "processing"
+  | "completed"
+  | "error";
+
+interface CompleteResult {
+  score: number;
+  summary: string;
+  followup_scheduled: boolean;
+  teams_join_url: string | null;
+  scheduled_at: string | null;
+}
+
+// Web Speech API type declarations
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+  }
+}
+interface SpeechRecognitionInstance extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+export default function VideoInterviewPage() {
+  const router = useRouter();
+  const params = useParams();
+  const appId = Number(params?.id);
+
+  const token = useRef<string | null>(null);
+  const peerRef = useRef<RTCPeerConnection | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [stage, setStage] = useState<InterviewStage>("idle");
+  const [questionNumber, setQuestionNumber] = useState(0);
+  const [totalQuestions] = useState(4);
+  const [transcript, setTranscript] = useState(""); // live STT transcript
+  const [liveCaption, setLiveCaption] = useState(""); // wat avatar zegt
+  const [result, setResult] = useState<CompleteResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [sessionData, setSessionData] = useState<{
+    did_stream_id: string;
+    did_session_id: string;
+  } | null>(null);
+
+  useEffect(() => {
+    token.current = getToken();
+    if (!token.current) {
+      router.replace("/candidate/login");
+    }
+  }, [router]);
+
+  // ── API helpers ────────────────────────────────────────────────────────────
+
+  const apiPost = useCallback(
+    async (path: string, body?: object) => {
+      const resp = await fetch(`${BASE}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token.current}`,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error(err.detail || "API fout");
+      }
+      return resp.json();
+    },
+    []
+  );
+
+  // ── D-ID / WebRTC ──────────────────────────────────────────────────────────
+
+  const startInterview = useCallback(async () => {
+    setStage("connecting");
+    setErrorMsg("");
+
+    try {
+      // 1. Backend start D-ID stream, geeft SDP offer + ICE servers
+      const data = await apiPost(`/virtual-interview/session/${appId}/start`);
+      setSessionData({ did_stream_id: data.did_stream_id, did_session_id: data.did_session_id });
+
+      // 2. WebRTC peer connection opzetten
+      const pc = new RTCPeerConnection({ iceServers: data.ice_servers });
+      peerRef.current = pc;
+
+      // Avatar video ontvangen
+      pc.ontrack = (event) => {
+        if (videoRef.current && event.streams[0]) {
+          videoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      // ICE candidates doorsturen naar D-ID via backend
+      pc.onicecandidate = async (event) => {
+        if (event.candidate) {
+          try {
+            await apiPost(`/virtual-interview/session/${appId}/ice-candidate`, {
+              candidate: event.candidate.candidate,
+              sdpMid: event.candidate.sdpMid ?? "",
+              sdpMLineIndex: event.candidate.sdpMLineIndex ?? 0,
+            });
+          } catch {
+            // ICE errors zijn niet fataal
+          }
+        }
+      };
+
+      // SDP offer van D-ID verwerken
+      await pc.setRemoteDescription(
+        new RTCSessionDescription({ type: "offer", sdp: data.offer.sdp })
+      );
+
+      // SDP answer genereren en terugsturen
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      await apiPost(`/virtual-interview/session/${appId}/sdp-answer`, {
+        sdp: answer.sdp,
+        type: "answer",
+      });
+
+      // 3. Wacht even tot verbinding stabiel is, dan intro uitspreken
+      setTimeout(async () => {
+        setStage("intro");
+        const introText =
+          `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
+          `Fijn dat u de tijd neemt voor dit video interview. ` +
+          `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
+          `Bent u er klaar voor? Dan beginnen we nu.`;
+        await speakText(introText);
+        // Na intro: eerste vraag
+        const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+          transcript: "[Interview gestart - kandidaat is aanwezig]",
+        });
+        setQuestionNumber(firstAnswer.question_number);
+        await speakText(firstAnswer.next_text);
+        if (!firstAnswer.ended) {
+          setStage("listening");
+          startListening();
+        } else {
+          await finishInterview();
+        }
+      }, 2000);
+    } catch (e: unknown) {
+      setStage("error");
+      setErrorMsg((e as Error).message || "Verbinding mislukt");
+    }
+  }, [appId, apiPost]);
+
+  const speakText = useCallback(
+    async (text: string) => {
+      setStage("speaking");
+      setLiveCaption(text);
+      if (!sessionData) return;
+      try {
+        await apiPost(`/virtual-interview/session/${appId}/speak`, { text });
+        // Schat spreektijd: ~150 woorden/minuut
+        const words = text.split(" ").length;
+        const durationMs = Math.max(2000, (words / 150) * 60000);
+        await new Promise((resolve) => setTimeout(resolve, durationMs));
+      } catch {
+        // Fallback: wacht vast 3 seconden
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+      setLiveCaption("");
+    },
+    [appId, apiPost, sessionData]
+  );
+
+  // ── STT (Web Speech API) ───────────────────────────────────────────────────
+
+  const startListening = useCallback(() => {
+    const SpeechRec =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      setErrorMsg("Spraakherkenning niet ondersteund in deze browser. Gebruik Chrome.");
+      setStage("error");
+      return;
+    }
+
+    setStage("listening");
+    setTranscript("");
+
+    const recognition = new SpeechRec();
+    recognition.lang = "nl-NL";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let full = "";
+      for (let i = 0; i < event.results.length; i++) {
+        full += event.results[i][0].transcript;
+      }
+      setTranscript(full);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error !== "no-speech" && event.error !== "aborted") {
+        setErrorMsg(`Microfoon fout: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      // Automatisch stoppen na stilte — niets doen, gebruiker klikt op "Klaar"
+    };
+
+    recognition.start();
+  }, []);
+
+  const stopListeningAndAnswer = useCallback(async () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    const answer = transcript.trim() || "[Geen antwoord gegeven]";
+    setTranscript("");
+    setStage("processing");
+
+    try {
+      const resp = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+        transcript: answer,
+      });
+      setQuestionNumber(resp.question_number);
+
+      if (resp.ended) {
+        await speakText(resp.next_text);
+        await finishInterview();
+      } else {
+        await speakText(resp.next_text);
+        setStage("listening");
+        startListening();
+      }
+    } catch (e: unknown) {
+      setStage("error");
+      setErrorMsg((e as Error).message || "Fout bij verwerken antwoord");
+    }
+  }, [appId, apiPost, transcript, speakText, startListening]);
+
+  const finishInterview = useCallback(async () => {
+    setStage("processing");
+    try {
+      const res = await apiPost(`/virtual-interview/session/${appId}/complete`);
+      setResult(res);
+      setStage("completed");
+    } catch (e: unknown) {
+      setStage("error");
+      setErrorMsg((e as Error).message || "Fout bij afsluiten interview");
+    }
+  }, [appId, apiPost]);
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+
+  const progressPct = Math.min(100, Math.round((questionNumber / totalQuestions) * 100));
+
+  const stageLabel: Record<InterviewStage, string> = {
+    idle: "Klaar om te starten",
+    connecting: "Verbinding maken...",
+    intro: "Lisa stelt zich voor",
+    listening: "Jouw beurt — spreek nu",
+    speaking: "Lisa spreekt...",
+    processing: "Even geduld...",
+    completed: "Interview afgerond",
+    error: "Fout opgetreden",
+  };
+
+  const scoreColor = result
+    ? result.score >= 70 ? "#059669" : result.score >= 50 ? "#d97706" : "#dc2626"
+    : "#6b7280";
+  const scoreBg = result
+    ? result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2"
+    : "#f3f4f6";
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (stage === "completed" && result) {
+    return (
+      <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: "40px 36px", maxWidth: 520, width: "100%", textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>
+            {result.score >= 70 ? "🎉" : result.score >= 50 ? "👍" : "📋"}
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
+            Interview afgerond
+          </h1>
+          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 28 }}>
+            Bedankt voor je tijd. Je resultaat:
+          </p>
+
+          {/* Score cirkel */}
+          <div style={{
+            width: 90, height: 90, borderRadius: "50%",
+            background: scoreBg, border: `4px solid ${scoreColor}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 20px",
+            fontSize: 26, fontWeight: 900, color: scoreColor,
+          }}>
+            {result.score}
+          </div>
+
+          <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 24, textAlign: "left" }}>
+            {result.summary}
+          </p>
+
+          {result.followup_scheduled && result.scheduled_at ? (
+            <div style={{ background: "#d1fae5", borderRadius: 12, padding: "16px 20px", marginBottom: 24, textAlign: "left" }}>
+              <div style={{ fontWeight: 700, color: "#065f46", marginBottom: 6, fontSize: 15 }}>
+                ✅ 2e gesprek ingepland!
+              </div>
+              <div style={{ fontSize: 13, color: "#065f46" }}>
+                {new Date(result.scheduled_at).toLocaleString("nl-NL", {
+                  weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+                })}
+              </div>
+              {result.teams_join_url && (
+                <a
+                  href={result.teams_join_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "block", marginTop: 10, color: "#0284c7", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+                >
+                  Teams meeting openen →
+                </a>
+              )}
+            </div>
+          ) : (
+            <div style={{ background: "#f3f4f6", borderRadius: 12, padding: "14px 16px", marginBottom: 24, fontSize: 13, color: "#6b7280", textAlign: "left" }}>
+              Je hoort spoedig van de werkgever.
+            </div>
+          )}
+
+          <button
+            onClick={() => router.push(`/candidate/sollicitaties/${appId}`)}
+            style={{
+              background: "#0DA89E", color: "#fff", border: "none",
+              borderRadius: 12, padding: "12px 28px", fontSize: 15,
+              fontWeight: 700, cursor: "pointer", width: "100%",
+            }}
+          >
+            Terug naar sollicitatie
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      {/* Header */}
+      <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
+          ItsPeanuts AI · Video Interview
+        </div>
+        <div style={{
+          background: stage === "listening" ? "#22c55e" : stage === "speaking" ? "#3b82f6" : stage === "connecting" ? "#f59e0b" : "#6b7280",
+          color: "#fff", borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 700,
+          transition: "background 0.3s",
+        }}>
+          {stageLabel[stage]}
+        </div>
+      </div>
+
+      {/* Hoofd layout: avatar links, kandidaat rechts */}
+      <div style={{ width: "100%", maxWidth: 900, display: "flex", gap: 16, marginBottom: 16 }}>
+        {/* Avatar video */}
+        <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }}
+          />
+          {/* Placeholder als video niet actief is */}
+          {stage === "idle" || stage === "connecting" ? (
+            <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: "50%",
+                background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 32, fontWeight: 800, color: "#fff",
+              }}>L</div>
+              <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · AI Recruiter</div>
+              {stage === "connecting" && (
+                <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
+              )}
+            </div>
+          ) : null}
+
+          {/* Live ondertiteling */}
+          {liveCaption && (
+            <div style={{
+              position: "absolute", bottom: 16, left: 16, right: 16,
+              background: "rgba(0,0,0,0.75)", color: "#fff",
+              padding: "10px 14px", borderRadius: 10, fontSize: 14, lineHeight: 1.5,
+              backdropFilter: "blur(4px)",
+            }}>
+              {liveCaption}
+            </div>
+          )}
+
+          {/* Lisa label */}
+          <div style={{
+            position: "absolute", top: 12, left: 12,
+            background: "rgba(0,0,0,0.6)", color: "#fff",
+            padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+          }}>
+            Lisa — AI Recruiter
+          </div>
+
+          {/* Spreekt indicator */}
+          {stage === "speaking" && (
+            <div style={{
+              position: "absolute", top: 12, right: 12,
+              background: "#3b82f6", color: "#fff",
+              padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+              animation: "pulse 1s infinite",
+            }}>
+              🎙 Spreekt
+            </div>
+          )}
+        </div>
+
+        {/* Rechter kolom: kandidaat + controls */}
+        <div style={{ width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Kandidaat webcam placeholder */}
+          <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+            <div style={{ textAlign: "center", color: "#4b5563" }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
+              <div style={{ fontSize: 12 }}>Jij</div>
+            </div>
+          </div>
+
+          {/* Voortgang */}
+          <div style={{ background: "#1c1f26", borderRadius: 12, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>Voortgang</span>
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>
+                {questionNumber}/{totalQuestions}
+              </span>
+            </div>
+            <div style={{ background: "#374151", borderRadius: 6, height: 6, overflow: "hidden" }}>
+              <div style={{
+                background: "#0DA89E", height: "100%",
+                width: `${progressPct}%`, borderRadius: 6,
+                transition: "width 0.4s ease",
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Onderin: transcript + controls */}
+      <div style={{ width: "100%", maxWidth: 900, background: "#1c1f26", borderRadius: 16, padding: 20 }}>
+        {/* Live transcript */}
+        {stage === "listening" && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
+              🎤 Jouw antwoord (live):
+            </div>
+            <div style={{
+              background: "#0f1117", borderRadius: 10, padding: "12px 14px",
+              fontSize: 14, color: transcript ? "#f9fafb" : "#4b5563",
+              lineHeight: 1.6, minHeight: 50,
+            }}>
+              {transcript || "Spreek nu..."}
+            </div>
+          </div>
+        )}
+
+        {/* Foutmelding */}
+        {stage === "error" && (
+          <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 14 }}>
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Actie knoppen */}
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          {stage === "idle" && (
+            <button
+              onClick={startInterview}
+              style={{
+                background: "#0DA89E", color: "#fff", border: "none",
+                borderRadius: 12, padding: "14px 40px", fontSize: 16,
+                fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              Interview starten
+            </button>
+          )}
+
+          {stage === "listening" && (
+            <button
+              onClick={stopListeningAndAnswer}
+              style={{
+                background: "#22c55e", color: "#fff", border: "none",
+                borderRadius: 12, padding: "14px 32px", fontSize: 15,
+                fontWeight: 700, cursor: "pointer",
+                boxShadow: "0 0 20px rgba(34,197,94,0.4)",
+              }}
+            >
+              ✓ Klaar met antwoorden
+            </button>
+          )}
+
+          {(stage === "processing" || stage === "connecting") && (
+            <div style={{ color: "#9ca3af", fontSize: 14, padding: "14px 0" }}>
+              Even geduld...
+            </div>
+          )}
+
+          {stage === "error" && (
+            <button
+              onClick={() => { setStage("idle"); setErrorMsg(""); }}
+              style={{
+                background: "#374151", color: "#fff", border: "none",
+                borderRadius: 12, padding: "12px 24px", fontSize: 14,
+                fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              Opnieuw proberen
+            </button>
+          )}
+        </div>
+
+        {/* Browser ondersteuning waarschuwing */}
+        {stage === "idle" && typeof window !== "undefined" && !window.SpeechRecognition && !window.webkitSpeechRecognition && (
+          <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "#f59e0b" }}>
+            ⚠ Gebruik Google Chrome voor de beste spraakherkenning
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
