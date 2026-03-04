@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getToken, getRole } from "@/lib/session";
 import { createCheckoutSession } from "@/lib/api";
@@ -74,7 +74,7 @@ const PLANS = [
   },
 ];
 
-export default function AbonnementenPage() {
+function AbonnementenContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = useMemo(() => getToken(), []);
@@ -347,5 +347,13 @@ export default function AbonnementenPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AbonnementenPage() {
+  return (
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontFamily: "system-ui" }}><div style={{ color: "#6b7280" }}>Laden...</div></div>}>
+      <AbonnementenContent />
+    </Suspense>
   );
 }
