@@ -60,10 +60,10 @@ router = APIRouter(prefix="/virtual-interview", tags=["virtual-interview"])
 # ── Config ────────────────────────────────────────────────────────────────────
 
 DID_API_KEY = os.getenv("DID_API_KEY", "")
-DID_PRESENTER_URL = os.getenv(
-    "DID_PRESENTER_URL",
-    "https://its-peanuts-backend.onrender.com/static/lisa-avatar.jpg",
-)
+# DID_PRESENTER_ID: gebruik een D-ID preset avatar ID (bijv. "amber_professional-bJKPVHAO_female")
+# DID_PRESENTER_URL: fallback als je een eigen foto-URL wilt gebruiken
+DID_PRESENTER_ID = os.getenv("DID_PRESENTER_ID", "")
+DID_PRESENTER_URL = os.getenv("DID_PRESENTER_URL", "")
 SCORE_THRESHOLD = int(os.getenv("VIRTUAL_INTERVIEW_THRESHOLD", "60"))
 MAX_QUESTIONS = 4
 
@@ -139,9 +139,16 @@ def _did_create_stream() -> dict:
     """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug."""
     if not DID_API_KEY:
         raise HTTPException(status_code=503, detail="DID_API_KEY is niet geconfigureerd.")
+    # Gebruik presenter_id (D-ID preset avatar) of source_url (eigen foto)
+    if DID_PRESENTER_ID:
+        body = {"presenter_id": DID_PRESENTER_ID}
+    elif DID_PRESENTER_URL:
+        body = {"source_url": DID_PRESENTER_URL}
+    else:
+        raise HTTPException(status_code=503, detail="DID_PRESENTER_ID of DID_PRESENTER_URL is niet geconfigureerd.")
     resp = http.post(
         f"{DID_BASE}/talks/streams",
-        json={"source_url": DID_PRESENTER_URL},
+        json=body,
         headers=_did_headers(),
         timeout=15,
     )
