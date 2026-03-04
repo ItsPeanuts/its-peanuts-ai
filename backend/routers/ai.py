@@ -348,7 +348,7 @@ def generate_vacancy(
     current_user: models.User = Depends(_optional_user),
 ) -> GenerateVacancyResponse:
     """Genereer een complete vacaturetekst op basis van een korte omschrijving."""
-    if not current_user or current_user.role != "employer":
+    if not current_user or current_user.role not in ("employer", "admin"):
         raise HTTPException(status_code=403, detail="Alleen werkgevers kunnen vacatures genereren")
 
     c = ensure_client()

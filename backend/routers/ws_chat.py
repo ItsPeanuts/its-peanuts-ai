@@ -110,6 +110,28 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                 "ended": ended,
             })
 
+        # Geen geschiedenis → genereer Lisa's openingsbericht automatisch
+        if not history_msgs:
+            try:
+                ctx = _get_application_context(app_id, db)
+                system_prompt = _build_system_prompt(ctx)
+                opening_instruction = (
+                    f"Stel jezelf voor als Lisa en bedank {ctx['candidate_name']} kort voor de sollicitatie "
+                    f"op {ctx['vacancy_title']}. Vertel dat je een paar vragen hebt. "
+                    f"Stel dan meteen je eerste vraag over de gevonden aandachtspunten."
+                )
+                response_text = _call_ai(system_prompt, [{"role": "user", "content": opening_instruction}])
+                opening_msg = _save_message(app_id, "recruiter", response_text, db)
+                recruiter_count = 1
+                await manager.send(ws, {
+                    "id": opening_msg.id,
+                    "role": "recruiter",
+                    "content": response_text,
+                    "ended": False,
+                })
+            except Exception:
+                pass
+
         # Wacht op berichten van kandidaat
         while True:
             try:
