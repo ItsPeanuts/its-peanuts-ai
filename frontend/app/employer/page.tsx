@@ -54,6 +54,7 @@ export default function EmployerPage() {
   const role = useMemo(() => getRole(), []);
 
   const [userEmail, setUserEmail] = useState("");
+  const [userPlan, setUserPlan] = useState<string>("gratis");
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
@@ -116,6 +117,7 @@ export default function EmployerPage() {
       try {
         const [u, vacs] = await Promise.all([me(token), employerVacancies(token)]);
         setUserEmail(u.email || "");
+        setUserPlan((u as { plan?: string }).plan || "gratis");
         setVacancies(vacs || []);
         const apps = await getEmployerApplications(token);
         setApplications(apps);
@@ -756,6 +758,26 @@ export default function EmployerPage() {
                                 );
                               })}
                             </div>
+                          )}
+
+                          {/* Virtuele Lisa knop (altijd zichtbaar, plan-check) */}
+                          {userPlan === "premium" ? (
+                            <a
+                              href={`/candidate/interview/${app.id}`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "#fff", textDecoration: "none" }}
+                            >
+                              🎥 Video interview
+                            </a>
+                          ) : (
+                            <a
+                              href="/abonnementen#premium"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+                              style={{ background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe", textDecoration: "none" }}
+                              title="Upgrade naar Premium voor virtuele video interviews"
+                            >
+                              🎥 Video interview <span style={{ fontSize: 10, background: "#7c3aed", color: "#fff", borderRadius: 10, padding: "1px 5px", marginLeft: 2 }}>PRO</span>
+                            </a>
                           )}
 
                           {/* Interview plannen knop */}

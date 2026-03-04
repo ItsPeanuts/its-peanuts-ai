@@ -187,6 +187,37 @@ def start_conversation(
     if app.candidate_id != current_user.id:
         raise HTTPException(status_code=403, detail="Geen toegang tot deze sollicitatie")
 
+    # Controleer plan-limiet voor chatbot Lisa (gratis = max 2 nieuwe chats)
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+    if vacancy:
+        employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+        if employer and (employer.plan or "gratis") == "gratis":
+            # Tel unieke chats voor deze werkgever (via vacatures)
+            employer_app_ids = (
+                db.query(models.Application.id)
+                .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
+                .filter(models.Vacancy.employer_id == employer.id)
+                .subquery()
+            )
+            started_chats = (
+                db.query(models.RecruiterChatMessage)
+                .filter(
+                    models.RecruiterChatMessage.application_id.in_(employer_app_ids),
+                    models.RecruiterChatMessage.role == "recruiter",
+                )
+                .with_entities(models.RecruiterChatMessage.application_id)
+                .distinct()
+                .count()
+            )
+            if started_chats >= 2:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        "Je Gratis-abonnement staat maximaal 2 chatgesprekken toe. "
+                        "Upgrade naar Normaal voor onbeperkt gebruik van chatbot Lisa."
+                    ),
+                )
+
     # Controleer of de chat al gestart is
     existing = (
         db.query(models.RecruiterChatMessage)

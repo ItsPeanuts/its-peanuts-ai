@@ -381,6 +381,16 @@ def start_session(
     if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
+    # Controleer of de werkgever een premium abonnement heeft
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+    if vacancy:
+        employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+        if employer and employer.plan != "premium" and current_user.role != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Virtuele Lisa is alleen beschikbaar voor werkgevers met een Premium abonnement.",
+            )
+
     # Controleer of er al een actieve sessie is
     existing = (
         db.query(models.VirtualInterviewSession)

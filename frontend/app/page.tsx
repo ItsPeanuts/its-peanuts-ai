@@ -186,8 +186,44 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* ── Pricing teaser ── */}
       <section style={{ background: "#fff", borderTop: "1px solid #f3f4f6", padding: "60px 24px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
+              Transparante prijzen, voor elk budget
+            </h2>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>
+              Start gratis en schaal op wanneer je klaar bent.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {[
+              { name: "Gratis", price: "€0", color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb", items: ["1 vacature", "2× chatbot Lisa", "AI pre-screening"] },
+              { name: "Normaal", price: "€250/mnd", color: "#0A66C2", bg: "#eff6ff", border: "#bfdbfe", items: ["10 vacatures", "Onbeperkt chatbot Lisa", "Teams interview planning"] },
+              { name: "Premium", price: "€1.000/mnd", color: "#7c3aed", bg: "#faf5ff", border: "#c4b5fd", items: ["Onbeperkt vacatures", "Onbeperkt chatbot Lisa", "Virtuele Lisa (AI avatar)"] },
+            ].map((p) => (
+              <div key={p.name} style={{ background: p.bg, border: `1.5px solid ${p.border}`, borderRadius: 14, padding: "22px 20px" }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: p.color, marginBottom: 4 }}>{p.name}</div>
+                <div style={{ fontWeight: 900, fontSize: 22, color: "#111827", marginBottom: 14 }}>{p.price}</div>
+                {p.items.map((item) => (
+                  <div key={item} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#374151", marginBottom: 6 }}>
+                    <span style={{ color: p.color, fontWeight: 700 }}>✓</span> {item}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 24 }}>
+            <Link href="/abonnementen" style={{ fontSize: 14, color: "#0A66C2", fontWeight: 600, textDecoration: "none" }}>
+              Bekijk alle details en functies →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", padding: "60px 24px" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
             Klaar om te starten?

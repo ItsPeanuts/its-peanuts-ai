@@ -51,7 +51,7 @@ def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(g
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
         role="employer",
-        plan="normal",
+        plan="gratis",
     )
     db.add(user)
     db.commit()

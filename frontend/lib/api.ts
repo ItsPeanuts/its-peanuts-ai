@@ -575,3 +575,18 @@ export async function getIntegrationsStatus(token: string): Promise<Integrations
   return data as IntegrationsStatusResponse;
 }
 
+export async function createCheckoutSession(
+  token: string,
+  plan: string,
+  interval: "month" | "year",
+): Promise<{ checkout_url: string }> {
+  const res = await fetch(`${BASE}/billing/checkout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ plan, interval }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Checkout aanmaken mislukt");
+  return data as { checkout_url: string };
+}
+

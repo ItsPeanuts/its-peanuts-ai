@@ -28,12 +28,16 @@ def seed_test_data() -> None:
                 full_name="Test Werkgever",
                 hashed_password=hash_password(TEST_PASSWORD),
                 role="employer",
+                plan="normaal",
             )
             db.add(werkgever)
             db.commit()
             db.refresh(werkgever)
             print(f"[seed] werkgever aangemaakt: {WERKGEVER_EMAIL}")
         else:
+            if werkgever.plan not in ("gratis", "normaal", "premium"):
+                werkgever.plan = "normaal"
+                db.commit()
             print(f"[seed] werkgever bestaat al: {WERKGEVER_EMAIL}")
 
         # ── 2. Test kandidaat ──────────────────────────────────────────

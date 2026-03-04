@@ -62,6 +62,20 @@ services:
       - key: VIRTUAL_INTERVIEW_THRESHOLD
         value: "60"   # Minimumscore voor auto-plan 2e gesprek
 
+      # Stripe betalingen (abonnementen)
+      - key: STRIPE_SECRET_KEY
+        sync: false   # sk_live_... of sk_test_... van stripe.com/apikeys
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false   # whsec_... van stripe.com/webhooks
+      - key: STRIPE_PRICE_NORMAAL_MAAND
+        sync: false   # Stripe Price ID voor Normaal maandelijks
+      - key: STRIPE_PRICE_NORMAAL_JAAR
+        sync: false   # Stripe Price ID voor Normaal jaarlijks
+      - key: STRIPE_PRICE_PREMIUM_MAAND
+        sync: false   # Stripe Price ID voor Premium maandelijks
+      - key: STRIPE_PRICE_PREMIUM_JAAR
+        sync: false   # Stripe Price ID voor Premium jaarlijks
+
   # Frontend (Next.js)
   - type: web
     name: its-peanuts-frontend

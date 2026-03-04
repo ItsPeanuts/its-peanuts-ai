@@ -109,6 +109,21 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePatchPlan(userId: number, newPlan: string) {
+    if (!token) return;
+    try {
+      const updated = await apiFetch(token, `/admin/users/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ plan: newPlan }),
+      });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
+      setMsg("Plan bijgewerkt");
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Bijwerken mislukt");
+    }
+  }
+
   async function handleDeleteUser(userId: number, email: string) {
     if (!token || !confirm(`Weet je zeker dat je ${email} wilt verwijderen?`)) return;
     try {
@@ -266,7 +281,21 @@ export default function AdminPage() {
                             <option value="admin">admin</option>
                           </select>
                         </td>
-                        <td className="px-5 py-3 text-gray-400 text-xs">{u.plan || "—"}</td>
+                        <td className="px-5 py-3">
+                          <select
+                            value={u.plan || "gratis"}
+                            onChange={(e) => handlePatchPlan(u.id, e.target.value)}
+                            className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300"
+                            style={{
+                              color: u.plan === "premium" ? "#7c3aed" : u.plan === "normaal" ? "#0A66C2" : "#6b7280",
+                              background: u.plan === "premium" ? "#ede9fe" : u.plan === "normaal" ? "#dbeafe" : "#f3f4f6",
+                            }}
+                          >
+                            <option value="gratis">gratis</option>
+                            <option value="normaal">normaal</option>
+                            <option value="premium">premium</option>
+                          </select>
+                        </td>
                         <td className="px-5 py-3 text-right">
                           <button
                             onClick={() => handleDeleteUser(u.id, u.email)}
