@@ -102,7 +102,7 @@ def me(current_user: models.User = Depends(get_current_user)):
 
 
 def require_role(user: models.User, role: str):
-    if user.role != role:
+    if user.role != role and user.role != "admin":
         raise HTTPException(status_code=403, detail=f"{role.capitalize()} role required")
 
 
