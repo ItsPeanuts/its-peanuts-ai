@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getVacancy, PublicVacancyDetail } from "@/lib/api";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const AVATAR_COLORS = ["bg-teal-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500", "bg-indigo-500", "bg-red-500"];
 function avatarColor(id: number) { return AVATAR_COLORS[id % AVATAR_COLORS.length]; }
@@ -75,6 +77,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <PublicNav />
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-gray-500">
@@ -229,6 +232,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
           </aside>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

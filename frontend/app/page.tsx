@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const CATEGORIES = [
   "IT & Software", "Finance", "Design", "Marketing", "Engineering", "HR",
@@ -34,6 +36,7 @@ export default function HomePage() {
 
   return (
     <div>
+      <PublicNav />
 
       {/* ── HERO ── */}
       <section className="bg-white py-20 border-b border-gray-100">
@@ -242,6 +245,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <PublicFooter />
     </div>
   );
 }

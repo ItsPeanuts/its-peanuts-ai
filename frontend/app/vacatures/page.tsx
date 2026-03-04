@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
+import PublicNav from "@/components/PublicNav";
+import PublicFooter from "@/components/PublicFooter";
 
 const JOB_TYPES = [
   { label: "Fulltime",       value: "fulltime" },
@@ -68,6 +70,7 @@ export default function VacaturesPage() {
 
   return (
     <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
+      <PublicNav />
 
       {/* ── Zoekbalk header ── */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "24px 0" }}>
@@ -238,6 +241,7 @@ export default function VacaturesPage() {
           )}
         </main>
       </div>
+      <PublicFooter />
     </div>
   );
 }

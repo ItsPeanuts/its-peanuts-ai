@@ -184,7 +184,7 @@ def start_conversation(
     app = db.query(models.Application).filter(models.Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
-    if app.candidate_id != current_user.id:
+    if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang tot deze sollicitatie")
 
     # Controleer plan-limiet voor chatbot Lisa (gratis = max 2 nieuwe chats)
@@ -271,7 +271,7 @@ def send_message(
     app = db.query(models.Application).filter(models.Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
-    if app.candidate_id != current_user.id:
+    if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang tot deze sollicitatie")
 
     if not payload.content.strip():
