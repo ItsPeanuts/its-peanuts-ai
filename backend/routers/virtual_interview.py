@@ -142,67 +142,61 @@ class SessionStatusOut(BaseModel):
 
 # ── D-ID helpers ──────────────────────────────────────────────────────────────
 
-def _resolve_source_url() -> str:
+def _parse_clip_ids() -> tuple[str, str]:
     """
-    Geeft de source_url voor D-ID Streaming terug.
-
-    Prioriteit:
-    1. DID_PRESENTER_URL — eigen foto-URL (heeft voorrang)
-    2. DID_PRESENTER_ID + DID_DRIVER_ID — construeer D-ID Studio avatar image URL
-       → https://clips-presenters.d-id.com/v2/{NAME}/{ID}/{DRIVER}/image
-
-    Als de gebruiker de volledige talkingPreview URL heeft geplakt als DID_PRESENTER_ID
-    (bijv. https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4),
-    worden de IDs automatisch geëxtraheerd uit die URL.
+    Extraheer presenter_id en driver_id.
+    Als de gebruiker de volledige talkingPreview URL heeft geplakt,
+    worden de IDs automatisch uit de URL geëxtraheerd.
     """
     from urllib.parse import urlparse
 
-    if DID_PRESENTER_URL:
-        return DID_PRESENTER_URL
-
     presenter_id = DID_PRESENTER_ID
     driver_id = DID_DRIVER_ID
-    presenter_name = DID_PRESENTER_NAME
 
-    # Als de gebruiker de volledige URL heeft geplakt i.p.v. alleen het ID
     if presenter_id and presenter_id.startswith("http"):
         try:
             parts = urlparse(presenter_id).path.strip("/").split("/")
             # patroon: v2/{name}/{presenter_id}/{driver_id}/talkingPreview.mp4
             if len(parts) >= 4 and parts[0] == "v2":
-                presenter_name = parts[1]
                 presenter_id = parts[2]
                 driver_id = parts[3]
         except Exception:
             pass
 
-    if presenter_id and driver_id:
-        return (
-            f"https://clips-presenters.d-id.com/v2/"
-            f"{presenter_name}/{presenter_id}/{driver_id}/image"
-        )
-
-    return ""
+    return presenter_id, driver_id
 
 
 def _did_create_stream() -> dict:
-    """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug."""
+    """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug.
+
+    Body prioriteit:
+    1. DID_PRESENTER_URL → {"source_url": url}  (eigen publieke foto)
+    2. DID_PRESENTER_ID + DID_DRIVER_ID → {"presenter_type": "clip", "presenter_id": ..., "driver_id": ...}
+       (D-ID Studio avatar zoals Amber — IDs worden ook uit talkingPreview URL gehaald)
+    """
     if not DID_API_KEY:
         raise HTTPException(status_code=503, detail="DID_API_KEY is niet geconfigureerd.")
 
-    source_url = _resolve_source_url()
-    if not source_url:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "D-ID avatar niet geconfigureerd. Stel in via Render dashboard → Environment:\n"
-                "  DID_PRESENTER_ID  (ID of volledige talkingPreview URL uit D-ID Studio)\n"
-                "  DID_DRIVER_ID     (driver ID, of automatisch uit talkingPreview URL)\n"
-                "Of: DID_PRESENTER_URL = publieke URL naar een eigen foto."
-            ),
-        )
-
-    body: dict = {"source_url": source_url}
+    if DID_PRESENTER_URL:
+        body: dict = {"source_url": DID_PRESENTER_URL}
+    else:
+        presenter_id, driver_id = _parse_clip_ids()
+        if presenter_id and driver_id:
+            body = {
+                "presenter_type": "clip",
+                "presenter_id": presenter_id,
+                "driver_id": driver_id,
+            }
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "D-ID avatar niet geconfigureerd. Stel in via Render dashboard → Environment:\n"
+                    "  DID_PRESENTER_ID  (talkingPreview URL of alleen het ID uit D-ID Studio)\n"
+                    "  DID_DRIVER_ID     (driver ID, of automatisch uit talkingPreview URL)\n"
+                    "Of: DID_PRESENTER_URL = publieke URL naar een eigen foto."
+                ),
+            )
 
     resp = http.post(
         f"{DID_BASE}/talks/streams",

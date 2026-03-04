@@ -33,65 +33,82 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const seenIds = useRef<Set<number>>(new Set());
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCount = useRef(0);
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
 
-    const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}`);
-    wsRef.current = ws;
+    function connect() {
+      const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}`);
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      setConnected(true);
-    };
+      ws.onopen = () => {
+        setConnected(true);
+        setError("");
+        retryCount.current = 0;
+      };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
 
-        if (data.error) {
-          if (data.ended) {
-            setChatEnded(true);
-          } else {
-            setError(data.error);
+          if (data.error) {
+            if (data.ended) {
+              setChatEnded(true);
+            } else {
+              setError(data.error);
+            }
+            return;
           }
-          return;
+
+          // Deduplicate by id
+          if (data.id && seenIds.current.has(data.id)) return;
+          if (data.id) seenIds.current.add(data.id);
+
+          const msg: Message = {
+            id: data.id ?? Date.now(),
+            role: data.role as "recruiter" | "candidate",
+            content: data.content,
+          };
+
+          setMessages((prev) => [...prev, msg]);
+
+          if (data.role === "recruiter") setSending(false);
+          if (data.ended) setChatEnded(true);
+
+          setLoading(false);
+        } catch {
+          // ignore malformed frames
         }
+      };
 
-        // Deduplicate by id
-        if (data.id && seenIds.current.has(data.id)) return;
-        if (data.id) seenIds.current.add(data.id);
+      ws.onerror = () => {
+        // Retry tot 5x met oplopende wachttijd (cold start Render.com)
+        if (retryCount.current < 5) {
+          const delay = Math.min(2000 * (retryCount.current + 1), 10000);
+          retryCount.current += 1;
+          setError(`Verbinding maken... (poging ${retryCount.current}/5)`);
+          retryRef.current = setTimeout(connect, delay);
+        } else {
+          setError("Verbinding mislukt. Ververs de pagina of probeer het later opnieuw.");
+          setLoading(false);
+        }
+      };
 
-        const msg: Message = {
-          id: data.id ?? Date.now(),
-          role: data.role as "recruiter" | "candidate",
-          content: data.content,
-        };
+      ws.onclose = (e) => {
+        setConnected(false);
+        if (e.code === 4001) {
+          router.replace("/candidate/login");
+        }
+      };
+    }
 
-        setMessages((prev) => [...prev, msg]);
-
-        if (data.role === "recruiter") setSending(false);
-        if (data.ended) setChatEnded(true);
-
-        setLoading(false);
-      } catch {
-        // ignore malformed frames
-      }
-    };
-
-    ws.onerror = () => {
-      setError("Verbinding mislukt. Ververs de pagina.");
-      setLoading(false);
-    };
-
-    ws.onclose = (e) => {
-      setConnected(false);
-      if (e.code === 4001) {
-        router.replace("/candidate/login");
-      }
-    };
+    connect();
 
     return () => {
-      ws.close();
+      if (retryRef.current) clearTimeout(retryRef.current);
+      wsRef.current?.close();
     };
   }, [router, token, appId]);
 
