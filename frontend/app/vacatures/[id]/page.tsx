@@ -16,6 +16,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
   {
     id: 1, title: "Senior Frontend Developer", location: "Amsterdam", hours_per_week: "40",
     salary_range: "€4.500 - €6.000", created_at: "2026-02-20T10:00:00",
+    interview_type: "both", employer_plan: "premium",
     description: "Wij zoeken een ervaren Senior Frontend Developer die ons team komt versterken. Je werkt aan uitdagende projecten voor grote klanten in de fintech- en e-commerce sector.\n\nJe bent verantwoordelijk voor het bouwen van schaalbare, performante React-applicaties. Je werkt nauw samen met designers, backend-developers en product managers.\n\nWat we bieden:\n- Uitdagend werk in een innovatief team\n- Marktconform salaris + bonusregeling\n- 25 vakantiedagen\n- Thuiswerkmogelijkheden\n- Goede pensioenregeling",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar ervaring heb je met React?", options_json: null },
@@ -26,6 +27,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
   {
     id: 2, title: "Product Manager", location: "Rotterdam", hours_per_week: "40",
     salary_range: "€5.000 - €7.000", created_at: "2026-02-19T09:00:00",
+    interview_type: "both", employer_plan: "premium",
     description: "Als Product Manager bij ons bedrijf ben jij de verbindende schakel tussen techniek, design en business. Je definieert de productstrategie en zorgt voor een succesvolle uitvoering.\n\nJe werkt nauw samen met engineering teams en stakeholders om de beste producten op de markt te brengen.",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar PM-ervaring heb je?", options_json: null },
