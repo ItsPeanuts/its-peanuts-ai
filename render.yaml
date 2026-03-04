@@ -54,7 +54,9 @@ services:
       - key: DID_API_KEY
         sync: false   # Aanmaken op d-id.com → API sectie
       - key: DID_PRESENTER_ID
-        sync: false   # D-ID preset avatar ID (bijv. amber_professional-bJKPVHAO_female)
+        sync: false   # Uit talkingPreview URL: clips-presenters.d-id.com/v2/Amber/[ID]/...
+      - key: DID_DRIVER_ID
+        sync: false   # Uit talkingPreview URL: .../[PRESENTER_ID]/[DRIVER_ID]/talkingPreview.mp4
       - key: DID_PRESENTER_URL
         sync: false   # Alternatief: eigen foto-URL (als DID_PRESENTER_ID niet ingesteld)
       - key: VIRTUAL_INTERVIEW_THRESHOLD
