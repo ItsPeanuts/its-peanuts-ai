@@ -104,6 +104,7 @@ export async function createVacancy(
     hours_per_week?: string;
     salary_range?: string;
     description?: string;
+    interview_type?: string;
   }
 ) {
   const res = await fetch(`${BASE}/employer/vacancies`, {
@@ -143,6 +144,8 @@ export type IntakeQuestion = {
 
 export type PublicVacancyDetail = PublicVacancy & {
   intake_questions: IntakeQuestion[];
+  interview_type: string;   // "chat" | "virtual" | "both"
+  employer_plan: string;    // "gratis" | "normaal" | "premium"
 };
 
 // ----------------------------

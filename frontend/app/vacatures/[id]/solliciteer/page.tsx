@@ -49,7 +49,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   const vacancyId = parseInt(params.id);
   const token = useMemo(() => getToken(), []);
   const role  = useMemo(() => getRole(), []);
-  const isLoggedIn = !!token && role === "candidate";
+  const isLoggedIn = !!token && (role === "candidate" || role === "admin");
 
   const [vacancy, setVacancy]     = useState<PublicVacancyDetail | null>(null);
   const [hasCV, setHasCV]         = useState(false);
@@ -394,25 +394,54 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
 
                 {/* Bevestiging */}
                 <div style={{ background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#134e4a", marginBottom: 20, textAlign: "left" }}>
-                  Je sollicitatie (#{result.application_id}) is ingediend. De werkgever neemt contact op.
+                  Je sollicitatie (#{result.application_id}) is ingediend. De werkgever neemt contact op als je bent geselecteerd.
                 </div>
 
-                {/* Lisa CTA — prominent */}
-                <div style={{ background: "#fff", border: "2px solid #0f766e", borderRadius: 14, padding: "20px 24px", marginBottom: 24 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>L</div>
-                    <div style={{ textAlign: "left" }}>
-                      <div style={{ fontWeight: 700, color: "#111827", fontSize: 14 }}>Wil je met Lisa chatten?</div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Lisa is onze AI-recruiter — een kort gesprek vergroot je kansen.</div>
+                {/* Interview opties */}
+                {(() => {
+                  const iType = vacancy?.interview_type ?? "both";
+                  const ePlan = vacancy?.employer_plan ?? "gratis";
+                  const showChat    = iType === "chat" || iType === "both";
+                  const showVirtual = (iType === "virtual" || iType === "both") && ePlan === "premium";
+                  return (
+                    <div style={{ marginBottom: 24 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12, textAlign: "left" }}>
+                        Volgende stap — start je gesprek met Lisa:
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {showChat && (
+                          <Link
+                            href={`/candidate/sollicitaties/${result.application_id}/chat`}
+                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "#0f766e", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
+                          >
+                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🗨️</div>
+                            <div style={{ textAlign: "left" }}>
+                              <div>Chat met Lisa</div>
+                              <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.85 }}>AI-recruiter stelt je 3 vragen</div>
+                            </div>
+                          </Link>
+                        )}
+                        {showVirtual && (
+                          <Link
+                            href={`/candidate/interview/${result.application_id}`}
+                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
+                          >
+                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎥</div>
+                            <div style={{ textAlign: "left" }}>
+                              <div>Video interview met Lisa</div>
+                              <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.85 }}>AI avatar stelt je 4 vragen live</div>
+                            </div>
+                          </Link>
+                        )}
+                        {!showChat && !showVirtual && (
+                          <div style={{ padding: "14px 20px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, fontSize: 13, color: "#6b7280" }}>
+                            De werkgever neemt contact met je op voor een gesprek.
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <Link
-                    href={`/candidate/sollicitaties/${result.application_id}/chat`}
-                    style={{ display: "block", width: "100%", textAlign: "center", padding: "11px 0", background: "#0f766e", color: "#fff", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", boxSizing: "border-box" }}
-                  >
-                    Chat met Lisa
-                  </Link>
-                </div>
+                  );
+                })()}
 
                 {/* Secundaire acties */}
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>

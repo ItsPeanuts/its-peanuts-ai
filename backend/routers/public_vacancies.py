@@ -69,6 +69,8 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
         .all()
     )
 
+    employer_plan = (vacancy.employer.plan or "gratis") if vacancy.employer else "gratis"
+
     return schemas.PublicVacancyDetail(
         id=vacancy.id,
         title=vacancy.title,
@@ -77,6 +79,8 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
         salary_range=vacancy.salary_range,
         description=vacancy.description,
         created_at=vacancy.created_at,
+        interview_type=vacancy.interview_type or "both",
+        employer_plan=employer_plan,
         intake_questions=[
             schemas.IntakeQuestionPublic(
                 id=q.id,
@@ -259,7 +263,7 @@ async def apply_authenticated(
     """Solliciteren als ingelogde kandidaat — gebruikt bestaand account + meest recente CV."""
     if not current_user:
         raise HTTPException(status_code=401, detail="Niet ingelogd")
-    if current_user.role != "candidate":
+    if current_user.role not in ("candidate", "admin"):
         raise HTTPException(status_code=403, detail="Alleen kandidaten kunnen solliciteren")
 
     # Vacature ophalen

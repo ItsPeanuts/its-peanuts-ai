@@ -24,6 +24,9 @@ class Vacancy(Base):
     source_content_type = Column(String(100), nullable=True)
     extracted_text = Column(Text, nullable=True)
 
+    interview_type = Column(String(20), nullable=False, server_default="both")
+    # "chat" | "virtual" | "both"
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     employer = relationship("User", back_populates="vacancies", lazy="joined")

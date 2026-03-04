@@ -88,6 +88,7 @@ export default function EmployerPage() {
   const [hours, setHours] = useState("");
   const [salary, setSalary] = useState("");
   const [desc, setDesc] = useState("");
+  const [vacancyInterviewType, setVacancyInterviewType] = useState<"chat" | "virtual" | "both">("both");
   const [creating, setCreating] = useState(false);
 
   // AI vacature generator
@@ -312,10 +313,10 @@ export default function EmployerPage() {
     setCreating(true);
     setErr("");
     try {
-      await createVacancy(token, { title, location, hours_per_week: hours, salary_range: salary, description: desc });
+      await createVacancy(token, { title, location, hours_per_week: hours, salary_range: salary, description: desc, interview_type: vacancyInterviewType });
       const vacs = await employerVacancies(token);
       setVacancies(vacs || []);
-      setTitle(""); setLocation(""); setHours(""); setSalary(""); setDesc("");
+      setTitle(""); setLocation(""); setHours(""); setSalary(""); setDesc(""); setVacancyInterviewType("both");
       setMsg("Vacature aangemaakt!");
       setView("vacancies");
     } catch (e: unknown) {
@@ -917,6 +918,45 @@ export default function EmployerPage() {
                     placeholder="Beschrijf de functie, eisen en wat jouw bedrijf te bieden heeft..."
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none" />
                 </div>
+                {/* Sollicitatiegesprek type */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    Sollicitatiegesprek met Lisa
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: "chat",    label: "🗨️ Chatbot",       desc: "Alle plannen" },
+                      { value: "virtual", label: "🎥 Virtueel",       desc: "Alleen Premium" },
+                      { value: "both",    label: "✅ Beide opties",   desc: "Kandidaat kiest" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setVacancyInterviewType(opt.value)}
+                        style={{
+                          padding: "10px 8px",
+                          borderRadius: 10,
+                          border: `2px solid ${vacancyInterviewType === opt.value ? "#0f766e" : "#e5e7eb"}`,
+                          background: vacancyInterviewType === opt.value ? "#f0fdf4" : "#fff",
+                          cursor: "pointer",
+                          textAlign: "center" as const,
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 700, color: vacancyInterviewType === opt.value ? "#0f766e" : "#374151" }}>
+                          {opt.label}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {(vacancyInterviewType === "virtual" || vacancyInterviewType === "both") && userPlan !== "premium" && (
+                    <p style={{ fontSize: 12, color: "#d97706", marginTop: 8 }}>
+                      Virtuele Lisa vereist een Premium abonnement.{" "}
+                      <a href="/abonnementen#premium" style={{ color: "#0f766e", fontWeight: 600 }}>Upgrade</a>
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex gap-3 pt-2">
                   <button type="submit" disabled={creating}
                     className="px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90"

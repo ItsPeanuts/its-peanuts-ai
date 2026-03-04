@@ -65,6 +65,7 @@ def create_vacancy(
         hours_per_week=payload.hours_per_week,
         salary_range=payload.salary_range,
         description=payload.description,
+        interview_type=payload.interview_type or "both",
     )
     db.add(vacancy)
     db.commit()

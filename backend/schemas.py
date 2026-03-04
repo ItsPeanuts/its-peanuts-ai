@@ -49,13 +49,14 @@ class VacancyBase(BaseModel):
 
 
 class VacancyCreate(VacancyBase):
-    pass
+    interview_type: str = "both"  # "chat" | "virtual" | "both"
 
 
 class VacancyOut(VacancyBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
     employer_id: int
+    interview_type: str = "both"
 
     source_type: Optional[str] = None
     source_filename: Optional[str] = None
@@ -174,6 +175,8 @@ class IntakeQuestionPublic(BaseModel):
 
 class PublicVacancyDetail(PublicVacancyOut):
     intake_questions: List[IntakeQuestionPublic] = []
+    interview_type: str = "both"   # "chat" | "virtual" | "both"
+    employer_plan: str = "gratis"  # "gratis" | "normaal" | "premium"
 
 
 class ApplyResponse(BaseModel):
