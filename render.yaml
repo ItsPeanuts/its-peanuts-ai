@@ -16,6 +16,12 @@ services:
       - key: BOOTSTRAP_TOKEN
         value: Peanuts-Setup-2025!
 
+      # Admin account (automatisch aangemaakt bij opstart)
+      - key: ADMIN_EMAIL
+        value: admin@itspeanuts.ai
+      - key: ADMIN_PASSWORD
+        sync: false   # Stel in via Render dashboard — default: AdminPeanuts2025!
+
       # OpenAI (Lisa AI recruiter)
       - key: OPENAI_API_KEY
         sync: false   # Handmatig invullen in Render dashboard

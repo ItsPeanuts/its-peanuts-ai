@@ -1,13 +1,16 @@
 """
 Seed: vaste test-accounts en een demo-vacature worden aangemaakt bij
 elke opstart als ze er nog niet zijn. Zo gaan ze niet verloren na een
-Render-herstart (SQLite is ephemeral).
+Render-herstart.
 
 Inloggegevens:
+  Admin     : zie ADMIN_EMAIL + ADMIN_PASSWORD env vars
+              (default: admin@itspeanuts.ai / AdminPeanuts2025!)
   Werkgever : werkgever@test.nl  / TestPeanuts2025!
   Kandidaat : kandidaat@test.nl  / TestPeanuts2025!
 """
 
+import os
 from backend.db import SessionLocal
 from backend import models
 from backend.security import hash_password
@@ -16,10 +19,34 @@ WERKGEVER_EMAIL = "werkgever@test.nl"
 KANDIDAAT_EMAIL = "kandidaat@test.nl"
 TEST_PASSWORD   = "TestPeanuts2025!"
 
+# Admin account — configureerbaar via env vars zodat het wachtwoord veilig is
+ADMIN_EMAIL    = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "AdminPeanuts2025!")
+
 
 def seed_test_data() -> None:
     db = SessionLocal()
     try:
+        # ── 0. Admin account ───────────────────────────────────────────
+        admin = db.query(models.User).filter_by(email=ADMIN_EMAIL).first()
+        if not admin:
+            admin = models.User(
+                email=ADMIN_EMAIL,
+                full_name="Admin",
+                hashed_password=hash_password(ADMIN_PASSWORD),
+                role="admin",
+            )
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+            print(f"[seed] admin aangemaakt: {ADMIN_EMAIL}")
+        else:
+            # Altijd wachtwoord bijwerken zodat env var wijziging direct effect heeft
+            admin.hashed_password = hash_password(ADMIN_PASSWORD)
+            admin.role = "admin"
+            db.commit()
+            print(f"[seed] admin bijgewerkt: {ADMIN_EMAIL}")
+
         # ── 1. Test werkgever ──────────────────────────────────────────
         werkgever = db.query(models.User).filter_by(email=WERKGEVER_EMAIL).first()
         if not werkgever:
