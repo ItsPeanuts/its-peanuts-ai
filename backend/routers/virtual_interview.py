@@ -60,11 +60,14 @@ router = APIRouter(prefix="/virtual-interview", tags=["virtual-interview"])
 # ── Config ────────────────────────────────────────────────────────────────────
 
 DID_API_KEY = os.getenv("DID_API_KEY", "")
-# Clips presenter (D-ID studio avatars zoals Amber):
-#   DID_PRESENTER_ID = IVHRp0a96W  (uit de talkingPreview URL)
-#   DID_DRIVER_ID    = rrGsQrSVpu  (uit de talkingPreview URL)
+# D-ID Studio avatar (bijv. Amber):
+#   DID_PRESENTER_NAME = Amber
+#   DID_PRESENTER_ID   = IVHRp0a96W  (uit talkingPreview URL)
+#   DID_DRIVER_ID      = rrGsQrSVpu  (uit talkingPreview URL)
+# → image URL: https://clips-presenters.d-id.com/v2/{NAME}/{ID}/{DRIVER}/image
 # Of een eigen foto:
-#   DID_PRESENTER_URL = publieke jpg/png URL
+#   DID_PRESENTER_URL = publieke jpg/png URL (heeft voorrang)
+DID_PRESENTER_NAME = os.getenv("DID_PRESENTER_NAME", "Amber")
 DID_PRESENTER_ID = os.getenv("DID_PRESENTER_ID", "")
 DID_DRIVER_ID = os.getenv("DID_DRIVER_ID", "")
 DID_PRESENTER_URL = os.getenv("DID_PRESENTER_URL", "")
@@ -143,20 +146,30 @@ def _did_create_stream() -> dict:
     """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug.
 
     De D-ID Streaming API (/talks/streams) vereist altijd 'source_url'.
-    Stel DID_PRESENTER_URL in op een publieke foto-URL van de avatar.
+    Prioriteit:
+    1. DID_PRESENTER_URL — eigen foto-URL (heeft voorrang als ingesteld)
+    2. DID_PRESENTER_ID + DID_DRIVER_ID — construeer D-ID Studio avatar image URL
+       → https://clips-presenters.d-id.com/v2/{DID_PRESENTER_NAME}/{ID}/{DRIVER}/image
     """
     if not DID_API_KEY:
         raise HTTPException(status_code=503, detail="DID_API_KEY is niet geconfigureerd.")
 
-    # D-ID Streams API vereist source_url (publieke foto-URL van de presenter).
-    # DID_PRESENTER_ID wordt NIET ondersteund door de Streams API (alleen Clips API).
-    source_url = DID_PRESENTER_URL
-    if not source_url:
+    # Bepaal source_url: eigen foto OF D-ID Studio avatar image
+    if DID_PRESENTER_URL:
+        source_url = DID_PRESENTER_URL
+    elif DID_PRESENTER_ID and DID_DRIVER_ID:
+        source_url = (
+            f"https://clips-presenters.d-id.com/v2/"
+            f"{DID_PRESENTER_NAME}/{DID_PRESENTER_ID}/{DID_DRIVER_ID}/image"
+        )
+    else:
         raise HTTPException(
             status_code=503,
             detail=(
-                "Stel DID_PRESENTER_URL in via Render dashboard → Environment → "
-                "DID_PRESENTER_URL = publieke URL naar een foto van de avatar (bijv. LinkedIn-foto of eigen jpg)."
+                "D-ID avatar niet geconfigureerd. Stel in via Render dashboard → Environment:\n"
+                "  DID_PRESENTER_ID  (uit D-ID Studio talkingPreview URL)\n"
+                "  DID_DRIVER_ID     (uit D-ID Studio talkingPreview URL)\n"
+                "Of: DID_PRESENTER_URL = publieke URL naar een eigen foto."
             ),
         )
 

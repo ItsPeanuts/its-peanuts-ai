@@ -59,12 +59,14 @@ services:
       # Virtuele AI Recruiter — D-ID Avatar (premium feature)
       - key: DID_API_KEY
         sync: false   # Aanmaken op d-id.com → API sectie
+      - key: DID_PRESENTER_NAME
+        value: "Amber"  # Naam van D-ID Studio avatar (bijv. Amber)
       - key: DID_PRESENTER_ID
         sync: false   # Uit talkingPreview URL: clips-presenters.d-id.com/v2/Amber/[ID]/...
       - key: DID_DRIVER_ID
         sync: false   # Uit talkingPreview URL: .../[PRESENTER_ID]/[DRIVER_ID]/talkingPreview.mp4
       - key: DID_PRESENTER_URL
-        sync: false   # Alternatief: eigen foto-URL (als DID_PRESENTER_ID niet ingesteld)
+        sync: false   # Eigen foto-URL (heeft voorrang boven DID_PRESENTER_ID als ingesteld)
       - key: VIRTUAL_INTERVIEW_THRESHOLD
         value: "60"   # Minimumscore voor auto-plan 2e gesprek
 
