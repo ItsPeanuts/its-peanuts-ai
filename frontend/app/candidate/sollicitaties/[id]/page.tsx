@@ -36,7 +36,7 @@ export default function SollicitatieDetailPage() {
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
-    if (role && role !== "candidate") { router.replace("/employer"); return; }
+    if (role && role !== "candidate" && role !== "admin") { router.replace("/employer"); return; }
     if (!appId) { router.replace("/candidate/sollicitaties"); return; }
 
     (async () => {

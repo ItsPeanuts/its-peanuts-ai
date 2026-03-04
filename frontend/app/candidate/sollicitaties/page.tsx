@@ -51,7 +51,7 @@ export default function SollicitatiePage() {
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
-    if (role && role !== "candidate") { router.replace("/employer"); return; }
+    if (role && role !== "candidate" && role !== "admin") { router.replace("/employer"); return; }
 
     getMyApplications(token)
       .then(setApps)

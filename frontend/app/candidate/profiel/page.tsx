@@ -52,7 +52,7 @@ export default function ProfielPage() {
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
-    if (role && role !== "candidate") { router.replace("/employer"); return; }
+    if (role && role !== "candidate" && role !== "admin") { router.replace("/employer"); return; }
     (async () => {
       try {
         const [u, cvList, apps] = await Promise.all([

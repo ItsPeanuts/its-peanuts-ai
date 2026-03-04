@@ -26,7 +26,7 @@ export default function CVBeheerPage() {
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
-    if (role && role !== "candidate") { router.replace("/employer"); return; }
+    if (role && role !== "candidate" && role !== "admin") { router.replace("/employer"); return; }
 
     getCandidateCVs(token)
       .then(setCvs)
