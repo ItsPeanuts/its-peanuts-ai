@@ -140,18 +140,28 @@ class SessionStatusOut(BaseModel):
 # ── D-ID helpers ──────────────────────────────────────────────────────────────
 
 def _did_create_stream() -> dict:
-    """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug."""
+    """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug.
+
+    De D-ID Streaming API (/talks/streams) vereist altijd 'source_url'.
+    Stel DID_PRESENTER_URL in op een publieke foto-URL van de avatar.
+    """
     if not DID_API_KEY:
         raise HTTPException(status_code=503, detail="DID_API_KEY is niet geconfigureerd.")
-    # Gebruik presenter_id (D-ID studio avatar) of source_url (eigen foto)
-    if DID_PRESENTER_ID:
-        body: dict = {"presenter_id": DID_PRESENTER_ID}
-        if DID_DRIVER_ID:
-            body["driver_id"] = DID_DRIVER_ID
-    elif DID_PRESENTER_URL:
-        body = {"source_url": DID_PRESENTER_URL}
-    else:
-        raise HTTPException(status_code=503, detail="DID_PRESENTER_ID of DID_PRESENTER_URL is niet geconfigureerd.")
+
+    # D-ID Streams API vereist source_url (publieke foto-URL van de presenter).
+    # DID_PRESENTER_ID wordt NIET ondersteund door de Streams API (alleen Clips API).
+    source_url = DID_PRESENTER_URL
+    if not source_url:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Stel DID_PRESENTER_URL in via Render dashboard → Environment → "
+                "DID_PRESENTER_URL = publieke URL naar een foto van de avatar (bijv. LinkedIn-foto of eigen jpg)."
+            ),
+        )
+
+    body: dict = {"source_url": source_url}
+
     resp = http.post(
         f"{DID_BASE}/talks/streams",
         json=body,

@@ -75,17 +75,17 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
     try:
         # Auth
         user = _auth_user(token, db)
-        if not user or user.role != "candidate":
+        if not user or user.role not in ("candidate", "admin"):
             await ws.accept()
             await ws.send_text(json.dumps({"error": "Niet geautoriseerd"}))
             await ws.close(code=4001)
             return
 
-        # Verificeer dat sollicitatie van deze kandidaat is
-        app = db.query(models.Application).filter(
-            models.Application.id == app_id,
-            models.Application.candidate_id == user.id,
-        ).first()
+        # Verificeer dat sollicitatie van deze kandidaat is (admin mag alles)
+        app_query = db.query(models.Application).filter(models.Application.id == app_id)
+        if user.role != "admin":
+            app_query = app_query.filter(models.Application.candidate_id == user.id)
+        app = app_query.first()
         if not app:
             await ws.accept()
             await ws.send_text(json.dumps({"error": "Sollicitatie niet gevonden"}))
