@@ -72,3 +72,16 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/debug/routes")
+async def debug_routes():
+    """Tijdelijk endpoint: geeft alle geregistreerde routes terug voor diagnose."""
+    from fastapi.routing import APIRoute, APIWebSocketRoute
+    routes = []
+    for r in app.router.routes:
+        if hasattr(r, "path"):
+            routes.append({
+                "path": r.path,
+                "type": "websocket" if isinstance(r, APIWebSocketRoute) else "http",
+            })
+    return {"count": len(routes), "routes": routes}
