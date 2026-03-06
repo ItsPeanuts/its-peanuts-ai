@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -85,3 +85,12 @@ async def debug_routes():
                 "type": "websocket" if isinstance(r, APIWebSocketRoute) else "http",
             })
     return {"count": len(routes), "routes": routes}
+
+
+@app.websocket("/live-chat/{app_id}")
+async def live_chat_alias(ws: WebSocket, app_id: int, token: str = ""):
+    """
+    Alias WebSocket endpoint — zelfde logica als /ws/chat/{app_id}.
+    Gebruikt een ander pad om te werken als Cloudflare /ws/* paden blokkeert.
+    """
+    await ws_chat.ws_chat(ws, app_id, token)
