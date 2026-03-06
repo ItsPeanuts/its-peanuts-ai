@@ -7,6 +7,7 @@ De kandidaat stuurt berichten en ontvangt Lisa's antwoord streaming.
 Endpoint: WS /ws/chat/{app_id}?token=<jwt>
 """
 
+import asyncio
 import json
 import os
 from typing import Dict
@@ -120,7 +121,9 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                     f"op {ctx['vacancy_title']}. Vertel dat je een paar vragen hebt. "
                     f"Stel dan meteen je eerste vraag over de gevonden aandachtspunten."
                 )
-                response_text = _call_ai(system_prompt, [{"role": "user", "content": opening_instruction}])
+                response_text = await asyncio.to_thread(
+                    _call_ai, system_prompt, [{"role": "user", "content": opening_instruction}]
+                )
                 opening_msg = _save_message(app_id, "recruiter", response_text, db)
                 recruiter_count = 1
                 await manager.send(ws, {
@@ -169,7 +172,7 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                     conv_history.append({"role": "user", "content": closing})
                     ended = True
 
-                response_text = _call_ai(system_prompt, conv_history)
+                response_text = await asyncio.to_thread(_call_ai, system_prompt, conv_history)
                 recruiter_msg = _save_message(app_id, "recruiter", response_text, db)
 
                 await manager.send(ws, {
