@@ -22,6 +22,9 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://its-peanuts-backend.onrender.com";
 
+const AMBER_VIDEO_URL =
+  "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";
+
 type InterviewStage =
   | "idle"
   | "connecting"
@@ -125,13 +128,37 @@ export default function VideoInterviewPage() {
         return;
       }
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "nl-NL";
-      utterance.rate = 0.92;
-      utterance.pitch = 1.05;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => setTimeout(resolve, 2000);
-      window.speechSynthesis.speak(utterance);
+
+      const doSpeak = () => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "nl-NL";
+
+        // Selecteer beste Nederlandse vrouwenstem
+        const voices = window.speechSynthesis.getVoices();
+        const nlVoices = voices.filter((v) => v.lang.startsWith("nl"));
+        const best =
+          nlVoices.find((v) => /lotte|fenna|ellen/i.test(v.name)) ||   // MS Neural NL vrouw
+          nlVoices.find((v) => /google/i.test(v.name)) ||               // Google NL
+          nlVoices.find((v) => /female|vrouw/i.test(v.name)) ||         // overige vrouwelijk
+          nlVoices[0] ||
+          null;
+        if (best) utterance.voice = best;
+
+        utterance.rate = 0.90;
+        utterance.pitch = 1.1;
+        utterance.volume = 1.0;
+        utterance.onend = () => resolve();
+        utterance.onerror = () => setTimeout(resolve, 2000);
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length > 0) {
+        doSpeak();
+      } else {
+        // Wacht op stemmen (async laden)
+        window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
+        setTimeout(doSpeak, 600); // fallback timeout
+      }
     });
   }, []);
 
@@ -440,7 +467,7 @@ export default function VideoInterviewPage() {
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
-          ItsPeanuts AI · {isTTSMode ? "Audio Interview" : "Video Interview"}
+          ItsPeanuts AI · Video Interview
         </div>
         <div style={{
           background: stage === "listening" ? "#22c55e" : stage === "speaking" ? "#3b82f6" : stage === "connecting" ? "#f59e0b" : "#6b7280",
@@ -455,30 +482,35 @@ export default function VideoInterviewPage() {
       <div style={{ width: "100%", maxWidth: 900, display: "flex", gap: 16, marginBottom: 16 }}>
         {/* Avatar / video */}
         <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* D-ID WebRTC video */}
           {!isTTSMode && (
             <video ref={videoRef} autoPlay playsInline
               style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
           )}
 
-          {/* Avatar placeholder (idle/connecting/TTS modus) */}
-          {(stage === "idle" || stage === "connecting" || isTTSMode) && (
-            <div style={{ position: isTTSMode ? "relative" : "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          {/* TTS modus: Amber avatar video (loopt continu als visuele aanwezigheid) */}
+          {isTTSMode && (
+            <video
+              loop autoPlay muted playsInline
+              style={{
+                width: "100%", height: "100%", objectFit: "cover", borderRadius: 16,
+                opacity: (stage === "speaking" || stage === "intro") ? 1 : 0.82,
+                transition: "opacity 0.5s",
+              }}
+              src={AMBER_VIDEO_URL}
+            />
+          )}
+
+          {/* Idle/connecting placeholder — alleen D-ID modus vóór verbinding */}
+          {!isTTSMode && (stage === "idle" || stage === "connecting") && (
+            <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               <div style={{
-                width: isTTSMode ? 120 : 80,
-                height: isTTSMode ? 120 : 80,
-                borderRadius: "50%",
-                background: stage === "speaking" ? "linear-gradient(135deg, #3b82f6, #0DA89E)" : "linear-gradient(135deg, #0DA89E, #0891b2)",
+                width: 80, height: 80, borderRadius: "50%",
+                background: "linear-gradient(135deg, #0DA89E, #0891b2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: isTTSMode ? 48 : 32, fontWeight: 800, color: "#fff",
-                boxShadow: stage === "speaking" ? "0 0 30px rgba(59,130,246,0.6)" : "none",
-                transition: "box-shadow 0.3s",
+                fontSize: 32, fontWeight: 800, color: "#fff",
               }}>L</div>
               <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · AI Recruiter</div>
-              {isTTSMode && (
-                <div style={{ fontSize: 11, color: "#6b7280", background: "#374151", padding: "3px 10px", borderRadius: 20 }}>
-                  Audio modus
-                </div>
-              )}
               {stage === "connecting" && (
                 <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
               )}
@@ -498,11 +530,9 @@ export default function VideoInterviewPage() {
           )}
 
           {/* Lisa label */}
-          {!isTTSMode && (
-            <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-              Lisa — AI Recruiter
-            </div>
-          )}
+          <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+            Lisa — AI Recruiter
+          </div>
 
           {/* Spreekt indicator */}
           {stage === "speaking" && (

@@ -62,9 +62,9 @@ services:
       - key: DID_PRESENTER_NAME
         value: "Amber"  # Naam van D-ID Studio avatar (bijv. Amber)
       - key: DID_PRESENTER_ID
-        sync: false   # Uit talkingPreview URL: clips-presenters.d-id.com/v2/Amber/[ID]/...
+        value: IVHRp0a96W   # Amber presenter ID (talkingPreview URL segment)
       - key: DID_DRIVER_ID
-        sync: false   # Uit talkingPreview URL: .../[PRESENTER_ID]/[DRIVER_ID]/talkingPreview.mp4
+        value: rrGsQrSVpu   # Amber driver ID (talkingPreview URL segment)
       - key: DID_PRESENTER_URL
         sync: false   # Eigen foto-URL (heeft voorrang boven DID_PRESENTER_ID als ingesteld)
       - key: VIRTUAL_INTERVIEW_THRESHOLD
