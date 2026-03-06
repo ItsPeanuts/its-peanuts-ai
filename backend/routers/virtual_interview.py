@@ -212,14 +212,27 @@ def _did_create_stream() -> dict:
                 ),
             )
 
-    resp = http.post(
-        f"{DID_BASE}/talks/streams",
-        json=body,
-        headers=_did_headers(),
-        timeout=15,
-    )
-    if not resp.ok:
-        raise HTTPException(status_code=502, detail=f"D-ID stream aanmaken mislukt: {resp.text}")
+    try:
+        resp = http.post(
+            f"{DID_BASE}/talks/streams",
+            json=body,
+            headers=_did_headers(),
+            timeout=15,
+        )
+    except Exception:
+        resp = None
+
+    if resp is None or not resp.ok:
+        # D-ID API mislukt (ongeldige key, avatar-config niet ingesteld, netwerk) →
+        # val terug op browser TTS zodat het interview toch werkt.
+        return {
+            "id": TTS_FALLBACK_STREAM_ID,
+            "session_id": TTS_FALLBACK_STREAM_ID,
+            "offer": {"sdp": "", "type": "offer"},
+            "ice_servers": [],
+            "tts_mode": True,
+        }
+
     return resp.json()
 
 

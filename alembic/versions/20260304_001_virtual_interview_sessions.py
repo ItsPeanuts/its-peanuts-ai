@@ -6,6 +6,8 @@ Create Date: 2026-03-04
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
+
 
 revision = "b2c3d4e5f6a1"
 down_revision = "a1b2c3d4e5f0"
@@ -14,6 +16,12 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Idempotent: sla over als tabel al bestaat (bijv. aangemaakt door create_all)
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    if "virtual_interview_sessions" in inspector.get_table_names():
+        return
+
     op.create_table(
         "virtual_interview_sessions",
         sa.Column("id", sa.Integer(), nullable=False),

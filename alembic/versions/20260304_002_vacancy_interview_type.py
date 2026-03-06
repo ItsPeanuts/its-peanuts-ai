@@ -6,6 +6,7 @@ Create Date: 2026-03-04
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = "c3d4e5f6a7b2"
 down_revision = "b2c3d4e5f6a1"
@@ -14,6 +15,13 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Idempotent: sla over als kolom al bestaat
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    cols = [c["name"] for c in inspector.get_columns("vacancies")]
+    if "interview_type" in cols:
+        return
+
     op.add_column(
         "vacancies",
         sa.Column(
