@@ -3,11 +3,15 @@
 /**
  * Virtuele AI Recruiter — Video Interview Pagina
  *
- * Flow:
+ * Flow (D-ID modus — wanneer DID_API_KEY geconfigureerd is):
  * 1. Browser verbindt via WebRTC met D-ID (avatar video stream)
  * 2. Avatar stelt intro + vragen (TTS via D-ID)
  * 3. Kandidaat antwoordt via microfoon (Web Speech API STT)
  * 4. Na MAX_QUESTIONS: AI scoort, eventueel 2e gesprek ingepland
+ *
+ * Fallback (TTS modus — wanneer D-ID NIET geconfigureerd is):
+ * Hetzelfde conversatieflow maar met browser Web Speech API SpeechSynthesis
+ * voor de stem van Lisa i.p.v. D-ID video avatar.
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -69,14 +73,16 @@ export default function VideoInterviewPage() {
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ttsModeRef = useRef(false); // true = browser TTS, geen D-ID
 
   const [stage, setStage] = useState<InterviewStage>("idle");
   const [questionNumber, setQuestionNumber] = useState(0);
   const [totalQuestions] = useState(4);
-  const [transcript, setTranscript] = useState(""); // live STT transcript
-  const [liveCaption, setLiveCaption] = useState(""); // wat avatar zegt
+  const [transcript, setTranscript] = useState("");
+  const [liveCaption, setLiveCaption] = useState("");
   const [result, setResult] = useState<CompleteResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isTTSMode, setIsTTSMode] = useState(false); // voor UI
   const [sessionData, setSessionData] = useState<{
     did_stream_id: string;
     did_session_id: string;
@@ -110,103 +116,53 @@ export default function VideoInterviewPage() {
     []
   );
 
-  // ── D-ID / WebRTC ──────────────────────────────────────────────────────────
+  // ── TTS helpers ────────────────────────────────────────────────────────────
 
-  const startInterview = useCallback(async () => {
-    setStage("connecting");
-    setErrorMsg("");
+  const browserSpeak = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined" || !window.speechSynthesis) {
+        setTimeout(resolve, 3000);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "nl-NL";
+      utterance.rate = 0.92;
+      utterance.pitch = 1.05;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => setTimeout(resolve, 2000);
+      window.speechSynthesis.speak(utterance);
+    });
+  }, []);
 
-    try {
-      // 1. Backend start D-ID stream, geeft SDP offer + ICE servers
-      const data = await apiPost(`/virtual-interview/session/${appId}/start`);
-      setSessionData({ did_stream_id: data.did_stream_id, did_session_id: data.did_session_id });
-
-      // 2. WebRTC peer connection opzetten
-      const pc = new RTCPeerConnection({ iceServers: data.ice_servers });
-      peerRef.current = pc;
-
-      // Avatar video ontvangen
-      pc.ontrack = (event) => {
-        if (videoRef.current && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0];
-        }
-      };
-
-      // ICE candidates doorsturen naar D-ID via backend
-      pc.onicecandidate = async (event) => {
-        if (event.candidate) {
-          try {
-            await apiPost(`/virtual-interview/session/${appId}/ice-candidate`, {
-              candidate: event.candidate.candidate,
-              sdpMid: event.candidate.sdpMid ?? "",
-              sdpMLineIndex: event.candidate.sdpMLineIndex ?? 0,
-            });
-          } catch {
-            // ICE errors zijn niet fataal
-          }
-        }
-      };
-
-      // SDP offer van D-ID verwerken
-      await pc.setRemoteDescription(
-        new RTCSessionDescription({ type: "offer", sdp: data.offer.sdp })
-      );
-
-      // SDP answer genereren en terugsturen
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await apiPost(`/virtual-interview/session/${appId}/sdp-answer`, {
-        sdp: answer.sdp,
-        type: "answer",
-      });
-
-      // 3. Wacht even tot verbinding stabiel is, dan intro uitspreken
-      setTimeout(async () => {
-        setStage("intro");
-        const introText =
-          `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
-          `Fijn dat u de tijd neemt voor dit video interview. ` +
-          `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
-          `Bent u er klaar voor? Dan beginnen we nu.`;
-        await speakText(introText);
-        // Na intro: eerste vraag
-        const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-          transcript: "[Interview gestart - kandidaat is aanwezig]",
-        });
-        setQuestionNumber(firstAnswer.question_number);
-        await speakText(firstAnswer.next_text);
-        if (!firstAnswer.ended) {
-          setStage("listening");
-          startListening();
-        } else {
-          await finishInterview();
-        }
-      }, 2000);
-    } catch (e: unknown) {
-      setStage("error");
-      setErrorMsg((e as Error).message || "Verbinding mislukt");
-    }
-  }, [appId, apiPost]);
+  // ── speakText: D-ID of browser TTS ────────────────────────────────────────
 
   const speakText = useCallback(
     async (text: string) => {
       setStage("speaking");
       setLiveCaption(text);
-      if (!sessionData) return;
-      try {
-        await apiPost(`/virtual-interview/session/${appId}/speak`, { text });
-        // Schat spreektijd: ~150 woorden/minuut
-        const words = text.split(" ").length;
-        const durationMs = Math.max(2000, (words / 150) * 60000);
-        await new Promise((resolve) => setTimeout(resolve, durationMs));
-      } catch {
-        // Fallback: wacht vast 3 seconden
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      if (ttsModeRef.current) {
+        // Browser TTS modus
+        await browserSpeak(text);
+      } else {
+        // D-ID modus: stuur tekst naar backend, schat spreektijd
+        if (!sessionData) {
+          await new Promise((r) => setTimeout(r, 3000));
+        } else {
+          try {
+            await apiPost(`/virtual-interview/session/${appId}/speak`, { text });
+            const words = text.split(" ").length;
+            const durationMs = Math.max(2000, (words / 150) * 60000);
+            await new Promise((resolve) => setTimeout(resolve, durationMs));
+          } catch {
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+          }
+        }
       }
       setLiveCaption("");
     },
-    [appId, apiPost, sessionData]
+    [appId, apiPost, sessionData, browserSpeak]
   );
 
   // ── STT (Web Speech API) ───────────────────────────────────────────────────
@@ -215,7 +171,7 @@ export default function VideoInterviewPage() {
     const SpeechRec =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-      setErrorMsg("Spraakherkenning niet ondersteund in deze browser. Gebruik Chrome.");
+      setErrorMsg("Spraakherkenning niet ondersteund. Gebruik Chrome.");
       setStage("error");
       return;
     }
@@ -243,12 +199,25 @@ export default function VideoInterviewPage() {
       }
     };
 
-    recognition.onend = () => {
-      // Automatisch stoppen na stilte — niets doen, gebruiker klikt op "Klaar"
-    };
-
+    recognition.onend = () => {};
     recognition.start();
   }, []);
+
+  // ── finishInterview ────────────────────────────────────────────────────────
+
+  const finishInterview = useCallback(async () => {
+    setStage("processing");
+    try {
+      const res = await apiPost(`/virtual-interview/session/${appId}/complete`);
+      setResult(res);
+      setStage("completed");
+    } catch (e: unknown) {
+      setStage("error");
+      setErrorMsg((e as Error).message || "Fout bij afsluiten interview");
+    }
+  }, [appId, apiPost]);
+
+  // ── stopListeningAndAnswer ─────────────────────────────────────────────────
 
   const stopListeningAndAnswer = useCallback(async () => {
     if (recognitionRef.current) {
@@ -276,19 +245,107 @@ export default function VideoInterviewPage() {
       setStage("error");
       setErrorMsg((e as Error).message || "Fout bij verwerken antwoord");
     }
-  }, [appId, apiPost, transcript, speakText, startListening]);
+  }, [appId, apiPost, transcript, speakText, startListening, finishInterview]);
 
-  const finishInterview = useCallback(async () => {
-    setStage("processing");
+  // ── startInterview ─────────────────────────────────────────────────────────
+
+  const startInterview = useCallback(async () => {
+    setStage("connecting");
+    setErrorMsg("");
+
     try {
-      const res = await apiPost(`/virtual-interview/session/${appId}/complete`);
-      setResult(res);
-      setStage("completed");
+      const data = await apiPost(`/virtual-interview/session/${appId}/start`);
+      setSessionData({ did_stream_id: data.did_stream_id, did_session_id: data.did_session_id });
+
+      if (data.tts_mode) {
+        // ── TTS MODUS: geen WebRTC, browser doet de spraak ──
+        ttsModeRef.current = true;
+        setIsTTSMode(true);
+
+        setTimeout(async () => {
+          setStage("intro");
+          const introText =
+            `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
+            `Fijn dat u de tijd neemt voor dit interview. ` +
+            `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd. ` +
+            `Bent u er klaar voor? Dan beginnen we nu.`;
+          await speakText(introText);
+
+          const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+            transcript: "[Interview gestart - kandidaat is aanwezig]",
+          });
+          setQuestionNumber(firstAnswer.question_number);
+          await speakText(firstAnswer.next_text);
+          if (!firstAnswer.ended) {
+            setStage("listening");
+            startListening();
+          } else {
+            await finishInterview();
+          }
+        }, 500);
+        return;
+      }
+
+      // ── D-ID MODUS: WebRTC avatar ──
+      const pc = new RTCPeerConnection({ iceServers: data.ice_servers });
+      peerRef.current = pc;
+
+      pc.ontrack = (event) => {
+        if (videoRef.current && event.streams[0]) {
+          videoRef.current.srcObject = event.streams[0];
+        }
+      };
+
+      pc.onicecandidate = async (event) => {
+        if (event.candidate) {
+          try {
+            await apiPost(`/virtual-interview/session/${appId}/ice-candidate`, {
+              candidate: event.candidate.candidate,
+              sdpMid: event.candidate.sdpMid ?? "",
+              sdpMLineIndex: event.candidate.sdpMLineIndex ?? 0,
+            });
+          } catch {
+            // ICE errors zijn niet fataal
+          }
+        }
+      };
+
+      await pc.setRemoteDescription(
+        new RTCSessionDescription({ type: "offer", sdp: data.offer.sdp })
+      );
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      await apiPost(`/virtual-interview/session/${appId}/sdp-answer`, {
+        sdp: answer.sdp,
+        type: "answer",
+      });
+
+      setTimeout(async () => {
+        setStage("intro");
+        const introText =
+          `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
+          `Fijn dat u de tijd neemt voor dit video interview. ` +
+          `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
+          `Bent u er klaar voor? Dan beginnen we nu.`;
+        await speakText(introText);
+        const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+          transcript: "[Interview gestart - kandidaat is aanwezig]",
+        });
+        setQuestionNumber(firstAnswer.question_number);
+        await speakText(firstAnswer.next_text);
+        if (!firstAnswer.ended) {
+          setStage("listening");
+          startListening();
+        } else {
+          await finishInterview();
+        }
+      }, 2000);
     } catch (e: unknown) {
       setStage("error");
-      setErrorMsg((e as Error).message || "Fout bij afsluiten interview");
+      setErrorMsg((e as Error).message || "Verbinding mislukt");
     }
-  }, [appId, apiPost]);
+  }, [appId, apiPost, speakText, startListening, finishInterview]);
 
   // ── UI helpers ─────────────────────────────────────────────────────────────
 
@@ -312,7 +369,7 @@ export default function VideoInterviewPage() {
     ? result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2"
     : "#f3f4f6";
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render: resultaatscherm ────────────────────────────────────────────────
 
   if (stage === "completed" && result) {
     return (
@@ -328,7 +385,6 @@ export default function VideoInterviewPage() {
             Bedankt voor je tijd. Je resultaat:
           </p>
 
-          {/* Score cirkel */}
           <div style={{
             width: 90, height: 90, borderRadius: "50%",
             background: scoreBg, border: `4px solid ${scoreColor}`,
@@ -354,12 +410,8 @@ export default function VideoInterviewPage() {
                 })}
               </div>
               {result.teams_join_url && (
-                <a
-                  href={result.teams_join_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: "block", marginTop: 10, color: "#0284c7", fontSize: 13, fontWeight: 600, textDecoration: "none" }}
-                >
+                <a href={result.teams_join_url} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "block", marginTop: 10, color: "#0284c7", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
                   Teams meeting openen →
                 </a>
               )}
@@ -372,11 +424,7 @@ export default function VideoInterviewPage() {
 
           <button
             onClick={() => router.push(`/candidate/sollicitaties/${appId}`)}
-            style={{
-              background: "#0DA89E", color: "#fff", border: "none",
-              borderRadius: 12, padding: "12px 28px", fontSize: 15,
-              fontWeight: 700, cursor: "pointer", width: "100%",
-            }}
+            style={{ background: "#0DA89E", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" }}
           >
             Terug naar sollicitatie
           </button>
@@ -385,12 +433,14 @@ export default function VideoInterviewPage() {
     );
   }
 
+  // ── Render: interviewscherm ────────────────────────────────────────────────
+
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
-          ItsPeanuts AI · Video Interview
+          ItsPeanuts AI · {isTTSMode ? "Audio Interview" : "Video Interview"}
         </div>
         <div style={{
           background: stage === "listening" ? "#22c55e" : stage === "speaking" ? "#3b82f6" : stage === "connecting" ? "#f59e0b" : "#6b7280",
@@ -401,37 +451,45 @@ export default function VideoInterviewPage() {
         </div>
       </div>
 
-      {/* Hoofd layout: avatar links, kandidaat rechts */}
+      {/* Hoofd layout */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", gap: 16, marginBottom: 16 }}>
-        {/* Avatar video */}
+        {/* Avatar / video */}
         <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }}
-          />
-          {/* Placeholder als video niet actief is */}
-          {stage === "idle" || stage === "connecting" ? (
-            <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          {!isTTSMode && (
+            <video ref={videoRef} autoPlay playsInline
+              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
+          )}
+
+          {/* Avatar placeholder (idle/connecting/TTS modus) */}
+          {(stage === "idle" || stage === "connecting" || isTTSMode) && (
+            <div style={{ position: isTTSMode ? "relative" : "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               <div style={{
-                width: 80, height: 80, borderRadius: "50%",
-                background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                width: isTTSMode ? 120 : 80,
+                height: isTTSMode ? 120 : 80,
+                borderRadius: "50%",
+                background: stage === "speaking" ? "linear-gradient(135deg, #3b82f6, #0DA89E)" : "linear-gradient(135deg, #0DA89E, #0891b2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 32, fontWeight: 800, color: "#fff",
+                fontSize: isTTSMode ? 48 : 32, fontWeight: 800, color: "#fff",
+                boxShadow: stage === "speaking" ? "0 0 30px rgba(59,130,246,0.6)" : "none",
+                transition: "box-shadow 0.3s",
               }}>L</div>
               <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · AI Recruiter</div>
+              {isTTSMode && (
+                <div style={{ fontSize: 11, color: "#6b7280", background: "#374151", padding: "3px 10px", borderRadius: 20 }}>
+                  Audio modus
+                </div>
+              )}
               {stage === "connecting" && (
                 <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
               )}
             </div>
-          ) : null}
+          )}
 
           {/* Live ondertiteling */}
           {liveCaption && (
             <div style={{
               position: "absolute", bottom: 16, left: 16, right: 16,
-              background: "rgba(0,0,0,0.75)", color: "#fff",
+              background: "rgba(0,0,0,0.78)", color: "#fff",
               padding: "10px 14px", borderRadius: 10, fontSize: 14, lineHeight: 1.5,
               backdropFilter: "blur(4px)",
             }}>
@@ -440,30 +498,22 @@ export default function VideoInterviewPage() {
           )}
 
           {/* Lisa label */}
-          <div style={{
-            position: "absolute", top: 12, left: 12,
-            background: "rgba(0,0,0,0.6)", color: "#fff",
-            padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600,
-          }}>
-            Lisa — AI Recruiter
-          </div>
+          {!isTTSMode && (
+            <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+              Lisa — AI Recruiter
+            </div>
+          )}
 
           {/* Spreekt indicator */}
           {stage === "speaking" && (
-            <div style={{
-              position: "absolute", top: 12, right: 12,
-              background: "#3b82f6", color: "#fff",
-              padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-              animation: "pulse 1s infinite",
-            }}>
+            <div style={{ position: "absolute", top: 12, right: 12, background: "#3b82f6", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
               🎙 Spreekt
             </div>
           )}
         </div>
 
-        {/* Rechter kolom: kandidaat + controls */}
+        {/* Rechter kolom */}
         <div style={{ width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Kandidaat webcam placeholder */}
           <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
             <div style={{ textAlign: "center", color: "#4b5563" }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
@@ -475,71 +525,45 @@ export default function VideoInterviewPage() {
           <div style={{ background: "#1c1f26", borderRadius: 12, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>Voortgang</span>
-              <span style={{ fontSize: 12, color: "#9ca3af" }}>
-                {questionNumber}/{totalQuestions}
-              </span>
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>{questionNumber}/{totalQuestions}</span>
             </div>
             <div style={{ background: "#374151", borderRadius: 6, height: 6, overflow: "hidden" }}>
-              <div style={{
-                background: "#0DA89E", height: "100%",
-                width: `${progressPct}%`, borderRadius: 6,
-                transition: "width 0.4s ease",
-              }} />
+              <div style={{ background: "#0DA89E", height: "100%", width: `${progressPct}%`, borderRadius: 6, transition: "width 0.4s ease" }} />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Onderin: transcript + controls */}
+      {/* Onderin */}
       <div style={{ width: "100%", maxWidth: 900, background: "#1c1f26", borderRadius: 16, padding: 20 }}>
-        {/* Live transcript */}
         {stage === "listening" && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
               🎤 Jouw antwoord (live):
             </div>
-            <div style={{
-              background: "#0f1117", borderRadius: 10, padding: "12px 14px",
-              fontSize: 14, color: transcript ? "#f9fafb" : "#4b5563",
-              lineHeight: 1.6, minHeight: 50,
-            }}>
+            <div style={{ background: "#0f1117", borderRadius: 10, padding: "12px 14px", fontSize: 14, color: transcript ? "#f9fafb" : "#4b5563", lineHeight: 1.6, minHeight: 50 }}>
               {transcript || "Spreek nu..."}
             </div>
           </div>
         )}
 
-        {/* Foutmelding */}
         {stage === "error" && (
           <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 14 }}>
             {errorMsg}
           </div>
         )}
 
-        {/* Actie knoppen */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
           {stage === "idle" && (
-            <button
-              onClick={startInterview}
-              style={{
-                background: "#0DA89E", color: "#fff", border: "none",
-                borderRadius: 12, padding: "14px 40px", fontSize: 16,
-                fontWeight: 700, cursor: "pointer",
-              }}
-            >
+            <button onClick={startInterview}
+              style={{ background: "#0DA89E", color: "#fff", border: "none", borderRadius: 12, padding: "14px 40px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
               Interview starten
             </button>
           )}
 
           {stage === "listening" && (
-            <button
-              onClick={stopListeningAndAnswer}
-              style={{
-                background: "#22c55e", color: "#fff", border: "none",
-                borderRadius: 12, padding: "14px 32px", fontSize: 15,
-                fontWeight: 700, cursor: "pointer",
-                boxShadow: "0 0 20px rgba(34,197,94,0.4)",
-              }}
-            >
+            <button onClick={stopListeningAndAnswer}
+              style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 12, padding: "14px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 20px rgba(34,197,94,0.4)" }}>
               ✓ Klaar met antwoorden
             </button>
           )}
@@ -551,20 +575,13 @@ export default function VideoInterviewPage() {
           )}
 
           {stage === "error" && (
-            <button
-              onClick={() => { setStage("idle"); setErrorMsg(""); }}
-              style={{
-                background: "#374151", color: "#fff", border: "none",
-                borderRadius: 12, padding: "12px 24px", fontSize: 14,
-                fontWeight: 600, cursor: "pointer",
-              }}
-            >
+            <button onClick={() => { setStage("idle"); setErrorMsg(""); }}
+              style={{ background: "#374151", color: "#fff", border: "none", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
               Opnieuw proberen
             </button>
           )}
         </div>
 
-        {/* Browser ondersteuning waarschuwing */}
         {stage === "idle" && typeof window !== "undefined" && !window.SpeechRecognition && !window.webkitSpeechRecognition && (
           <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "#f59e0b" }}>
             ⚠ Gebruik Google Chrome voor de beste spraakherkenning

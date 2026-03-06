@@ -29,22 +29,28 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
   const [error, setError] = useState("");
   const [chatEnded, setChatEnded] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [waking, setWaking] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const seenIds = useRef<Set<number>>(new Set());
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCount = useRef(0);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
 
+    cancelledRef.current = false;
+
     function connect() {
+      if (cancelledRef.current) return;
       const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
         setConnected(true);
+        setWaking(false);
         setError("");
         retryCount.current = 0;
       };
@@ -62,7 +68,6 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
             return;
           }
 
-          // Deduplicate by id
           if (data.id && seenIds.current.has(data.id)) return;
           if (data.id) seenIds.current.add(data.id);
 
@@ -84,15 +89,14 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
       };
 
       ws.onerror = () => {
-        // Retry tot 5x met oplopende wachttijd (cold start Render.com)
-        if (retryCount.current < 5) {
-          const delay = Math.min(2000 * (retryCount.current + 1), 10000);
+        if (retryCount.current < 3) {
           retryCount.current += 1;
-          setError(`Verbinding maken... (poging ${retryCount.current}/5)`);
-          retryRef.current = setTimeout(connect, delay);
+          setError(`Opnieuw verbinden... (${retryCount.current}/3)`);
+          retryRef.current = setTimeout(connect, 3000);
         } else {
-          setError("Verbinding mislukt. Ververs de pagina of probeer het later opnieuw.");
+          setError("Verbinding mislukt. Ververs de pagina.");
           setLoading(false);
+          setWaking(false);
         }
       };
 
@@ -104,18 +108,54 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
       };
     }
 
-    connect();
+    async function wakeAndConnect() {
+      // Wek de backend op — Render.com free tier slaapt na 15 min inactiviteit.
+      // Poll /health totdat de backend reageert, dan pas WebSocket verbinden.
+      setWaking(true);
+      setError("Server opstarten...");
+
+      for (let i = 0; i < 30 && !cancelledRef.current; i++) {
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 5000);
+          const res = await fetch(`${BASE}/health`, { signal: ctrl.signal });
+          clearTimeout(tid);
+          if (res.ok) {
+            if (!cancelledRef.current) {
+              setError("");
+              setWaking(false);
+              connect();
+            }
+            return;
+          }
+        } catch {
+          // Backend slaapt nog
+        }
+        if (!cancelledRef.current && i < 29) {
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+
+      if (!cancelledRef.current) {
+        setError("Server niet bereikbaar. Ververs de pagina en probeer opnieuw.");
+        setLoading(false);
+        setWaking(false);
+      }
+    }
+
+    wakeAndConnect();
 
     return () => {
+      cancelledRef.current = true;
       if (retryRef.current) clearTimeout(retryRef.current);
       wsRef.current?.close();
     };
   }, [router, token, appId]);
 
-  // Trigger loading=false after connection if no messages arrive within 1s
+  // Fallback: zet loading=false na 3s als er geen berichten binnenkomen
   useEffect(() => {
     if (!loading) return;
-    const timer = setTimeout(() => setLoading(false), 2000);
+    const timer = setTimeout(() => setLoading(false), 3000);
     return () => clearTimeout(timer);
   }, [loading]);
 
@@ -128,7 +168,6 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
     const content = input.trim();
     if (!content || sending || chatEnded || !connected) return;
 
-    // Optimistically add candidate message
     const tempId = Date.now();
     seenIds.current.add(tempId);
     setMessages((prev) => [...prev, { id: tempId, role: "candidate", content }]);
@@ -147,16 +186,17 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
           ← Terug
         </Link>
         <div className="flex items-center gap-3">
-          {/* Lisa avatar */}
           <div className="relative">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
               L
             </div>
-            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${connected ? "bg-green-400" : "bg-gray-300"}`} />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${connected ? "bg-green-400" : waking ? "bg-yellow-400" : "bg-gray-300"}`} />
           </div>
           <div>
             <div className="font-semibold text-gray-900 text-sm">Lisa</div>
-            <div className="text-xs text-gray-400">AI HR-Recruiter · It&apos;s Peanuts AI</div>
+            <div className="text-xs text-gray-400">
+              {waking ? "Verbinding maken..." : connected ? "Online" : "Offline"} · AI HR-Recruiter
+            </div>
           </div>
         </div>
         {chatEnded && (
@@ -168,7 +208,22 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto w-full">
-        {loading ? (
+        {waking ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+                L
+              </div>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                Lisa wordt opgestart...
+              </div>
+              <p className="text-xs text-gray-400 max-w-xs">
+                De server start op. Dit duurt maximaal 1 minuut.
+              </p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center h-40">
             <div className="flex items-center gap-3 text-gray-400 text-sm">
               <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
@@ -182,14 +237,12 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 key={msg.id}
                 className={`flex gap-3 ${msg.role === "candidate" ? "flex-row-reverse" : ""}`}
               >
-                {/* Avatar */}
                 {msg.role === "recruiter" && (
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
                     L
                   </div>
                 )}
 
-                {/* Bubble */}
                 <div className={`max-w-md ${msg.role === "candidate" ? "items-end" : "items-start"} flex flex-col`}>
                   {msg.role === "recruiter" && (
                     <span className="text-xs text-gray-400 mb-1 ml-1">Lisa</span>
@@ -224,7 +277,6 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
               </div>
             )}
 
-            {/* Chat ended message */}
             {chatEnded && !sending && (
               <div className="text-center py-4">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 text-xs font-medium">
@@ -237,7 +289,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
           </div>
         )}
 
-        {error && (
+        {error && !waking && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mt-4">{error}</div>
         )}
       </div>
@@ -262,14 +314,14 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Typ je antwoord..."
-                disabled={sending || loading || !connected}
+                placeholder={waking ? "Wachten op server..." : connected ? "Typ je antwoord..." : "Verbinding verbroken..."}
+                disabled={sending || loading || !connected || waking}
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition disabled:opacity-50"
                 autoFocus
               />
               <button
                 type="submit"
-                disabled={!input.trim() || sending || loading || !connected}
+                disabled={!input.trim() || sending || loading || !connected || waking}
                 className="px-5 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 hover:opacity-90 flex items-center gap-2"
                 style={{ background: "#0DA89E" }}
               >

@@ -97,6 +97,7 @@ class StartSessionOut(BaseModel):
     did_session_id: str
     offer: dict              # SDP offer van D-ID
     ice_servers: List[dict]
+    tts_mode: bool = False   # True als D-ID niet geconfigureerd → browser TTS
 
 
 class SdpAnswerIn(BaseModel):
@@ -166,6 +167,9 @@ def _parse_clip_ids() -> tuple[str, str]:
     return presenter_id, driver_id
 
 
+TTS_FALLBACK_STREAM_ID = "tts-fallback"
+
+
 def _did_create_stream() -> dict:
     """Maak een nieuwe D-ID streaming sessie aan. Geeft offer + ice_servers terug.
 
@@ -173,9 +177,19 @@ def _did_create_stream() -> dict:
     1. DID_PRESENTER_URL → {"source_url": url}  (eigen publieke foto)
     2. DID_PRESENTER_ID + DID_DRIVER_ID → {"presenter_type": "clip", "presenter_id": ..., "driver_id": ...}
        (D-ID Studio avatar zoals Amber — IDs worden ook uit talkingPreview URL gehaald)
+
+    Als D-ID niet geconfigureerd is: retourneer tts_mode=True zodat de browser
+    Web Speech API (SpeechSynthesis) gebruikt voor TTS.
     """
     if not DID_API_KEY:
-        raise HTTPException(status_code=503, detail="DID_API_KEY is niet geconfigureerd.")
+        # TTS modus: geen D-ID, browser doet de spraaksynthese
+        return {
+            "id": TTS_FALLBACK_STREAM_ID,
+            "session_id": TTS_FALLBACK_STREAM_ID,
+            "offer": {"sdp": "", "type": "offer"},
+            "ice_servers": [],
+            "tts_mode": True,
+        }
 
     if DID_PRESENTER_URL:
         body: dict = {"source_url": DID_PRESENTER_URL}
@@ -446,12 +460,13 @@ def start_session(
     if existing and existing.status == "completed":
         raise HTTPException(status_code=409, detail="Dit interview is al afgerond.")
 
-    # Maak D-ID stream aan
+    # Maak D-ID stream aan (of TTS fallback als D-ID niet geconfigureerd is)
     stream_data = _did_create_stream()
     did_stream_id = stream_data["id"]
     did_session_id = stream_data.get("session_id", "")
     offer = stream_data.get("offer", {})
     ice_servers = stream_data.get("ice_servers", [])
+    tts_mode = stream_data.get("tts_mode", False)
 
     if existing:
         # Herstart bestaande sessie
@@ -466,6 +481,7 @@ def start_session(
             did_session_id=did_session_id,
             offer=offer,
             ice_servers=ice_servers,
+            tts_mode=tts_mode,
         )
 
     # Nieuwe sessie aanmaken
@@ -485,6 +501,7 @@ def start_session(
         did_session_id=did_session_id,
         offer=offer,
         ice_servers=ice_servers,
+        tts_mode=tts_mode,
     )
 
 
@@ -551,7 +568,9 @@ def speak(
     )
     if not vi_session or not vi_session.did_stream_id:
         raise HTTPException(status_code=404, detail="Geen actieve interview sessie")
-    _did_speak(vi_session.did_stream_id, vi_session.did_session_id or "", payload.text)
+    # TTS modus: browser doet de spraak, alleen transcript opslaan
+    if vi_session.did_stream_id != TTS_FALLBACK_STREAM_ID:
+        _did_speak(vi_session.did_stream_id, vi_session.did_session_id or "", payload.text)
     _append_transcript(vi_session, "recruiter", payload.text, db)
     return {"ok": True}
 
