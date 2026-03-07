@@ -35,6 +35,7 @@ Premium feature: alleen beschikbaar als employer.plan == "premium"
 """
 
 import base64
+import io
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -42,6 +43,7 @@ from typing import List, Optional
 
 import requests as http
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from openai import OpenAI
@@ -794,6 +796,45 @@ def complete_interview(
         teams_join_url=teams_join_url,
         scheduled_at=scheduled_at_str,
     )
+
+
+@router.post("/session/{app_id}/tts")
+def text_to_speech(
+    app_id: int,
+    payload: SpeakIn,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    OpenAI TTS: zet tekst om naar MP3 audio.
+    Wordt gebruikt als vervanger voor browser Web Speech API — klinkt veel natuurlijker.
+    Vereist OPENAI_API_KEY geconfigureerd op de server.
+    """
+    if not _ai_client:
+        raise HTTPException(status_code=503, detail="OpenAI niet geconfigureerd")
+
+    # Autorisatie: alleen de kandidaat van deze sollicitatie (of admin)
+    app = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
+    if app.candidate_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    try:
+        response = _ai_client.audio.speech.create(
+            model="tts-1-hd",
+            voice="nova",          # Natuurlijke vrouwenstem (klinkt goed in het Nederlands)
+            input=payload.text,
+            response_format="mp3",
+        )
+        audio_bytes = response.content
+        return StreamingResponse(
+            io.BytesIO(audio_bytes),
+            media_type="audio/mpeg",
+            headers={"Cache-Control": "no-cache", "Content-Length": str(len(audio_bytes))},
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"TTS mislukt: {str(e)}")
 
 
 @router.get("/session/{app_id}", response_model=SessionStatusOut)

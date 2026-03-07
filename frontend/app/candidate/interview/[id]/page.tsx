@@ -162,7 +162,41 @@ export default function VideoInterviewPage() {
     });
   }, []);
 
-  // ── speakText: D-ID of browser TTS ────────────────────────────────────────
+  // ── OpenAI TTS (via backend) ───────────────────────────────────────────────
+
+  const openaiSpeak = useCallback(
+    async (text: string): Promise<void> => {
+      try {
+        const resp = await fetch(
+          `${BASE}/virtual-interview/session/${appId}/tts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token.current}`,
+            },
+            body: JSON.stringify({ text }),
+          }
+        );
+        if (!resp.ok) throw new Error("TTS endpoint mislukt");
+
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        await new Promise<void>((resolve) => {
+          const audio = new Audio(url);
+          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.play().catch(() => resolve());
+        });
+      } catch {
+        // Fallback naar browser TTS als OpenAI TTS niet beschikbaar is
+        await browserSpeak(text);
+      }
+    },
+    [appId, browserSpeak]
+  );
+
+  // ── speakText: D-ID of OpenAI TTS ─────────────────────────────────────────
 
   const speakText = useCallback(
     async (text: string) => {
@@ -170,8 +204,8 @@ export default function VideoInterviewPage() {
       setLiveCaption(text);
 
       if (ttsModeRef.current) {
-        // Browser TTS modus
-        await browserSpeak(text);
+        // OpenAI TTS via backend (klinkt natuurlijk), fallback naar browser TTS
+        await openaiSpeak(text);
       } else {
         // D-ID modus: stuur tekst naar backend, schat spreektijd
         if (!sessionData) {
@@ -189,7 +223,7 @@ export default function VideoInterviewPage() {
       }
       setLiveCaption("");
     },
-    [appId, apiPost, sessionData, browserSpeak]
+    [appId, apiPost, sessionData, openaiSpeak]
   );
 
   // ── STT (Web Speech API) ───────────────────────────────────────────────────
