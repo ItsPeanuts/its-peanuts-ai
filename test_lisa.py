@@ -207,13 +207,13 @@ if not app_id:
         except Exception as e:
             info(f"Publieke vacatures: {e}")
 
-    # Sollicitatie aanmaken als kandidaat
+    # Sollicitatie aanmaken als kandidaat (authenticated endpoint, form data)
     if vacancy_id and candidate_token:
         try:
-            app = http_post(f"/vacancies/{vacancy_id}/apply", {
-                "motivation": "Dit is een testsolllicitatie voor geautomatiseerde tests.",
-            }, token=candidate_token)
-            app_id = app.get("id")
+            app = http_post(f"/vacancies/{vacancy_id}/apply-authenticated", {
+                "motivation_letter": "Dit is een testsollicitatie voor geautomatiseerde tests.",
+            }, token=candidate_token, form=True)
+            app_id = app.get("id") or app.get("application_id")
             if app_id:
                 ok(f"Testsolllicitatie aangemaakt: app_id={app_id}")
             else:
