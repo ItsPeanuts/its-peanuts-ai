@@ -76,11 +76,17 @@ def _get_application_context(app_id: int, db: Session) -> dict:
         .first()
     )
 
+    employer = (
+        db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+        if vacancy else None
+    )
+
     return {
         "app": app,
         "candidate_name": candidate.full_name if candidate else "Kandidaat",
         "vacancy_title": vacancy.title if vacancy else "Vacature",
         "vacancy_description": vacancy.description or "" if vacancy else "",
+        "employer_name": employer.full_name if employer else "It's Peanuts AI",
         "match_score": ai_result.match_score if ai_result else None,
         "gaps": ai_result.gaps if ai_result else "",
         "strengths": ai_result.strengths if ai_result else "",
@@ -90,13 +96,14 @@ def _get_application_context(app_id: int, db: Session) -> dict:
 
 
 def _build_system_prompt(ctx: dict) -> str:
-    return f"""Je bent Lisa, een professionele en vriendelijke AI HR-recruiter van It's Peanuts AI.
+    return f"""Je bent Lisa, een professionele en vriendelijke AI HR-recruiter van {ctx['employer_name']}.
 
 Je spreekt altijd in het Nederlands, professioneel maar toegankelijk.
 
 CONTEXT OVER DEZE SOLLICITATIE:
 - Kandidaat: {ctx['candidate_name']}
 - Vacature: {ctx['vacancy_title']}
+- Bedrijf: {ctx['employer_name']}
 - Vacatureomschrijving: {ctx['vacancy_description'][:800] if ctx['vacancy_description'] else 'Niet beschikbaar'}
 - AI Matchscore: {ctx['match_score']}/100
 - Sterktes van kandidaat: {ctx['strengths'] or 'Geen informatie'}
@@ -105,7 +112,7 @@ CONTEXT OVER DEZE SOLLICITATIE:
 - Voorgestelde interviewvragen: {ctx['suggested_questions'] or 'Geen specifieke vragen'}
 
 JOUW TAAK:
-1. Stel jezelf voor als Lisa van It's Peanuts AI
+1. Stel jezelf voor als Lisa van {ctx['employer_name']}
 2. Stel gerichte vragen over de aandachtspunten/gaps die gevonden zijn
 3. Stel maximaal {MAX_QUESTIONS} vragen in totaal
 4. Stel ALTIJD slechts 1 vraag per bericht
