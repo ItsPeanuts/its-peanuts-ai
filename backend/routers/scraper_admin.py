@@ -88,9 +88,10 @@ class ClaimResponse(BaseModel):
 def trigger_scrape(
     payload: ScrapeRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_role("admin")),
+    current_user: models.User = Depends(get_current_user),
 ):
     """Start scraping op basis van de opgegeven bron."""
+    require_role(current_user, "admin")
     raw = run_scraper(source=payload.source, custom_urls=payload.urls)
 
     saved = 0
@@ -134,9 +135,10 @@ def list_scraped_vacancies(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_role("admin")),
+    current_user: models.User = Depends(get_current_user),
 ):
     """Lijst van gescrapede vacatures, optioneel gefilterd op status."""
+    require_role(current_user, "admin")
     query = db.query(models.ScrapedVacancy).order_by(models.ScrapedVacancy.scraped_at.desc())
     if status:
         query = query.filter(models.ScrapedVacancy.status == status)
@@ -166,13 +168,14 @@ def list_scraped_vacancies(
 def publish_scraped_vacancy(
     sv_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_role("admin")),
+    current_user: models.User = Depends(get_current_user),
 ):
     """
     Publiceer een gescrapede vacature:
     - Maak een Vacancy aan onder de systeem-werkgever
     - Zet status op 'published'
     """
+    require_role(current_user, "admin")
     sv = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.id == sv_id).first()
     if not sv:
         raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
@@ -215,9 +218,10 @@ def publish_scraped_vacancy(
 def delete_scraped_vacancy(
     sv_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_role("admin")),
+    current_user: models.User = Depends(get_current_user),
 ):
     """Verwijder een gescrapede vacature (en de bijbehorende Vacancy als die bestaat)."""
+    require_role(current_user, "admin")
     sv = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.id == sv_id).first()
     if not sv:
         raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
