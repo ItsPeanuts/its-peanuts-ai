@@ -28,9 +28,27 @@ ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
 # Regex voor e-mailadressen
 EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b")
 
-# E-mailadressen die we NIET willen (automatische mailboxen)
-EMAIL_BLOCKLIST = {"noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon",
-                   "postmaster", "webmaster", "abuse", "spam", "unsubscribe"}
+# HR/recruitment trefwoorden → altijd doorlaten (hogere prioriteit)
+HR_KEYWORDS = {
+    "hr", "hrm", "recruitment", "recruiter", "recruiting", "talent",
+    "jobs", "vacature", "vacatures", "career", "careers", "hiring",
+    "personeel", "werving", "humanresources", "human-resources",
+}
+
+# Exacte blokkeerlijst — alleen als het de VOLLEDIGE lokale naam is (info@, contact@, ...)
+EMAIL_BLOCKLIST_EXACT = {
+    "info", "contact", "hallo", "hello", "support", "service", "admin",
+    "office", "mail", "general", "sales", "marketing", "feedback",
+    "help", "helpdesk", "team", "all", "finance", "receptie", "reception",
+    "boekhouding", "administratie", "post", "press", "media", "pr",
+    "enquiries", "enquiry", "privacy", "legal", "juridisch",
+}
+
+# Substring-blokkeerlijst — als deze string érgens in het lokale deel voorkomt
+EMAIL_BLOCKLIST_CONTAINS = {
+    "noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon",
+    "postmaster", "webmaster", "abuse", "spam", "unsubscribe",
+}
 
 HEADERS = {
     "User-Agent": (
@@ -41,7 +59,15 @@ HEADERS = {
 
 
 def _extract_emails(text: str) -> list[str]:
-    """Extraheer geldige e-mailadressen uit tekst en filter automatische mailboxen."""
+    """Extraheer geldige e-mailadressen uit tekst.
+
+    Filtert:
+    - Automatische mailboxen (noreply, mailer-daemon, ...)
+    - Generieke afdelingen (info, contact, sales, ...)
+    Laat altijd door:
+    - HR/recruitment adressen (hr@, recruitment@, personeel@, ...)
+    - Persoonlijke adressen (naam.achternaam@bedrijf.nl)
+    """
     found = EMAIL_RE.findall(text)
     result = []
     seen = set()
@@ -50,8 +76,17 @@ def _extract_emails(text: str) -> list[str]:
         local_part = email_lower.split("@")[0]
         if email_lower in seen:
             continue
-        if any(blocked in local_part for blocked in EMAIL_BLOCKLIST):
-            continue
+
+        # HR/recruitment emails altijd doorlaten
+        is_hr = any(kw in local_part for kw in HR_KEYWORDS)
+        if not is_hr:
+            # Exacte blokkeerlijst (volledige lokale naam = generieke mailbox)
+            if local_part in EMAIL_BLOCKLIST_EXACT:
+                continue
+            # Substring-blokkeerlijst (automatische/systeem mailboxen)
+            if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
+                continue
+
         seen.add(email_lower)
         result.append(email_lower)
     return result
