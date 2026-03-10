@@ -5,16 +5,15 @@ Bronnen:
 - Adzuna API (meest betrouwbaar, vereist ADZUNA_APP_ID + ADZUNA_APP_KEY)
 - Arbeitnow API (gratis, geen key vereist, Europese vacatures)
 - Werkzoeken.nl (BeautifulSoup)
+- Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
+- Jobbird.com (Nederlandse vacaturesite, JSON API)
 - Custom URLs (admin-opgegeven bedrijfscarrièrepagina's)
 
-Wijzigingen (2026-03-10):
-- NVB vervangen door Arbeitnow API: NVB is een client-side Next.js SPA —
-  BeautifulSoup krijgt alleen een leeg HTML-shell zonder vacaturedata.
-  Arbeitnow biedt een gratis JSON API zonder authenticatie.
-- `if not emails: continue` verwijderd in alle scrapers — vacatures worden
-  nu altijd opgeslagen, ook als er geen contact_email gevonden wordt.
-  Dit was de primaire reden waarom de scraper 0 resultaten retourneerde.
-- HEADERS bijgewerkt naar een echte browser User-Agent met Accept headers.
+E-mailaanpak:
+- HR/recruitment adressen (hr@, personeel@, ...): altijd doorlaten
+- Persoonlijke zakelijke adressen (jan.bakker@acme.nl, marie@company.com): altijd doorlaten
+- Generieke mailboxen (info@, contact@, ...): blokkeren
+- Zoekqueries gericht op vacatures die "solliciteer per email", "stuur cv naar" etc. bevatten
 
 Deduplicatie: zelfde source_url OF contact_email+title combinatie wordt niet dubbel opgeslagen.
 """
@@ -58,6 +57,13 @@ EMAIL_BLOCKLIST_CONTAINS = {
     "postmaster", "webmaster", "abuse", "spam", "unsubscribe",
 }
 
+# Gratis e-mailproviders — persoonlijk adres maar niet zakelijk
+FREE_EMAIL_PROVIDERS = {
+    "gmail", "hotmail", "outlook", "yahoo", "live", "icloud", "protonmail",
+    "ziggo", "kpnmail", "planet", "xs4all", "hetnet", "chello", "home",
+    "upcmail", "telenet", "quicknet",
+}
+
 # Echte browser headers — voorkomt 403/bot-blokkering op veel sites
 HEADERS = {
     "User-Agent": (
@@ -70,35 +76,83 @@ HEADERS = {
 }
 
 
+def _is_personal_work_email(local: str, domain: str) -> bool:
+    """
+    Detecteert persoonlijke zakelijke e-mails: jan.bakker@acme.nl of marie@company.com
+
+    Regels:
+    - Domein is GEEN gratis e-mailprovider (gmail, hotmail, ...)
+    - Lokaal deel ziet eruit als een naam:
+        * bevat een punt tussen twee naam-achtige delen (jan.bakker)
+        * OF is alleen letters, 3-20 tekens (marie, joost, ...)
+        * OF bevat een initiaal + achternaam (j.bakker, m.dejong)
+    - Geen cijfers in lokaal deel (john123 = automatisch systeem)
+    """
+    domain_name = domain.split(".")[0].lower()
+    if domain_name in FREE_EMAIL_PROVIDERS:
+        return False
+
+    # Lokaal deel zonder speciale tekens
+    local_clean = local.replace(".", "").replace("-", "").replace("_", "")
+
+    # Moet puur alfabetisch zijn (geen nummers = geen systeem-account)
+    if not local_clean.isalpha():
+        return False
+
+    # Lengte check: echte namen zijn 2-30 tekens
+    if not (2 <= len(local_clean) <= 30):
+        return False
+
+    # Patroon: bevat punt (jan.bakker, m.dejong) OF korte naam (marie, joost)
+    has_dot = "." in local
+    is_short_name = len(local) <= 15
+
+    return has_dot or is_short_name
+
+
 def _extract_emails(text: str) -> list[str]:
     """Extraheer geldige e-mailadressen uit tekst.
 
-    Filtert:
-    - Automatische mailboxen (noreply, mailer-daemon, ...)
-    - Generieke afdelingen (info, contact, sales, ...)
-    Laat altijd door:
-    - HR/recruitment adressen (hr@, recruitment@, personeel@, ...)
-    - Persoonlijke adressen (naam.achternaam@bedrijf.nl)
+    Prioriteitsvolgorde (hoogste eerst):
+    1. HR/recruitment adressen (hr@, recruitment@, personeel@, ...) → altijd doorlaten
+    2. Persoonlijke zakelijke adressen (jan.bakker@acme.nl, marie@company.com) → altijd doorlaten
+    3. Generieke mailboxen (info@, contact@, ...) → blokkeren
+    4. Automatische/systeem mailboxen (noreply, mailer-daemon, ...) → blokkeren
     """
     found = EMAIL_RE.findall(text)
     result = []
-    seen = set()
+    seen: set[str] = set()
     for email in found:
         email_lower = email.lower()
-        local_part = email_lower.split("@")[0]
         if email_lower in seen:
             continue
 
-        # HR/recruitment emails altijd doorlaten
-        is_hr = any(kw in local_part for kw in HR_KEYWORDS)
-        if not is_hr:
-            # Exacte blokkeerlijst (volledige lokale naam = generieke mailbox)
-            if local_part in EMAIL_BLOCKLIST_EXACT:
-                continue
-            # Substring-blokkeerlijst (automatische/systeem mailboxen)
-            if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
-                continue
+        parts = email_lower.split("@")
+        if len(parts) != 2:
+            continue
+        local_part, domain_part = parts[0], parts[1]
 
+        # 1. HR/recruitment → altijd doorlaten
+        if any(kw in local_part for kw in HR_KEYWORDS):
+            seen.add(email_lower)
+            result.append(email_lower)
+            continue
+
+        # 2. Persoonlijk zakelijk adres → altijd doorlaten
+        if _is_personal_work_email(local_part, domain_part):
+            seen.add(email_lower)
+            result.append(email_lower)
+            continue
+
+        # 3. Exacte blokkeerlijst (volledige lokale naam = generieke mailbox)
+        if local_part in EMAIL_BLOCKLIST_EXACT:
+            continue
+
+        # 4. Substring-blokkeerlijst (automatische/systeem mailboxen)
+        if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
+            continue
+
+        # Al het overige doorlaten (bijv. solliciteer@bedrijf.nl)
         seen.add(email_lower)
         result.append(email_lower)
     return result
@@ -403,14 +457,19 @@ def _scrape_jobbird(max_pages: int = 3) -> list[dict]:
     }
 
     # Gerichte zoekopdrachten voor vacatures met e-mail in de tekst
+    # %40 = @ (URL-encoded), zoekt ook naar naam@bedrijf patronen
     SEARCH_QUERIES = [
         "hr%40",
         "recruitment%40",
         "solliciteer%40",
         "vacature%40",
+        "%40bedrijf",          # any@company
         "mail+naar",
         "mailen+naar",
         "per+email+solliciteren",
+        "stuur+cv+naar",
+        "solliciteer+via+email",
+        "cv+sturen+naar",
     ]
 
     results: list[dict] = []
@@ -503,92 +562,105 @@ def _scrape_indeed(max_pages: int = 2) -> list[dict]:
             base += "&render=true"
         return base
 
+    # Gerichte zoekqueries — vacatures die een e-mailadres bevatten
+    # Combinatie van HR-rol queries en "solliciteer per email" zinnen
+    INDEED_QUERIES = [
+        "solliciteer per email",
+        "stuur cv naar",
+        "mail je cv",
+        "cv sturen naar",
+        "solliciteer via email",
+        "mail naar recruiter",
+        "reageer per email",
+    ]
+
     results: list[dict] = []
     seen_job_keys: set[str] = set()
 
-    for page_num in range(0, max_pages * 10, 10):
-        search_url = (
-            f"https://nl.indeed.com/vacatures?q=&l=Nederland&sort=date&start={page_num}"
-        )
-        try:
-            resp = requests.get(_scraper_url(search_url, render=False), headers=HEADERS, timeout=30)
-            resp.raise_for_status()
-            soup = BeautifulSoup(resp.text, "html.parser")
-        except Exception as e:
-            logger.warning("[scraper] Indeed zoekpagina %d fout: %s", page_num, e)
-            break
-
-        # Extraheer job-keys
-        job_keys = []
-        for el in soup.select("[data-jk]"):
-            jk = el.get("data-jk", "")
-            if jk and jk not in seen_job_keys:
-                job_keys.append(jk)
-                seen_job_keys.add(jk)
-
-        # Fallback: links met /rc/clk of viewjob
-        if not job_keys:
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                if "jk=" in href:
-                    import re as _re
-                    m = _re.search(r"jk=([a-f0-9]+)", href)
-                    if m:
-                        jk = m.group(1)
-                        if jk not in seen_job_keys:
-                            job_keys.append(jk)
-                            seen_job_keys.add(jk)
-
-        if not job_keys:
-            logger.info("[scraper] Indeed pagina %d: geen job-keys gevonden", page_num)
-            break
-
-        logger.info("[scraper] Indeed pagina %d: %d vacatures", page_num, len(job_keys))
-
-        for jk in job_keys[:10]:
-            detail_url = f"https://nl.indeed.com/viewjob?jk={jk}"
+    for query in INDEED_QUERIES:
+        encoded_q = quote(query)
+        for page_num in range(0, max_pages * 10, 10):
+            search_url = (
+                f"https://nl.indeed.com/vacatures?q={encoded_q}&l=Nederland&sort=date&start={page_num}"
+            )
             try:
-                detail_resp = requests.get(
-                    _scraper_url(detail_url, render=True),
-                    headers=HEADERS,
-                    timeout=60,
-                )
-                detail_resp.raise_for_status()
-                detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
-                detail_text = detail_soup.get_text(separator=" ", strip=True)
-
-                emails = _extract_emails(detail_text)
-                if not emails:
-                    continue
-
-                title_el = detail_soup.find("h1")
-                title = title_el.get_text(strip=True)[:500] if title_el else "Vacature"
-
-                company_el = detail_soup.select_one(
-                    "[data-company-name], [class*='jobsearch-CompanyInfoContainer']"
-                )
-                company = company_el.get_text(strip=True)[:500] if company_el else None
-
-                location_el = detail_soup.select_one(
-                    "[data-testid='job-location'], [class*='jobsearch-JobLocationContainer']"
-                )
-                location = location_el.get_text(strip=True)[:255] if location_el else None
-
-                for email in emails:
-                    results.append({
-                        "title": title,
-                        "description": detail_text[:2000],
-                        "company_name": company,
-                        "contact_email": email,
-                        "location": location,
-                        "source_url": detail_url,
-                        "source_name": "indeed",
-                    })
-                    logger.info("[scraper] Indeed: email gevonden — %s @ %s", email, title[:40])
-
+                resp = requests.get(_scraper_url(search_url, render=False), headers=HEADERS, timeout=30)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "html.parser")
             except Exception as e:
-                logger.debug("[scraper] Indeed job %s fout: %s", jk, e)
-                continue
+                logger.warning("[scraper] Indeed zoekpagina '%s' p%d fout: %s", query, page_num, e)
+                break
+
+            # Extraheer job-keys
+            job_keys = []
+            for el in soup.select("[data-jk]"):
+                jk = el.get("data-jk", "")
+                if jk and jk not in seen_job_keys:
+                    job_keys.append(jk)
+                    seen_job_keys.add(jk)
+
+            # Fallback: links met jk= parameter
+            if not job_keys:
+                for a in soup.find_all("a", href=True):
+                    href = a["href"]
+                    if "jk=" in href:
+                        m = re.search(r"jk=([a-f0-9]+)", href)
+                        if m:
+                            jk = m.group(1)
+                            if jk not in seen_job_keys:
+                                job_keys.append(jk)
+                                seen_job_keys.add(jk)
+
+            if not job_keys:
+                logger.info("[scraper] Indeed '%s' p%d: geen job-keys", query, page_num)
+                break
+
+            logger.info("[scraper] Indeed '%s' p%d: %d vacatures", query, page_num, len(job_keys))
+
+            for jk in job_keys[:5]:  # max 5 per query-pagina (credits sparen)
+                detail_url = f"https://nl.indeed.com/viewjob?jk={jk}"
+                try:
+                    detail_resp = requests.get(
+                        _scraper_url(detail_url, render=True),
+                        headers=HEADERS,
+                        timeout=60,
+                    )
+                    detail_resp.raise_for_status()
+                    detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+                    detail_text = detail_soup.get_text(separator=" ", strip=True)
+
+                    emails = _extract_emails(detail_text)
+                    if not emails:
+                        continue
+
+                    title_el = detail_soup.find("h1")
+                    title = title_el.get_text(strip=True)[:500] if title_el else "Vacature"
+
+                    company_el = detail_soup.select_one(
+                        "[data-company-name], [class*='jobsearch-CompanyInfoContainer']"
+                    )
+                    company = company_el.get_text(strip=True)[:500] if company_el else None
+
+                    location_el = detail_soup.select_one(
+                        "[data-testid='job-location'], [class*='jobsearch-JobLocationContainer']"
+                    )
+                    location = location_el.get_text(strip=True)[:255] if location_el else None
+
+                    for email in emails:
+                        results.append({
+                            "title": title,
+                            "description": detail_text[:2000],
+                            "company_name": company,
+                            "contact_email": email,
+                            "location": location,
+                            "source_url": detail_url,
+                            "source_name": "indeed",
+                        })
+                        logger.info("[scraper] Indeed: email gevonden — %s @ %s", email, title[:40])
+
+                except Exception as e:
+                    logger.debug("[scraper] Indeed job %s fout: %s", jk, e)
+                    continue
 
     logger.info("[scraper] Indeed → %d vacature(s) met e-mail", len(results))
     return results
