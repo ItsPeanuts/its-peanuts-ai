@@ -409,9 +409,10 @@ export default function AdminPage() {
               <h2 className="text-sm font-bold text-gray-700 mb-4">Stap 1 — Scrape een bron</h2>
               <div className="flex flex-wrap gap-3">
                 {[
-                  { source: "nvb",        label: "Nationale Vacaturebank", color: "#1d4ed8" },
+                  { source: "indeed",     label: "Indeed.nl ✦",           color: "#2557a7" },
                   { source: "werkzoeken", label: "Werkzoeken.nl",          color: "#0891b2" },
                   { source: "adzuna",     label: "Adzuna API",             color: "#7c3aed" },
+                  { source: "jobbird",    label: "Jobbird.com",            color: "#d97706" },
                   { source: "all",        label: "Alle bronnen",           color: "#0f766e" },
                 ].map((s) => (
                   <button

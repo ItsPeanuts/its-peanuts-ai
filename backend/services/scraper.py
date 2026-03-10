@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 ADZUNA_APP_ID  = os.getenv("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
+SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
 
 # Regex voor e-mailadressen
 EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b")
@@ -473,6 +474,126 @@ def _scrape_jobbird(max_pages: int = 3) -> list[dict]:
     return results
 
 
+def _scrape_indeed(max_pages: int = 2) -> list[dict]:
+    """
+    Indeed.nl scraper via ScraperAPI — handelt JavaScript-rendering en anti-bot af.
+    Vereist SCRAPERAPI_KEY (gratis tier: 1.000 credits/maand, scraperapi.com).
+
+    Creditsverbruik:
+    - Zoekpagina zonder render: 1 credit
+    - Vacaturedetail met render=true: 25 credits
+    - 2 zoekpaginas + 20 details ≈ 502 credits per run
+
+    Strategie:
+    1. Haal zoekresultaten op (zonder render, snel)
+    2. Extraheer job-keys uit de HTML
+    3. Haal detailpagina per vacature op (met render=true)
+    4. Zoek naar e-mailadressen in de volledige tekst
+    5. Sla alleen vacatures op met een e-mailadres
+    """
+    from urllib.parse import quote
+
+    if not SCRAPERAPI_KEY:
+        logger.warning("[scraper] Indeed: SCRAPERAPI_KEY niet ingesteld — sla over")
+        return []
+
+    def _scraper_url(target: str, render: bool = False) -> str:
+        base = f"http://api.scraperapi.com?api_key={SCRAPERAPI_KEY}&url={quote(target)}&country_code=nl"
+        if render:
+            base += "&render=true"
+        return base
+
+    results: list[dict] = []
+    seen_job_keys: set[str] = set()
+
+    for page_num in range(0, max_pages * 10, 10):
+        search_url = (
+            f"https://nl.indeed.com/vacatures?q=&l=Nederland&sort=date&start={page_num}"
+        )
+        try:
+            resp = requests.get(_scraper_url(search_url, render=False), headers=HEADERS, timeout=30)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+        except Exception as e:
+            logger.warning("[scraper] Indeed zoekpagina %d fout: %s", page_num, e)
+            break
+
+        # Extraheer job-keys
+        job_keys = []
+        for el in soup.select("[data-jk]"):
+            jk = el.get("data-jk", "")
+            if jk and jk not in seen_job_keys:
+                job_keys.append(jk)
+                seen_job_keys.add(jk)
+
+        # Fallback: links met /rc/clk of viewjob
+        if not job_keys:
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if "jk=" in href:
+                    import re as _re
+                    m = _re.search(r"jk=([a-f0-9]+)", href)
+                    if m:
+                        jk = m.group(1)
+                        if jk not in seen_job_keys:
+                            job_keys.append(jk)
+                            seen_job_keys.add(jk)
+
+        if not job_keys:
+            logger.info("[scraper] Indeed pagina %d: geen job-keys gevonden", page_num)
+            break
+
+        logger.info("[scraper] Indeed pagina %d: %d vacatures", page_num, len(job_keys))
+
+        for jk in job_keys[:10]:
+            detail_url = f"https://nl.indeed.com/viewjob?jk={jk}"
+            try:
+                detail_resp = requests.get(
+                    _scraper_url(detail_url, render=True),
+                    headers=HEADERS,
+                    timeout=60,
+                )
+                detail_resp.raise_for_status()
+                detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+                detail_text = detail_soup.get_text(separator=" ", strip=True)
+
+                emails = _extract_emails(detail_text)
+                if not emails:
+                    continue
+
+                title_el = detail_soup.find("h1")
+                title = title_el.get_text(strip=True)[:500] if title_el else "Vacature"
+
+                company_el = detail_soup.select_one(
+                    "[data-company-name], [class*='jobsearch-CompanyInfoContainer']"
+                )
+                company = company_el.get_text(strip=True)[:500] if company_el else None
+
+                location_el = detail_soup.select_one(
+                    "[data-testid='job-location'], [class*='jobsearch-JobLocationContainer']"
+                )
+                location = location_el.get_text(strip=True)[:255] if location_el else None
+
+                for email in emails:
+                    results.append({
+                        "title": title,
+                        "description": detail_text[:2000],
+                        "company_name": company,
+                        "contact_email": email,
+                        "location": location,
+                        "source_url": detail_url,
+                        "source_name": "indeed",
+                    })
+                    logger.info("[scraper] Indeed: email gevonden — %s @ %s", email, title[:40])
+
+            except Exception as e:
+                logger.debug("[scraper] Indeed job %s fout: %s", jk, e)
+                continue
+
+    logger.info("[scraper] Indeed → %d vacature(s) met e-mail", len(results))
+    return results
+
+
 def run_scraper(source: str, custom_urls: Optional[list[str]] = None) -> list[dict]:
     """
     Hoofd-entry voor scraping.
@@ -483,6 +604,7 @@ def run_scraper(source: str, custom_urls: Optional[list[str]] = None) -> list[di
       - "nvb"        → alias voor "arbeitnow" (NVB is een SPA, niet scrapable)
       - "werkzoeken" → Werkzoeken.nl
       - "jobbird"    → Jobbird.com (Nederlandse vacaturesite, JSON API)
+      - "indeed"     → Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
       - "custom"     → Lijst van bedrijfs-URLs (custom_urls vereist)
       - "all"        → Alle bovenstaande bronnen
 
@@ -500,6 +622,8 @@ def run_scraper(source: str, custom_urls: Optional[list[str]] = None) -> list[di
         raw += _scrape_werkzoeken()
     if source in ("jobbird", "all"):
         raw += _scrape_jobbird()
+    if source in ("indeed", "all"):
+        raw += _scrape_indeed()
     if source == "custom" or (source == "all" and custom_urls):
         for url in (custom_urls or []):
             raw += _scrape_custom_url(url)

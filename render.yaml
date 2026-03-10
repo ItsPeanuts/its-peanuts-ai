@@ -76,6 +76,10 @@ services:
       - key: ADZUNA_APP_KEY
         sync: false   # Registreer op adzuna.com/api → Application Key
 
+      # Indeed scraper via ScraperAPI (gratis tier: 1.000 credits/maand op scraperapi.com)
+      - key: SCRAPERAPI_KEY
+        sync: false   # Registreer op scraperapi.com → API Key
+
       # Stripe betalingen (abonnementen)
       - key: STRIPE_SECRET_KEY
         sync: false   # sk_live_... of sk_test_... van stripe.com/apikeys
