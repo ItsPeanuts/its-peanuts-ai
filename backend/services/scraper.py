@@ -57,6 +57,32 @@ def _extract_emails(text: str) -> list[str]:
     return result
 
 
+def _find_email_on_company_site(base_url: str) -> Optional[str]:
+    """
+    Bezoek de bedrijfswebsite en zoek een contact/hr/jobs e-mailadres.
+    Probeert de hoofdpagina + /contact + /over-ons.
+    """
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(base_url)
+        domain_root = f"{parsed.scheme}://{parsed.netloc}"
+    except Exception:
+        return None
+
+    for path in ["", "/contact", "/contact-us", "/over-ons", "/about", "/jobs", "/vacatures", "/careers"]:
+        try:
+            url = domain_root + path
+            soup = _fetch_html(url, timeout=8)
+            if not soup:
+                continue
+            emails = _extract_emails(soup.get_text(separator=" ", strip=True))
+            if emails:
+                return emails[0]
+        except Exception:
+            continue
+    return None
+
+
 def _fetch_html(url: str, timeout: int = 15) -> Optional[BeautifulSoup]:
     """Fetch een URL en geef BeautifulSoup terug, of None bij fout."""
     try:
@@ -167,23 +193,28 @@ def _scrape_nvb(max_pages: int = 3) -> list[dict]:
                 location_el = detail_soup.select_one("[class*='location'], [class*='place']")
                 location = location_el.get_text(strip=True)[:255] if location_el else None
 
-                if emails:
-                    for email in emails:
-                        results.append({
-                            "title": title,
-                            "description": detail_text[:2000],
-                            "company_name": company,
-                            "contact_email": email,
-                            "location": location,
-                            "source_url": link,
-                            "source_name": "nvb",
-                        })
-                else:
+                # Geen e-mail in vacaturetekst → probeer bedrijfswebsite
+                if not emails:
+                    company_link = None
+                    for a in detail_soup.find_all("a", href=True):
+                        href = a["href"]
+                        if href.startswith("http") and "nationalevacaturebank" not in href:
+                            company_link = href
+                            break
+                    if company_link:
+                        found = _find_email_on_company_site(company_link)
+                        if found:
+                            emails = [found]
+
+                if not emails:
+                    continue  # Sla vacature over als er écht geen e-mail te vinden is
+
+                for email in emails:
                     results.append({
                         "title": title,
                         "description": detail_text[:2000],
                         "company_name": company,
-                        "contact_email": None,
+                        "contact_email": email,
                         "location": location,
                         "source_url": link,
                         "source_name": "nvb",
@@ -236,23 +267,28 @@ def _scrape_werkzoeken(max_pages: int = 3) -> list[dict]:
                 location_el = detail_soup.select_one("[class*='location'], [class*='locatie']")
                 location = location_el.get_text(strip=True)[:255] if location_el else None
 
-                if emails:
-                    for email in emails:
-                        results.append({
-                            "title": title,
-                            "description": detail_text[:2000],
-                            "company_name": company,
-                            "contact_email": email,
-                            "location": location,
-                            "source_url": link,
-                            "source_name": "werkzoeken",
-                        })
-                else:
+                # Geen e-mail → probeer bedrijfswebsite
+                if not emails:
+                    company_link = None
+                    for a in detail_soup.find_all("a", href=True):
+                        href = a["href"]
+                        if href.startswith("http") and "werkzoeken" not in href:
+                            company_link = href
+                            break
+                    if company_link:
+                        found = _find_email_on_company_site(company_link)
+                        if found:
+                            emails = [found]
+
+                if not emails:
+                    continue
+
+                for email in emails:
                     results.append({
                         "title": title,
                         "description": detail_text[:2000],
                         "company_name": company,
-                        "contact_email": None,
+                        "contact_email": email,
                         "location": location,
                         "source_url": link,
                         "source_name": "werkzoeken",
@@ -296,39 +332,36 @@ def _scrape_adzuna(pages: int = 2) -> list[dict]:
             emails = _extract_emails(description)
 
             # Probeer ook redirect URL voor e-mail als description leeg is
+            redirect = job.get("redirect_url", "")
+            if not emails and redirect:
+                try:
+                    detail_resp = requests.get(
+                        redirect, headers=HEADERS, timeout=10, allow_redirects=True
+                    )
+                    emails = _extract_emails(detail_resp.text)
+                except Exception:
+                    pass
+
+            # Probeer bedrijfswebsite als fallback
+            if not emails and redirect:
+                found = _find_email_on_company_site(redirect)
+                if found:
+                    emails = [found]
+
             if not emails:
-                redirect = job.get("redirect_url", "")
-                if redirect:
-                    try:
-                        detail_resp = requests.get(
-                            redirect, headers=HEADERS, timeout=10, allow_redirects=True
-                        )
-                        emails = _extract_emails(detail_resp.text)
-                    except Exception:
-                        pass
+                continue  # Sla vacature over als er écht geen e-mail te vinden is
 
             title = (job.get("title") or "Vacature")[:500]
             company = (job.get("company", {}).get("display_name") or "")[:500] or None
             location = (job.get("location", {}).get("display_name") or "")[:255] or None
-            source_url = job.get("redirect_url") or job.get("adref") or ""
+            source_url = redirect or job.get("adref") or ""
 
-            if emails:
-                for email in emails:
-                    results.append({
-                        "title": title,
-                        "description": description[:2000],
-                        "company_name": company,
-                        "contact_email": email,
-                        "location": location,
-                        "source_url": source_url,
-                        "source_name": "adzuna",
-                    })
-            else:
+            for email in emails:
                 results.append({
                     "title": title,
                     "description": description[:2000],
                     "company_name": company,
-                    "contact_email": None,
+                    "contact_email": email,
                     "location": location,
                     "source_url": source_url,
                     "source_name": "adzuna",
