@@ -5,11 +5,14 @@ export default function PublicFooter() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center text-white font-bold text-xs">
-              P
+              V
             </div>
-            <span className="font-semibold text-white text-sm">It&apos;s Peanuts AI</span>
+            <span className="font-semibold text-white text-sm">VorzaIQ</span>
           </div>
-          <p className="text-sm">&copy; 2025 It&apos;s Peanuts AI. Slim solliciteren &amp; slim werven.</p>
+          <p className="text-sm">&copy; 2025 VorzaIQ. Find smarter. Hire faster.</p>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-800 text-center">
+          <span className="text-xs text-gray-600">Powered by It&apos;s Peanuts AI</span>
         </div>
       </div>
     </footer>

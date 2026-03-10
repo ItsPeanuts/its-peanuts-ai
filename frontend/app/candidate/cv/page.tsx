@@ -74,7 +74,7 @@ export default function CVBeheerPage() {
         justifyContent: "space-between",
         height: 60,
       }}>
-        <a href="/" style={{ fontWeight: 800, fontSize: 20, color: "#0A66C2", textDecoration: "none" }}>ItsPeanuts AI</a>
+        <a href="/" style={{ fontWeight: 800, fontSize: 20, color: "#0A66C2", textDecoration: "none" }}>VorzaIQ</a>
         <div style={{ display: "flex", gap: 4 }}>
           {NAV_ITEMS.map((item) => (
             <a key={item.href} href={item.href} style={{

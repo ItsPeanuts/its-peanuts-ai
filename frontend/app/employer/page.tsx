@@ -344,8 +344,8 @@ export default function EmployerPage() {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 min-h-screen">
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0f766e" }}>P</div>
-            <span className="font-bold text-gray-900 text-sm">It&apos;s Peanuts AI</span>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0f766e" }}>V</div>
+            <span className="font-bold text-gray-900 text-sm">VorzaIQ</span>
           </div>
           <div className="text-xs text-gray-400 mt-1 truncate">{userEmail}</div>
         </div>
@@ -863,7 +863,7 @@ export default function EmployerPage() {
                   <input
                     value={aiWebsite}
                     onChange={(e) => setAiWebsite(e.target.value)}
-                    placeholder="Bedrijfswebsite (optioneel) — bijv. https://itspeanuts.nl"
+                    placeholder="Bedrijfswebsite (optioneel) — bijv. https://vorzaiq.nl"
                     className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
                   />
                   <button

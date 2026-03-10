@@ -121,7 +121,7 @@ function AbonnementenContent() {
         height: 60,
       }}>
         <a href="/" style={{ fontWeight: 800, fontSize: 20, color: "#0A66C2", textDecoration: "none" }}>
-          ItsPeanuts AI
+          VorzaIQ
         </a>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {role === "employer" && (

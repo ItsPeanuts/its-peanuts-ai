@@ -42,7 +42,7 @@ export default function AdminSetupPage() {
           <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: "#7c3aed" }}>A</div>
           <div>
             <div className="font-bold text-gray-900">Admin setup</div>
-            <div className="text-xs text-gray-400">It&apos;s Peanuts AI — eenmalige configuratie</div>
+            <div className="text-xs text-gray-400">VorzaIQ — eenmalige configuratie</div>
           </div>
         </div>
 

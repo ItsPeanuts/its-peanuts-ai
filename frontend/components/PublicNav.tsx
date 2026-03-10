@@ -6,14 +6,14 @@ export default function PublicNav() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 no-underline group">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm">
-            P
+            V
           </div>
           <div>
             <span className="font-bold text-gray-900 text-base leading-tight block">
-              It&apos;s Peanuts AI
+              VorzaIQ
             </span>
             <span className="text-xs text-gray-400 leading-tight block hidden sm:block">
-              Slim solliciteren &amp; slim werven
+              Find smarter. Hire faster.
             </span>
           </div>
         </Link>

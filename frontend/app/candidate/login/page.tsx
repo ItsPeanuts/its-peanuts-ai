@@ -62,11 +62,11 @@ export default function CandidateLoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0f766e" }}>
-              P
+              V
             </div>
             <div className="text-left">
-              <div className="font-bold text-gray-900 text-lg leading-tight">It&apos;s Peanuts AI</div>
-              <div className="text-xs text-gray-400">Slim solliciteren & werven</div>
+              <div className="font-bold text-gray-900 text-lg leading-tight">VorzaIQ</div>
+              <div className="text-xs text-gray-400">Find smarter. Hire faster.</div>
             </div>
           </Link>
         </div>

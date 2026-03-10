@@ -79,7 +79,7 @@ const SETUP_GUIDES: Record<string, { title: string; steps: string[]; link: strin
     title: "Microsoft Graph instellen (Teams meetings + agenda)",
     steps: [
       "Ga naar https://portal.azure.com → Azure Active Directory → App registrations",
-      "Klik 'New registration' → geef naam: 'ItsPeanuts Lisa'",
+      "Klik 'New registration' → geef naam: 'VorzaIQ Lisa'",
       "Kopieer Application (client) ID → MS_CLIENT_ID",
       "Kopieer Directory (tenant) ID → MS_TENANT_ID",
       "Ga naar Certificates & secrets → New client secret → kopieer → MS_CLIENT_SECRET",
@@ -107,7 +107,7 @@ const SETUP_GUIDES: Record<string, { title: string; steps: string[]; link: strin
     title: "HubSpot CRM instellen",
     steps: [
       "Ga naar https://app.hubspot.com/private-apps",
-      "Klik 'Create a private app' → geef naam: 'ItsPeanuts AI'",
+      "Klik 'Create a private app' → geef naam: 'VorzaIQ'",
       "Ga naar Scopes → voeg toe: crm.objects.contacts.write + crm.objects.deals.write + crm.objects.notes.write",
       "Klik 'Create app' → kopieer het token",
       "Stel in Render in: CRM_PROVIDER = hubspot",
@@ -185,8 +185,8 @@ export default function IntegratiesPage() {
       {/* Topbar */}
       <nav className="bg-white border-b border-gray-200 h-14 flex items-center px-6 gap-4">
         <Link href="/employer" className="flex items-center gap-2 no-underline">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0DA89E" }}>P</div>
-          <span className="font-bold text-gray-900 text-sm">It&apos;s Peanuts AI</span>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0DA89E" }}>V</div>
+          <span className="font-bold text-gray-900 text-sm">VorzaIQ</span>
         </Link>
         <span className="text-gray-300 text-lg">/</span>
         <span className="text-sm font-medium text-gray-600">Integraties</span>

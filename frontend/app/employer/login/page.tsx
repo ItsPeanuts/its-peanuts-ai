@@ -83,10 +83,10 @@ export default function EmployerLoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0f766e" }}>
-              P
+              V
             </div>
             <div className="text-left">
-              <div className="font-bold text-gray-900 text-lg leading-tight">It&apos;s Peanuts AI</div>
+              <div className="font-bold text-gray-900 text-lg leading-tight">VorzaIQ</div>
               <div className="text-xs text-gray-400">Werkgeversportaal</div>
             </div>
           </Link>
@@ -164,7 +164,7 @@ export default function EmployerLoginPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                   Bootstrap Token
-                  <span className="ml-1 text-xs text-gray-400 font-normal">(ontvangen via It&apos;s Peanuts)</span>
+                  <span className="ml-1 text-xs text-gray-400 font-normal">(ontvangen via VorzaIQ)</span>
                 </label>
                 <input type="text" required value={regToken} onChange={(e) => setRegToken(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx"

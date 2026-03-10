@@ -98,10 +98,10 @@ export default function ClaimPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-2xl mb-4">
-            <span className="text-white text-2xl font-black">IP</span>
+            <span className="text-white text-2xl font-black">V</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">ItsPeanuts AI</h1>
-          <p className="text-gray-500 mt-1">Uw recruitment partner</p>
+          <h1 className="text-2xl font-bold text-gray-900">VorzaIQ</h1>
+          <p className="text-gray-500 mt-1">The Smart Way to Hire</p>
         </div>
 
         {/* Card */}
@@ -128,7 +128,7 @@ export default function ClaimPage() {
 
             {/* Uitleg */}
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-              ItsPeanuts AI heeft uw vacature gevonden en gratis op ons platform gepubliceerd.
+              VorzaIQ heeft uw vacature gevonden en gratis op ons platform gepubliceerd.
               Activeer uw gratis account om de sollicitant te bekijken en te reageren.
               <br />
               <span className="font-semibold text-gray-800">Geen creditcard vereist.</span>
@@ -185,7 +185,7 @@ export default function ClaimPage() {
             {/* Disclaimer */}
             <p className="text-xs text-gray-400 leading-relaxed">
               U ontvangt deze mail omdat iemand heeft gesolliciteerd op een vacature die door
-              ItsPeanuts AI is gevonden op internet. Uw eerste vacature is altijd gratis. Meerdere
+              VorzaIQ is gevonden op internet. Uw eerste vacature is altijd gratis. Meerdere
               vacatures plaatsen? Upgrade uw abonnement vanuit het dashboard.
             </p>
           </div>

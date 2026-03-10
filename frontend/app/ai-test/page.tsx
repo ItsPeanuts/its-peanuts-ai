@@ -152,7 +152,7 @@ export default function AITestPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">AI Test Omgeving</h1>
-              <p className="text-sm text-gray-500">Test de AI-functies van It&apos;s Peanuts</p>
+              <p className="text-sm text-gray-500">Test de AI-functies van VorzaIQ</p>
             </div>
           </div>
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs font-medium">

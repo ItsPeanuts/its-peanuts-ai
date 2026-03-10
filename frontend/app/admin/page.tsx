@@ -232,7 +232,7 @@ export default function AdminPage() {
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7c3aed" }}>A</div>
             <span className="font-bold text-gray-900 text-sm">Admin Panel</span>
           </div>
-          <div className="text-xs text-gray-400 mt-1">It&apos;s Peanuts AI</div>
+          <div className="text-xs text-gray-400 mt-1">VorzaIQ</div>
         </div>
 
         <nav className="flex-1 p-3 space-y-1">

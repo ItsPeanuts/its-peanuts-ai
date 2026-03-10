@@ -326,7 +326,7 @@ export default function VideoInterviewPage() {
         setTimeout(async () => {
           setStage("intro");
           const introText =
-            `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
+            `Hallo! Ik ben Lisa, AI HR-recruiter van VorzaIQ. ` +
             `Fijn dat u de tijd neemt voor dit interview. ` +
             `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd. ` +
             `Bent u er klaar voor? Dan beginnen we nu.`;
@@ -385,7 +385,7 @@ export default function VideoInterviewPage() {
       setTimeout(async () => {
         setStage("intro");
         const introText =
-          `Hallo! Ik ben Lisa, AI HR-recruiter van It's Peanuts. ` +
+          `Hallo! Ik ben Lisa, AI HR-recruiter van VorzaIQ. ` +
           `Fijn dat u de tijd neemt voor dit video interview. ` +
           `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
           `Bent u er klaar voor? Dan beginnen we nu.`;
@@ -501,7 +501,7 @@ export default function VideoInterviewPage() {
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
-          ItsPeanuts AI · Video Interview
+          VorzaIQ · Video Interview
         </div>
         <div style={{
           background: stage === "listening" ? "#22c55e" : stage === "speaking" ? "#3b82f6" : stage === "connecting" ? "#f59e0b" : "#6b7280",
