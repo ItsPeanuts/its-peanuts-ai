@@ -3,12 +3,19 @@ Vacature Scraper — haalt vacatures op van externe bronnen.
 
 Bronnen:
 - Adzuna API (meest betrouwbaar, vereist ADZUNA_APP_ID + ADZUNA_APP_KEY)
-- Nationale Vacaturebank (BeautifulSoup)
+- Arbeitnow API (gratis, geen key vereist, Europese vacatures)
 - Werkzoeken.nl (BeautifulSoup)
 - Custom URLs (admin-opgegeven bedrijfscarrièrepagina's)
 
-Alle vacatures worden opgeslagen, ongeacht of er een e-mailadres bij staat.
-Als er wél een e-mail is, wordt de claim-flow getriggerd zodra iemand solliciteert.
+Wijzigingen (2026-03-10):
+- NVB vervangen door Arbeitnow API: NVB is een client-side Next.js SPA —
+  BeautifulSoup krijgt alleen een leeg HTML-shell zonder vacaturedata.
+  Arbeitnow biedt een gratis JSON API zonder authenticatie.
+- `if not emails: continue` verwijderd in alle scrapers — vacatures worden
+  nu altijd opgeslagen, ook als er geen contact_email gevonden wordt.
+  Dit was de primaire reden waarom de scraper 0 resultaten retourneerde.
+- HEADERS bijgewerkt naar een echte browser User-Agent met Accept headers.
+
 Deduplicatie: zelfde source_url OF contact_email+title combinatie wordt niet dubbel opgeslagen.
 """
 
@@ -50,11 +57,15 @@ EMAIL_BLOCKLIST_CONTAINS = {
     "postmaster", "webmaster", "abuse", "spam", "unsubscribe",
 }
 
+# Echte browser headers — voorkomt 403/bot-blokkering op veel sites
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; ItsPeanutsBot/1.0; "
-        "+https://its-peanuts-frontend.onrender.com)"
-    )
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
 }
 
 
@@ -188,77 +199,74 @@ def _scrape_custom_url(url: str) -> list[dict]:
         }]
 
 
-def _scrape_nvb(max_pages: int = 3) -> list[dict]:
+def _scrape_arbeitnow(pages: int = 3) -> list[dict]:
     """
-    Scrape Nationale Vacaturebank zoekresultaten.
-    Bezoekt detailpagina's. Slaat alle vacatures op, ook zonder e-mail.
+    Arbeitnow Jobs API — gratis, geen key vereist, Europese vacatures.
+    API docs: https://www.arbeitnow.com/api
+
+    Vervangt de NVB scraper: NVB is een client-side Next.js SPA die met
+    BeautifulSoup alleen een leeg HTML-shell teruggeeft.
+    Arbeitnow biedt een stabiele JSON API zonder authenticatie.
+
+    Vacatures worden altijd opgeslagen, ook zonder e-mailadres.
     """
     results = []
-    for page in range(1, max_pages + 1):
-        url = f"https://www.nationalevacaturebank.nl/vacature/zoeken?page={page}"
-        soup = _fetch_html(url)
-        if not soup:
+    for page in range(1, pages + 1):
+        url = f"https://www.arbeitnow.com/api/job-board-api?page={page}"
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=20)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning("[scraper] Arbeitnow API fout pagina %d: %s", page, e)
             break
 
-        cards = soup.select("article.vacancy-card, .vacancy-list-item, [data-vacancy-id]")
-        if not cards:
-            cards = [a for a in soup.find_all("a", href=True) if "/vacature/" in a["href"]][:20]
+        jobs = data.get("data", [])
+        if not jobs:
+            break
 
-        for card in cards[:10]:
-            try:
-                link = card.get("href") or (card.find("a") or {}).get("href", "")
-                if not link:
-                    continue
-                if not link.startswith("http"):
-                    link = "https://www.nationalevacaturebank.nl" + link
+        for job in jobs:
+            description = job.get("description", "") or ""
+            emails = _extract_emails(description)
 
-                detail_soup = _fetch_html(link)
-                if not detail_soup:
-                    continue
+            # Probeer bedrijfswebsite als er geen e-mail in de beschrijving staat
+            job_url = job.get("url", "")
+            if not emails and job_url:
+                found = _find_email_on_company_site(job_url)
+                if found:
+                    emails = [found]
 
-                detail_text = detail_soup.get_text(separator=" ", strip=True)
-                emails = _extract_emails(detail_text)
+            title = (job.get("title") or "Vacature")[:500]
+            company = (job.get("company_name") or "")[:500] or None
+            location = (job.get("location") or "")[:255] or None
+            tags = job.get("tags", [])
+            tag_str = ", ".join(tags[:5]) if tags else ""
+            full_description = f"{description}\n\nTags: {tag_str}".strip()[:2000]
 
-                title_el = detail_soup.find("h1")
-                title = title_el.get_text(strip=True)[:500] if title_el else "Vacature"
-
-                company_el = detail_soup.select_one("[class*='company'], [class*='employer']")
-                company = company_el.get_text(strip=True)[:500] if company_el else None
-
-                location_el = detail_soup.select_one("[class*='location'], [class*='place']")
-                location = location_el.get_text(strip=True)[:255] if location_el else None
-
-                # Geen e-mail in vacaturetekst → probeer bedrijfswebsite
-                if not emails:
-                    company_link = None
-                    for a in detail_soup.find_all("a", href=True):
-                        href = a["href"]
-                        if href.startswith("http") and "nationalevacaturebank" not in href:
-                            company_link = href
-                            break
-                    if company_link:
-                        found = _find_email_on_company_site(company_link)
-                        if found:
-                            emails = [found]
-
-                if not emails:
-                    continue  # Sla vacature over als er écht geen e-mail te vinden is
-
+            if emails:
                 for email in emails:
                     results.append({
                         "title": title,
-                        "description": detail_text[:2000],
+                        "description": full_description,
                         "company_name": company,
                         "contact_email": email,
                         "location": location,
-                        "source_url": link,
-                        "source_name": "nvb",
+                        "source_url": job_url,
+                        "source_name": "arbeitnow",
                     })
-            except Exception as e:
-                logger.debug("[scraper] NVB kaart fout: %s", e)
-                continue
+            else:
+                # Sla op zonder e-mail — contact_email is None
+                results.append({
+                    "title": title,
+                    "description": full_description,
+                    "company_name": company,
+                    "contact_email": None,
+                    "location": location,
+                    "source_url": job_url,
+                    "source_name": "arbeitnow",
+                })
 
-    logger.info("[scraper] NVB → %d vacature(s) totaal", len(results))
+    logger.info("[scraper] Arbeitnow → %d vacature(s) totaal", len(results))
     return results
 
 
@@ -266,6 +274,10 @@ def _scrape_werkzoeken(max_pages: int = 3) -> list[dict]:
     """
     Scrape Werkzoeken.nl zoekresultaten.
     Slaat alle vacatures op, ook zonder e-mail.
+
+    Werkzoeken.nl beheert sollicitaties via hun eigen platform
+    (reageer-direct-per-email links), dus e-mailadressen staan zelden
+    in de vacaturetekst. Vacatures worden nu altijd opgeslagen.
     """
     results = []
     for page in range(1, max_pages + 1):
@@ -315,15 +327,24 @@ def _scrape_werkzoeken(max_pages: int = 3) -> list[dict]:
                         if found:
                             emails = [found]
 
-                if not emails:
-                    continue
-
-                for email in emails:
+                if emails:
+                    for email in emails:
+                        results.append({
+                            "title": title,
+                            "description": detail_text[:2000],
+                            "company_name": company,
+                            "contact_email": email,
+                            "location": location,
+                            "source_url": link,
+                            "source_name": "werkzoeken",
+                        })
+                else:
+                    # Sla op zonder e-mail — eerder werden deze vacatures overgeslagen
                     results.append({
                         "title": title,
                         "description": detail_text[:2000],
                         "company_name": company,
-                        "contact_email": email,
+                        "contact_email": None,
                         "location": location,
                         "source_url": link,
                         "source_name": "werkzoeken",
@@ -340,7 +361,7 @@ def _scrape_adzuna(pages: int = 2) -> list[dict]:
     """
     Adzuna Jobs API — meest betrouwbaar.
     Vereist ADZUNA_APP_ID + ADZUNA_APP_KEY (gratis tier beschikbaar op adzuna.com/api).
-    Slaat alle vacatures op; probeert e-mail te vinden maar vereist het niet.
+    Vacatures worden altijd opgeslagen, ook zonder e-mail.
     """
     if not ADZUNA_APP_ID or not ADZUNA_APP_KEY:
         logger.warning("[scraper] Adzuna: ADZUNA_APP_ID of ADZUNA_APP_KEY niet ingesteld")
@@ -383,20 +404,29 @@ def _scrape_adzuna(pages: int = 2) -> list[dict]:
                 if found:
                     emails = [found]
 
-            if not emails:
-                continue  # Sla vacature over als er écht geen e-mail te vinden is
-
             title = (job.get("title") or "Vacature")[:500]
             company = (job.get("company", {}).get("display_name") or "")[:500] or None
             location = (job.get("location", {}).get("display_name") or "")[:255] or None
             source_url = redirect or job.get("adref") or ""
 
-            for email in emails:
+            if emails:
+                for email in emails:
+                    results.append({
+                        "title": title,
+                        "description": description[:2000],
+                        "company_name": company,
+                        "contact_email": email,
+                        "location": location,
+                        "source_url": source_url,
+                        "source_name": "adzuna",
+                    })
+            else:
+                # Sla op zonder e-mail
                 results.append({
                     "title": title,
                     "description": description[:2000],
                     "company_name": company,
-                    "contact_email": email,
+                    "contact_email": None,
                     "location": location,
                     "source_url": source_url,
                     "source_name": "adzuna",
@@ -412,7 +442,8 @@ def run_scraper(source: str, custom_urls: list[str] | None = None) -> list[dict]
 
     source:
       - "adzuna"     → Adzuna Jobs API
-      - "nvb"        → Nationale Vacaturebank
+      - "arbeitnow"  → Arbeitnow Jobs API (gratis, geen key)
+      - "nvb"        → alias voor "arbeitnow" (NVB is een SPA, niet scrapable)
       - "werkzoeken" → Werkzoeken.nl
       - "custom"     → Lijst van bedrijfs-URLs (custom_urls vereist)
       - "all"        → Alle bovenstaande bronnen
@@ -425,8 +456,8 @@ def run_scraper(source: str, custom_urls: list[str] | None = None) -> list[dict]
 
     if source in ("adzuna", "all"):
         raw += _scrape_adzuna()
-    if source in ("nvb", "all"):
-        raw += _scrape_nvb()
+    if source in ("arbeitnow", "nvb", "all"):
+        raw += _scrape_arbeitnow()
     if source in ("werkzoeken", "all"):
         raw += _scrape_werkzoeken()
     if source == "custom" or (source == "all" and custom_urls):
