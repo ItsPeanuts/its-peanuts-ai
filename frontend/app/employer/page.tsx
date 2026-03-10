@@ -59,6 +59,7 @@ export default function EmployerPage() {
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
   const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions" | "analytics">("vacancies");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -130,6 +131,14 @@ export default function EmployerPage() {
       }
     })();
   }, [router, role, token]);
+
+  function handleNewVacancy() {
+    if (userPlan === "gratis" && vacancies.length >= 1) {
+      setShowUpgradeModal(true);
+    } else {
+      setView("new-vacancy");
+    }
+  }
 
   async function loadApplications(vacancyId?: number) {
     try {
@@ -374,7 +383,7 @@ export default function EmployerPage() {
           </button>
 
           <button
-            onClick={() => setView("new-vacancy")}
+            onClick={handleNewVacancy}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "new-vacancy" ? "text-orange-700 bg-orange-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -447,7 +456,7 @@ export default function EmployerPage() {
                 <p className="text-sm text-gray-500 mt-1">{vacancies.length} actieve vacature{vacancies.length !== 1 ? "s" : ""}</p>
               </div>
               <button
-                onClick={() => setView("new-vacancy")}
+                onClick={handleNewVacancy}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90"
                 style={{ background: "#f97316" }}
               >
@@ -477,7 +486,7 @@ export default function EmployerPage() {
               <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
                 <div className="text-lg font-semibold text-gray-700 mb-2">Nog geen vacatures</div>
                 <div className="text-gray-400 text-sm mb-6">Plaats je eerste vacature en vind de beste kandidaten.</div>
-                <button onClick={() => setView("new-vacancy")}
+                <button onClick={handleNewVacancy}
                   className="px-6 py-3 rounded-xl text-sm font-bold text-white hover:opacity-90" style={{ background: "#f97316" }}>
                   + Vacature plaatsen
                 </button>
@@ -1203,6 +1212,94 @@ export default function EmployerPage() {
           );
         })()}
       </main>
+
+      {/* ── Upgrade modal (gratis plan, 2e vacature) ── */}
+      {showUpgradeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowUpgradeModal(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg, #6D28D9, #A78BFA)", padding: "28px 28px 20px" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white text-xs font-semibold uppercase tracking-widest opacity-70">VorzaIQ</span>
+                <button onClick={() => setShowUpgradeModal(false)} className="text-white opacity-60 hover:opacity-100 text-lg leading-none">✕</button>
+              </div>
+              <h2 className="text-white text-xl font-bold">Je gratis vacature is gebruikt</h2>
+              <p className="text-purple-100 text-sm mt-1">Upgrade je plan om meer vacatures te plaatsen en meer kandidaten te bereiken.</p>
+            </div>
+
+            {/* Plans */}
+            <div className="p-6 space-y-3">
+              {[
+                {
+                  name: "Normaal",
+                  price: "€250",
+                  period: "/mnd",
+                  color: "#2563eb",
+                  bg: "#eff6ff",
+                  border: "#bfdbfe",
+                  items: ["10 vacatures per jaar", "Onbeperkt chatbot Lisa", "Teams interview planning", "CRM integratie"],
+                },
+                {
+                  name: "Premium",
+                  price: "€1.000",
+                  period: "/mnd",
+                  color: "#7C3AED",
+                  bg: "#faf5ff",
+                  border: "#c4b5fd",
+                  badge: "Meest gekozen",
+                  items: ["Onbeperkt vacatures", "Virtuele Lisa (AI avatar)", "Prioriteit plaatsing", "Dedicated support"],
+                },
+              ].map((plan) => (
+                <div key={plan.name} style={{ border: `2px solid ${plan.border}`, background: plan.bg, borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span style={{ fontWeight: 800, fontSize: 15, color: plan.color }}>{plan.name}</span>
+                      {(plan as { badge?: string }).badge && (
+                        <span style={{ fontSize: 10, fontWeight: 700, background: plan.color, color: "#fff", borderRadius: 100, padding: "2px 8px" }}>{(plan as { badge?: string }).badge}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                      {plan.items.map(item => (
+                        <span key={item} style={{ fontSize: 12, color: "#374151" }}>✓ {item}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div style={{ fontWeight: 900, fontSize: 20, color: "#111827" }}>{plan.price}</div>
+                    <div style={{ fontSize: 11, color: "#6b7280" }}>{plan.period}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 pb-6 flex gap-3">
+              <Link
+                href="/abonnementen"
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white text-center no-underline"
+                style={{ background: "linear-gradient(135deg, #6D28D9, #7C3AED)" }}
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                Bekijk alle abonnementen →
+              </Link>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="px-4 py-3 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                Later
+              </button>
+            </div>
+
+            <div className="px-6 pb-5 text-center">
+              <span className="text-xs text-gray-400">Vragen? Mail ons op <a href="mailto:info@itspeanuts.ai" className="text-purple-600 no-underline">info@itspeanuts.ai</a></span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Interview plannen modal ── */}
       {interviewModal && (
