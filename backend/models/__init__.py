@@ -9,6 +9,7 @@ from backend.models.recruiter_chat import RecruiterChatMessage
 from backend.models.interview_session import InterviewSession
 from backend.models.crm_sync import CRMSync
 from backend.models.virtual_interview import VirtualInterviewSession
+from backend.models.scraped_vacancy import ScrapedVacancy
 
 __all__ = [
     "Base",
@@ -23,6 +24,7 @@ __all__ = [
     "InterviewSession",
     "CRMSync",
     "VirtualInterviewSession",
+    "ScrapedVacancy",
 ]
 
 

@@ -18,6 +18,7 @@ from backend.security import hash_password
 WERKGEVER_EMAIL = "werkgever@test.nl"
 KANDIDAAT_EMAIL = "kandidaat@test.nl"
 TEST_PASSWORD   = "TestPeanuts2025!"
+SYSTEM_EMAIL    = "system@itspeanuts.ai"
 
 # Admin account — configureerbaar via env vars zodat het wachtwoord veilig is
 ADMIN_EMAIL    = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
@@ -83,7 +84,24 @@ def seed_test_data() -> None:
         else:
             print(f"[seed] kandidaat bestaat al: {KANDIDAAT_EMAIL}")
 
-        # ── 3. Demo-vacature (gekoppeld aan test werkgever) ────────────
+        # ── 3. Systeem-werkgever (eigenaar van gescrapete vacatures) ──────
+        system_user = db.query(models.User).filter_by(email=SYSTEM_EMAIL).first()
+        if not system_user:
+            system_user = models.User(
+                email=SYSTEM_EMAIL,
+                full_name="ItsPeanuts AI Platform",
+                hashed_password=hash_password("SysP3anutsX!2025#"),
+                role="employer",
+                plan="normaal",
+            )
+            db.add(system_user)
+            db.commit()
+            db.refresh(system_user)
+            print(f"[seed] systeem-werkgever aangemaakt: {SYSTEM_EMAIL}")
+        else:
+            print(f"[seed] systeem-werkgever bestaat al: {SYSTEM_EMAIL}")
+
+        # ── 4. Demo-vacature (gekoppeld aan test werkgever) ────────────
         existing_vacancy = (
             db.query(models.Vacancy)
             .filter_by(employer_id=werkgever.id, title="Full-Stack Developer (Demo)")

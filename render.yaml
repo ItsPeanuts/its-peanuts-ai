@@ -70,6 +70,12 @@ services:
       - key: VIRTUAL_INTERVIEW_THRESHOLD
         value: "60"   # Minimumscore voor auto-plan 2e gesprek
 
+      # Vacature scraper — Adzuna Jobs API (gratis tier op adzuna.com/api)
+      - key: ADZUNA_APP_ID
+        sync: false   # Registreer op adzuna.com/api → Application ID
+      - key: ADZUNA_APP_KEY
+        sync: false   # Registreer op adzuna.com/api → Application Key
+
       # Stripe betalingen (abonnementen)
       - key: STRIPE_SECRET_KEY
         sync: false   # sk_live_... of sk_test_... van stripe.com/apikeys

@@ -1,0 +1,331 @@
+"""
+Scraper Admin Router + Claim Flow
+
+Endpoints (admin):
+  POST /admin/scrape                      → start scraping
+  GET  /admin/scraped-vacancies           → lijst per status
+  POST /admin/scraped-vacancies/{id}/publish → publiceer als Vacancy
+  DELETE /admin/scraped-vacancies/{id}    → verwijder record
+
+Endpoints (publiek — claim flow):
+  GET  /claim/{token}  → vacature info voor claim-pagina
+  POST /claim/{token}  → werkgever registreert + vacancy wordt overgedragen
+"""
+
+import logging
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from backend.db import get_db
+from backend import models
+from backend.routers.auth import get_current_user, require_role
+from backend.security import hash_password, create_access_token
+from backend.services.scraper import run_scraper
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["scraper-admin"])
+
+SYSTEM_EMAIL = "system@itspeanuts.ai"
+
+
+# ── Schemas ──────────────────────────────────────────────────────────────────
+
+class ScrapeRequest(BaseModel):
+    source: str  # "adzuna" | "nvb" | "werkzoeken" | "custom" | "all"
+    urls: Optional[List[str]] = None  # alleen bij source="custom"
+
+
+class ScrapedVacancyOut(BaseModel):
+    id: int
+    title: str
+    company_name: Optional[str]
+    contact_email: str
+    location: Optional[str]
+    source_name: Optional[str]
+    source_url: Optional[str]
+    status: str
+    claim_notified: bool
+    scraped_at: Optional[str]
+    published_at: Optional[str]
+    claimed_at: Optional[str]
+    vacancy_id: Optional[int]
+
+    class Config:
+        from_attributes = True
+
+
+class ScrapeResult(BaseModel):
+    scraped: int
+    saved: int
+    skipped_duplicates: int
+
+
+class ClaimInfoOut(BaseModel):
+    vacancy_title: str
+    company_name: Optional[str]
+    status: str
+
+
+class ClaimRequest(BaseModel):
+    company_name: str
+    password: str
+
+
+class ClaimResponse(BaseModel):
+    access_token: str
+    user_id: int
+    vacancy_id: int
+
+
+# ── Admin endpoints ───────────────────────────────────────────────────────────
+
+@router.post("/admin/scrape", response_model=ScrapeResult)
+def trigger_scrape(
+    payload: ScrapeRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin")),
+):
+    """Start scraping op basis van de opgegeven bron."""
+    raw = run_scraper(source=payload.source, custom_urls=payload.urls)
+
+    saved = 0
+    skipped = 0
+
+    for item in raw:
+        # Deduplicatie: zelfde email + title bestaat al?
+        existing = (
+            db.query(models.ScrapedVacancy)
+            .filter(
+                models.ScrapedVacancy.contact_email == item["contact_email"].lower(),
+                models.ScrapedVacancy.title == item["title"],
+            )
+            .first()
+        )
+        if existing:
+            skipped += 1
+            continue
+
+        sv = models.ScrapedVacancy(
+            title=item["title"],
+            description=item.get("description"),
+            company_name=item.get("company_name"),
+            contact_email=item["contact_email"].lower(),
+            location=item.get("location"),
+            source_url=item.get("source_url"),
+            source_name=item.get("source_name"),
+        )
+        db.add(sv)
+        saved += 1
+
+    db.commit()
+    logger.info("[scraper-admin] Scrape afgerond: %d gevonden, %d opgeslagen, %d skip", len(raw), saved, skipped)
+
+    return ScrapeResult(scraped=len(raw), saved=saved, skipped_duplicates=skipped)
+
+
+@router.get("/admin/scraped-vacancies", response_model=List[ScrapedVacancyOut])
+def list_scraped_vacancies(
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin")),
+):
+    """Lijst van gescrapede vacatures, optioneel gefilterd op status."""
+    query = db.query(models.ScrapedVacancy).order_by(models.ScrapedVacancy.scraped_at.desc())
+    if status:
+        query = query.filter(models.ScrapedVacancy.status == status)
+    items = query.offset(skip).limit(limit).all()
+
+    return [
+        ScrapedVacancyOut(
+            id=sv.id,
+            title=sv.title,
+            company_name=sv.company_name,
+            contact_email=sv.contact_email,
+            location=sv.location,
+            source_name=sv.source_name,
+            source_url=sv.source_url,
+            status=sv.status,
+            claim_notified=sv.claim_notified,
+            scraped_at=str(sv.scraped_at) if sv.scraped_at else None,
+            published_at=str(sv.published_at) if sv.published_at else None,
+            claimed_at=str(sv.claimed_at) if sv.claimed_at else None,
+            vacancy_id=sv.vacancy_id,
+        )
+        for sv in items
+    ]
+
+
+@router.post("/admin/scraped-vacancies/{sv_id}/publish")
+def publish_scraped_vacancy(
+    sv_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin")),
+):
+    """
+    Publiceer een gescrapede vacature:
+    - Maak een Vacancy aan onder de systeem-werkgever
+    - Zet status op 'published'
+    """
+    sv = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.id == sv_id).first()
+    if not sv:
+        raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
+    if sv.status != "pending":
+        raise HTTPException(status_code=409, detail=f"Status is al '{sv.status}', niet pending")
+
+    # Zoek systeem-werkgever
+    system_employer = (
+        db.query(models.User).filter(models.User.email == SYSTEM_EMAIL).first()
+    )
+    if not system_employer:
+        raise HTTPException(
+            status_code=500,
+            detail="Systeem-werkgever niet gevonden. Voer seed opnieuw uit.",
+        )
+
+    # Maak Vacancy aan
+    vacancy = models.Vacancy(
+        employer_id=system_employer.id,
+        title=sv.title,
+        description=sv.description or "",
+        location=sv.location,
+        source_type="scraped",
+    )
+    db.add(vacancy)
+    db.commit()
+    db.refresh(vacancy)
+
+    # Update ScrapedVacancy
+    sv.vacancy_id = vacancy.id
+    sv.status = "published"
+    sv.published_at = datetime.now(timezone.utc)
+    db.commit()
+
+    logger.info("[scraper-admin] ScrapedVacancy %d gepubliceerd als Vacancy %d", sv_id, vacancy.id)
+    return {"vacancy_id": vacancy.id, "status": "published"}
+
+
+@router.delete("/admin/scraped-vacancies/{sv_id}")
+def delete_scraped_vacancy(
+    sv_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role("admin")),
+):
+    """Verwijder een gescrapede vacature (en de bijbehorende Vacancy als die bestaat)."""
+    sv = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.id == sv_id).first()
+    if not sv:
+        raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
+
+    # Verwijder gekoppelde Vacancy (optioneel — als die er is)
+    if sv.vacancy_id:
+        vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == sv.vacancy_id).first()
+        if vacancy:
+            db.delete(vacancy)
+
+    db.delete(sv)
+    db.commit()
+    return {"deleted": True}
+
+
+# ── Claim endpoints (publiek) ─────────────────────────────────────────────────
+
+@router.get("/claim/{token}", response_model=ClaimInfoOut)
+def get_claim_info(token: str, db: Session = Depends(get_db)):
+    """Geef vacature-info terug voor de claim-pagina (publiek)."""
+    sv = (
+        db.query(models.ScrapedVacancy)
+        .filter(models.ScrapedVacancy.claim_token == token)
+        .first()
+    )
+    if not sv:
+        raise HTTPException(status_code=404, detail="Ongeldige of verlopen claim-link")
+    if sv.status == "claimed":
+        raise HTTPException(status_code=409, detail="Dit account is al geactiveerd")
+
+    return ClaimInfoOut(
+        vacancy_title=sv.title,
+        company_name=sv.company_name,
+        status=sv.status,
+    )
+
+
+@router.post("/claim/{token}", response_model=ClaimResponse)
+def claim_vacancy(token: str, payload: ClaimRequest, db: Session = Depends(get_db)):
+    """
+    Werkgever activeert gratis account via claim-link:
+    1. Maak employer User aan (email = contact_email uit ScrapedVacancy)
+    2. Draag Vacancy over aan de nieuwe werkgever
+    3. Update ScrapedVacancy.status = 'claimed'
+    4. Geef JWT terug (werkgever direct ingelogd)
+    """
+    sv = (
+        db.query(models.ScrapedVacancy)
+        .filter(models.ScrapedVacancy.claim_token == token)
+        .first()
+    )
+    if not sv:
+        raise HTTPException(status_code=404, detail="Ongeldige of verlopen claim-link")
+    if sv.status == "claimed":
+        raise HTTPException(status_code=409, detail="Dit account is al geactiveerd")
+    if sv.status != "published":
+        raise HTTPException(
+            status_code=400,
+            detail="De vacature is nog niet goedgekeurd door de beheerder",
+        )
+    if not sv.vacancy_id:
+        raise HTTPException(status_code=500, detail="Geen gekoppelde vacature gevonden")
+
+    # Controleer wachtwoord-sterkte
+    if len(payload.password) < 8:
+        raise HTTPException(status_code=422, detail="Wachtwoord moet minimaal 8 tekens bevatten")
+
+    # E-mail al in gebruik?
+    existing = db.query(models.User).filter(models.User.email == sv.contact_email).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Er bestaat al een account met dit e-mailadres. Log in via de normale inlogpagina.",
+        )
+
+    # Werkgever aanmaken
+    employer = models.User(
+        email=sv.contact_email,
+        full_name=payload.company_name.strip(),
+        hashed_password=hash_password(payload.password),
+        role="employer",
+        plan="normaal",
+    )
+    db.add(employer)
+    db.commit()
+    db.refresh(employer)
+
+    # Vacancy overdragen
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == sv.vacancy_id).first()
+    if vacancy:
+        vacancy.employer_id = employer.id
+        db.commit()
+
+    # ScrapedVacancy bijwerken
+    sv.employer_id = employer.id
+    sv.status = "claimed"
+    sv.claimed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    access_token = create_access_token(subject=str(employer.id))
+
+    logger.info(
+        "[claim] Werkgever %s heeft ScrapedVacancy %d geclaimd → Vacancy %d",
+        employer.email, sv.id, sv.vacancy_id,
+    )
+
+    return ClaimResponse(
+        access_token=access_token,
+        user_id=employer.id,
+        vacancy_id=sv.vacancy_id,
+    )

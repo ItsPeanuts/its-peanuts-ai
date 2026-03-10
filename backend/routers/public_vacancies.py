@@ -14,7 +14,7 @@ from backend import models, schemas
 from backend.db import get_db
 from backend.security import create_access_token, hash_password, SECRET_KEY, ALGORITHM
 from backend.services.text_extract import extract_text
-from backend.services.email import send_application_confirmation, send_new_applicant_notification
+from backend.services.email import send_application_confirmation, send_new_applicant_notification, send_claim_notification
 
 oauth2_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
@@ -31,6 +31,25 @@ def _get_optional_user(token: str | None = Depends(oauth2_optional), db: Session
         return None
 
 router = APIRouter(prefix="/vacancies", tags=["public-vacancies"])
+
+
+def _maybe_send_claim_mail(vacancy_id: int, vacancy_title: str, db: Session) -> None:
+    """Stuur eenmalig een claim-mail als deze vacature gescraped is en nog niet geclaimd."""
+    from backend.models.scraped_vacancy import ScrapedVacancy as SV
+    import os
+    sv = db.query(SV).filter(SV.vacancy_id == vacancy_id, SV.claim_notified == False).first()
+    if not sv:
+        return
+    frontend_url = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+    claim_url = f"{frontend_url}/claim/{sv.claim_token}"
+    send_claim_notification(
+        employer_email=sv.contact_email,
+        vacancy_title=vacancy_title,
+        company_name=sv.company_name or "",
+        claim_url=claim_url,
+    )
+    sv.claim_notified = True
+    db.commit()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 _client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -242,6 +261,9 @@ async def apply_to_vacancy(
             match_score=match_score,
         )
 
+    # Claim-mail: stuur eenmalig als dit een gescrapede vacature is
+    _maybe_send_claim_mail(vacancy_id, vacancy.title, db)
+
     access_token = create_access_token(subject=str(candidate.id))
 
     return schemas.ApplyResponse(
@@ -375,6 +397,9 @@ async def apply_authenticated(
             vacancy_title=vacancy.title,
             match_score=match_score,
         )
+
+    # Claim-mail: stuur eenmalig als dit een gescrapede vacature is
+    _maybe_send_claim_mail(vacancy_id, vacancy.title, db)
 
     access_token = create_access_token(subject=str(current_user.id))
 
