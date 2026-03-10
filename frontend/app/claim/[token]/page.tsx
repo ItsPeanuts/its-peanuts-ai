@@ -56,8 +56,12 @@ export default function ClaimPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Activatie mislukt");
 
-      // Direct inloggen
-      setSession(data.access_token, "employer");
+      // Haal email op en sla sessie op
+      const meRes = await fetch(`${BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      const meData = await meRes.json();
+      setSession({ token: data.access_token, role: "employer", email: meData.email || "" });
       router.push("/employer");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Er ging iets mis");
