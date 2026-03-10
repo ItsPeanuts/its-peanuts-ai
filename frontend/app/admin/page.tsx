@@ -36,6 +36,18 @@ type AdminVacancy = {
   application_count: number;
 };
 
+type ScrapedVacancy = {
+  id: number;
+  title: string;
+  company_name: string | null;
+  contact_email: string;
+  location: string | null;
+  source_name: string | null;
+  status: string;
+  claim_notified: boolean;
+  vacancy_id: number | null;
+};
+
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
   admin:     { color: "#7c3aed", bg: "#f5f3ff" },
   employer:  { color: "#0f766e", bg: "#f0fdfa" },
@@ -62,7 +74,7 @@ export default function AdminPage() {
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
 
-  const [view, setView] = useState<"stats" | "users" | "vacancies">("stats");
+  const [view, setView] = useState<"stats" | "users" | "vacancies" | "scraper">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [vacancies, setVacancies] = useState<AdminVacancy[]>([]);
@@ -70,13 +82,19 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
+  // Scraper state
+  const [scraped, setScraped] = useState<ScrapedVacancy[]>([]);
+  const [scrapeFilter, setScrapeFilter] = useState<"all" | "pending" | "published" | "claimed">("pending");
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<string>("");
+
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
     if (role && role !== "admin") { router.replace("/"); return; }
 
     (async () => {
       try {
-        await me(token); // verificeer token
+        await me(token);
         const [s, u, v] = await Promise.all([
           apiFetch(token, "/admin/stats"),
           apiFetch(token, "/admin/users"),
@@ -93,6 +111,67 @@ export default function AdminPage() {
       }
     })();
   }, [router, token, role]);
+
+  // Laad gescrapede vacatures wanneer scraper tab actief is
+  useEffect(() => {
+    if (view !== "scraper" || !token) return;
+    loadScraped();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, scrapeFilter]);
+
+  async function loadScraped() {
+    if (!token) return;
+    try {
+      const params = scrapeFilter !== "all" ? `?status=${scrapeFilter}` : "";
+      const data = await apiFetch(token, `/admin/scraped-vacancies${params}`);
+      setScraped(data);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Laden mislukt");
+    }
+  }
+
+  async function handleScrape(source: string) {
+    if (!token) return;
+    setScraping(true);
+    setScrapeResult("");
+    setErr("");
+    try {
+      const data = await apiFetch(token, "/admin/scrape", {
+        method: "POST",
+        body: JSON.stringify({ source }),
+      });
+      setScrapeResult(`Gevonden: ${data.scraped} · Opgeslagen: ${data.saved} · Duplicaten overgeslagen: ${data.skipped_duplicates}`);
+      await loadScraped();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Scrapen mislukt");
+    } finally {
+      setScraping(false);
+    }
+  }
+
+  async function handlePublish(svId: number) {
+    if (!token) return;
+    try {
+      await apiFetch(token, `/admin/scraped-vacancies/${svId}/publish`, { method: "POST" });
+      setMsg("Vacature gepubliceerd op de website!");
+      setTimeout(() => setMsg(""), 4000);
+      await loadScraped();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Publiceren mislukt");
+    }
+  }
+
+  async function handleDeleteScraped(svId: number) {
+    if (!token || !confirm("Weet je zeker dat je deze vacature wilt verwijderen?")) return;
+    try {
+      await apiFetch(token, `/admin/scraped-vacancies/${svId}`, { method: "DELETE" });
+      setScraped((prev) => prev.filter((s) => s.id !== svId));
+      setMsg("Verwijderd");
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Verwijderen mislukt");
+    }
+  }
 
   async function handlePatchRole(userId: number, newRole: string) {
     if (!token) return;
@@ -161,10 +240,11 @@ export default function AdminPage() {
             { id: "stats",     label: "Dashboard" },
             { id: "users",     label: "Gebruikers" },
             { id: "vacancies", label: "Vacatures" },
+            { id: "scraper",   label: "Vacatures scrapen" },
           ] as const).map((item) => (
             <button
               key={item.id}
-              onClick={() => setView(item.id)}
+              onClick={() => { setErr(""); setMsg(""); setView(item.id); }}
               className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 view === item.id ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
               }`}
@@ -176,31 +256,16 @@ export default function AdminPage() {
 
         <div className="p-3 border-t border-gray-100 space-y-1">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-3 pt-1 pb-0.5">Testen als</div>
-          <button
-            onClick={() => router.push("/employer")}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Werkgever →
-          </button>
-          <button
-            onClick={() => router.push("/candidate")}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Kandidaat →
-          </button>
-          <button
-            onClick={() => { clearSession(); router.push("/"); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors mt-1"
-          >
-            Uitloggen
-          </button>
+          <button onClick={() => router.push("/employer")} className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">Werkgever →</button>
+          <button onClick={() => router.push("/candidate")} className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">Kandidaat →</button>
+          <button onClick={() => { clearSession(); router.push("/"); }} className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors mt-1">Uitloggen</button>
         </div>
       </aside>
 
       {/* Main */}
       <main className="flex-1 p-8 overflow-auto">
         {msg && <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm mb-5">{msg}</div>}
-        {err && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5">{err}</div>}
+        {err && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5 cursor-pointer" onClick={() => setErr("")}>{err} ✕</div>}
 
         {/* === DASHBOARD STATS === */}
         {view === "stats" && stats && (
@@ -208,12 +273,12 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Platform overzicht</h1>
             <div className="grid grid-cols-4 gap-4 mb-6">
               {[
-                { label: "Gebruikers",     value: stats.total_users,        color: "#7c3aed" },
-                { label: "Kandidaten",     value: stats.total_candidates,   color: "#1d4ed8" },
-                { label: "Werkgevers",     value: stats.total_employers,    color: "#0f766e" },
-                { label: "Vacatures",      value: stats.total_vacancies,    color: "#d97706" },
-                { label: "Sollicitaties",  value: stats.total_applications, color: "#059669" },
-                { label: "Interviews",     value: stats.total_interviews,   color: "#0891b2" },
+                { label: "Gebruikers",      value: stats.total_users,        color: "#7c3aed" },
+                { label: "Kandidaten",      value: stats.total_candidates,   color: "#1d4ed8" },
+                { label: "Werkgevers",      value: stats.total_employers,    color: "#0f766e" },
+                { label: "Vacatures",       value: stats.total_vacancies,    color: "#d97706" },
+                { label: "Sollicitaties",   value: stats.total_applications, color: "#059669" },
+                { label: "Interviews",      value: stats.total_interviews,   color: "#0891b2" },
                 { label: "Gem. matchscore", value: stats.avg_match_score !== null ? `${stats.avg_match_score}%` : "—", color: "#dc2626" },
               ].map((s) => (
                 <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
@@ -222,7 +287,6 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-sm font-bold text-gray-700 mb-3">Recente gebruikers</h2>
               <div className="space-y-2">
@@ -234,9 +298,7 @@ export default function AdminPage() {
                         <div className="text-sm font-medium text-gray-800">{u.full_name || u.email}</div>
                         <div className="text-xs text-gray-400">{u.email}</div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: rc.color, background: rc.bg }}>
-                        {u.role}
-                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: rc.color, background: rc.bg }}>{u.role}</span>
                     </div>
                   );
                 })}
@@ -270,37 +332,29 @@ export default function AdminPage() {
                         <td className="px-5 py-3 font-medium text-gray-800">{u.full_name || "—"}</td>
                         <td className="px-5 py-3 text-gray-500">{u.email}</td>
                         <td className="px-5 py-3">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handlePatchRole(u.id, e.target.value)}
+                          <select value={u.role} onChange={(e) => handlePatchRole(u.id, e.target.value)}
                             className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300"
-                            style={{ color: rc.color, background: rc.bg }}
-                          >
+                            style={{ color: rc.color, background: rc.bg }}>
                             <option value="candidate">candidate</option>
                             <option value="employer">employer</option>
                             <option value="admin">admin</option>
                           </select>
                         </td>
                         <td className="px-5 py-3">
-                          <select
-                            value={u.plan || "gratis"}
-                            onChange={(e) => handlePatchPlan(u.id, e.target.value)}
+                          <select value={u.plan || "gratis"} onChange={(e) => handlePatchPlan(u.id, e.target.value)}
                             className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300"
                             style={{
                               color: u.plan === "premium" ? "#7c3aed" : u.plan === "normaal" ? "#0A66C2" : "#6b7280",
                               background: u.plan === "premium" ? "#ede9fe" : u.plan === "normaal" ? "#dbeafe" : "#f3f4f6",
-                            }}
-                          >
+                            }}>
                             <option value="gratis">gratis</option>
                             <option value="normaal">normaal</option>
                             <option value="premium">premium</option>
                           </select>
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <button
-                            onClick={() => handleDeleteUser(u.id, u.email)}
-                            className="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                          >
+                          <button onClick={() => handleDeleteUser(u.id, u.email)}
+                            className="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
                             Verwijder
                           </button>
                         </td>
@@ -316,9 +370,7 @@ export default function AdminPage() {
         {/* === VACATURES === */}
         {view === "vacancies" && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
-              Alle vacatures <span className="text-gray-400 text-lg font-normal">({vacancies.length})</span>
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Alle vacatures <span className="text-gray-400 text-lg font-normal">({vacancies.length})</span></h1>
             <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -336,14 +388,126 @@ export default function AdminPage() {
                       <td className="px-5 py-3 text-gray-400 text-xs">{v.location || "—"}</td>
                       <td className="px-5 py-3 text-gray-500 text-xs">{v.employer_email}</td>
                       <td className="px-5 py-3">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: "#f0fdfa", color: "#0f766e" }}>
-                          {v.application_count}
-                        </span>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: "#f0fdfa", color: "#0f766e" }}>{v.application_count}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </>
+        )}
+
+        {/* === SCRAPER === */}
+        {view === "scraper" && (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Vacatures scrapen</h1>
+            <p className="text-sm text-gray-500 mb-6">Haal vacatures op van externe bronnen. Alleen vacatures met een e-mailadres worden opgeslagen. Keur ze daarna goed om ze op de website te zetten.</p>
+
+            {/* Scrape knoppen */}
+            <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+              <h2 className="text-sm font-bold text-gray-700 mb-4">Stap 1 — Scrape een bron</h2>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { source: "nvb",        label: "Nationale Vacaturebank", color: "#1d4ed8" },
+                  { source: "werkzoeken", label: "Werkzoeken.nl",          color: "#0891b2" },
+                  { source: "adzuna",     label: "Adzuna API",             color: "#7c3aed" },
+                  { source: "all",        label: "Alle bronnen",           color: "#0f766e" },
+                ].map((s) => (
+                  <button
+                    key={s.source}
+                    disabled={scraping}
+                    onClick={() => handleScrape(s.source)}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+                    style={{ background: s.color }}
+                  >
+                    {scraping ? "Bezig…" : `Scrape ${s.label}`}
+                  </button>
+                ))}
+              </div>
+              {scrapeResult && (
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                  {scrapeResult}
+                </div>
+              )}
+            </div>
+
+            {/* Filter + lijst */}
+            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-sm font-bold text-gray-700">
+                  Stap 2 — Keur goed en publiceer
+                  <span className="ml-2 text-gray-400 font-normal">({scraped.length})</span>
+                </h2>
+                <div className="flex gap-1">
+                  {(["pending", "published", "claimed", "all"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setScrapeFilter(f)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                        scrapeFilter === f ? "bg-purple-100 text-purple-700" : "text-gray-500 hover:bg-gray-100"
+                      }`}
+                    >
+                      {f === "pending" ? "Wachtend" : f === "published" ? "Live" : f === "claimed" ? "Geclaimd" : "Alles"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {scraped.length === 0 ? (
+                <div className="px-5 py-12 text-center text-gray-400 text-sm">
+                  Geen vacatures gevonden. Klik op een Scrape knop hierboven.
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Vacature</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bedrijf</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bron</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                      <th className="px-5 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scraped.map((sv) => (
+                      <tr key={sv.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td className="px-5 py-3 font-medium text-gray-800 max-w-xs truncate">{sv.title}</td>
+                        <td className="px-5 py-3 text-gray-500 text-xs">{sv.company_name || "—"}</td>
+                        <td className="px-5 py-3 text-gray-500 text-xs">{sv.contact_email}</td>
+                        <td className="px-5 py-3 text-gray-400 text-xs">{sv.source_name || "—"}</td>
+                        <td className="px-5 py-3">
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold" style={{
+                            background: sv.status === "pending" ? "#fef3c7" : sv.status === "published" ? "#d1fae5" : "#e0e7ff",
+                            color:      sv.status === "pending" ? "#92400e" : sv.status === "published" ? "#065f46"  : "#3730a3",
+                          }}>
+                            {sv.status === "pending" ? "Wachtend" : sv.status === "published" ? "Live" : "Geclaimd"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right space-x-2">
+                          {sv.status === "pending" && (
+                            <button
+                              onClick={() => handlePublish(sv.id)}
+                              className="text-xs bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              Publiceer
+                            </button>
+                          )}
+                          {sv.status !== "claimed" && (
+                            <button
+                              onClick={() => handleDeleteScraped(sv.id)}
+                              className="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                            >
+                              Verwijder
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </>
         )}
