@@ -98,15 +98,28 @@ def trigger_scrape(
     skipped = 0
 
     for item in raw:
-        # Deduplicatie: zelfde email + title bestaat al?
-        existing = (
-            db.query(models.ScrapedVacancy)
-            .filter(
-                models.ScrapedVacancy.contact_email == item["contact_email"].lower(),
-                models.ScrapedVacancy.title == item["title"],
+        # Deduplicatie: op source_url (als aanwezig), anders op email+title
+        src_url = item.get("source_url") or ""
+        email = item.get("contact_email") or ""
+
+        if src_url:
+            existing = (
+                db.query(models.ScrapedVacancy)
+                .filter(models.ScrapedVacancy.source_url == src_url)
+                .first()
             )
-            .first()
-        )
+        elif email:
+            existing = (
+                db.query(models.ScrapedVacancy)
+                .filter(
+                    models.ScrapedVacancy.contact_email == email.lower(),
+                    models.ScrapedVacancy.title == item["title"],
+                )
+                .first()
+            )
+        else:
+            existing = None
+
         if existing:
             skipped += 1
             continue
@@ -115,9 +128,9 @@ def trigger_scrape(
             title=item["title"],
             description=item.get("description"),
             company_name=item.get("company_name"),
-            contact_email=item["contact_email"].lower(),
+            contact_email=email.lower() if email else None,
             location=item.get("location"),
-            source_url=item.get("source_url"),
+            source_url=src_url or None,
             source_name=item.get("source_name"),
         )
         db.add(sv)
