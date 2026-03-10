@@ -97,7 +97,7 @@ export default function ClaimPage() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl mb-4">
             <span className="text-white text-2xl font-black">V</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">VorzaIQ</h1>
@@ -107,17 +107,17 @@ export default function ClaimPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Groene banner */}
-          <div className="bg-teal-600 px-8 py-6">
+          <div className="bg-purple-600 px-8 py-6">
             <div className="text-white text-lg font-bold">🎉 Goed nieuws!</div>
-            <div className="text-teal-100 text-sm mt-1">
+            <div className="text-purple-100 text-sm mt-1">
               Iemand heeft gesolliciteerd op uw vacature
             </div>
           </div>
 
           <div className="px-8 py-6">
             {/* Vacature info */}
-            <div className="bg-teal-50 border border-teal-100 rounded-xl px-5 py-4 mb-6">
-              <div className="text-xs text-teal-700 font-semibold uppercase tracking-wide mb-1">
+            <div className="bg-purple-50 border border-purple-100 rounded-xl px-5 py-4 mb-6">
+              <div className="text-xs text-purple-700 font-semibold uppercase tracking-wide mb-1">
                 Vacature
               </div>
               <div className="text-lg font-bold text-gray-900">{info!.vacancy_title}</div>
@@ -146,7 +146,7 @@ export default function ClaimPage() {
                   onChange={(e) => setCompanyName(e.target.value)}
                   required
                   placeholder="Uw bedrijfsnaam"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -161,7 +161,7 @@ export default function ClaimPage() {
                   required
                   minLength={8}
                   placeholder="Minimaal 8 tekens"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export default function ClaimPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-60"
+                className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-60"
               >
                 {submitting ? "Bezig…" : "Activeer gratis account en bekijk sollicitant →"}
               </button>

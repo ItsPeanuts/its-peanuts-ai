@@ -185,7 +185,7 @@ export default function IntegratiesPage() {
       {/* Topbar */}
       <nav className="bg-white border-b border-gray-200 h-14 flex items-center px-6 gap-4">
         <Link href="/employer" className="flex items-center gap-2 no-underline">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0DA89E" }}>V</div>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7C3AED" }}>V</div>
           <span className="font-bold text-gray-900 text-sm">VorzaIQ</span>
         </Link>
         <span className="text-gray-300 text-lg">/</span>
@@ -275,7 +275,7 @@ export default function IntegratiesPage() {
                     <div key={guideKey} className="ml-4 mt-1">
                       <button
                         onClick={() => setOpenGuide(openGuide === guideKey ? null : guideKey)}
-                        className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                        className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1"
                       >
                         {openGuide === guideKey ? "▴" : "▾"} {SETUP_GUIDES[guideKey].title}
                       </button>
@@ -287,7 +287,7 @@ export default function IntegratiesPage() {
                               <li key={idx} className="flex gap-3 text-sm text-gray-700">
                                 <span
                                   className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
-                                  style={{ background: "#0DA89E" }}
+                                  style={{ background: "#7C3AED" }}
                                 >
                                   {idx + 1}
                                 </span>
@@ -300,7 +300,7 @@ export default function IntegratiesPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90 transition"
-                            style={{ background: "#0DA89E" }}
+                            style={{ background: "#7C3AED" }}
                           >
                             {SETUP_GUIDES[guideKey].linkLabel}
                           </a>
@@ -323,23 +323,23 @@ export default function IntegratiesPage() {
           </p>
           <ol className="space-y-2 text-sm text-gray-700">
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#0DA89E" }}>1</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#7C3AED" }}>1</span>
               <span>Ga naar <strong>render.com/dashboard</strong> → selecteer <strong>its-peanuts-backend</strong></span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#0DA89E" }}>2</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#7C3AED" }}>2</span>
               <span>Klik op <strong>Environment</strong> in het linkermenu</span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#0DA89E" }}>3</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#7C3AED" }}>3</span>
               <span>Voeg de variabele toe via <strong>Add Environment Variable</strong></span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#0DA89E" }}>4</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#7C3AED" }}>4</span>
               <span>Klik <strong>Save Changes</strong> — de backend herstart automatisch</span>
             </li>
             <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#0DA89E" }}>5</span>
+              <span className="flex-shrink-0 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ background: "#7C3AED" }}>5</span>
               <span>Kom terug naar deze pagina en klik <strong>↺ Hertest alles</strong> om te verifiëren</span>
             </li>
           </ol>

@@ -147,7 +147,7 @@ export default function AITestPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg" style={{ background: "#0DA89E" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg" style={{ background: "#7C3AED" }}>
               🤖
             </div>
             <div>
@@ -169,9 +169,9 @@ export default function AITestPage() {
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 tab === t.id
                   ? "text-white shadow-sm"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-teal-200 hover:text-teal-600"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-purple-200 hover:text-purple-600"
               }`}
-              style={tab === t.id ? { background: "#0DA89E" } : {}}
+              style={tab === t.id ? { background: "#7C3AED" } : {}}
             >
               {t.icon} {t.label}
             </button>
@@ -190,7 +190,7 @@ export default function AITestPage() {
                     value={cvText}
                     onChange={(e) => setCvText(e.target.value)}
                     rows={12}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                   />
                 </div>
                 <div>
@@ -201,13 +201,13 @@ export default function AITestPage() {
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
                     placeholder="bijv. Senior Developer"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition mb-4"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition mb-4"
                   />
                   <button
                     onClick={handleRewrite}
                     disabled={rewriteLoading || !cvText.trim()}
                     className="w-full py-3 rounded-xl text-white font-bold text-sm transition-all disabled:opacity-50 hover:opacity-90"
-                    style={{ background: "#0DA89E" }}
+                    style={{ background: "#7C3AED" }}
                   >
                     {rewriteLoading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -228,12 +228,12 @@ export default function AITestPage() {
             </div>
 
             {rewriteResult && (
-              <div className="bg-white rounded-xl border border-teal-100 p-6">
+              <div className="bg-white rounded-xl border border-purple-100 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900">✅ Herschreven CV</h3>
                   <button
                     onClick={() => navigator.clipboard.writeText(rewriteResult)}
-                    className="text-xs text-teal-600 font-medium hover:text-teal-700"
+                    className="text-xs text-purple-600 font-medium hover:text-purple-700"
                   >
                     📋 Kopiëren
                   </button>
@@ -258,7 +258,7 @@ export default function AITestPage() {
                     value={motCvText}
                     onChange={(e) => setMotCvText(e.target.value)}
                     rows={10}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                   />
                 </div>
                 <div>
@@ -267,7 +267,7 @@ export default function AITestPage() {
                     value={motJobDesc}
                     onChange={(e) => setMotJobDesc(e.target.value)}
                     rows={10}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                   />
                 </div>
               </div>
@@ -280,7 +280,7 @@ export default function AITestPage() {
                     value={motCompany}
                     onChange={(e) => setMotCompany(e.target.value)}
                     placeholder="bijv. Acme BV"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
                 </div>
                 <button
@@ -337,7 +337,7 @@ export default function AITestPage() {
                     value={matchProfile}
                     onChange={(e) => setMatchProfile(e.target.value)}
                     rows={12}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                   />
                 </div>
                 <div>
@@ -346,7 +346,7 @@ export default function AITestPage() {
                     value={matchJob}
                     onChange={(e) => setMatchJob(e.target.value)}
                     rows={12}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                   />
                 </div>
               </div>
@@ -354,7 +354,7 @@ export default function AITestPage() {
                 onClick={handleMatch}
                 disabled={matchLoading || !matchProfile.trim() || !matchJob.trim()}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-all disabled:opacity-50 hover:opacity-90"
-                style={{ background: "#0DA89E" }}
+                style={{ background: "#7C3AED" }}
               >
                 {matchLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -373,7 +373,7 @@ export default function AITestPage() {
             </div>
 
             {matchResult && (
-              <div className="bg-white rounded-xl border border-teal-100 p-6">
+              <div className="bg-white rounded-xl border border-purple-100 p-6">
                 <h3 className="font-bold text-gray-900 mb-5">✅ Matching Resultaat</h3>
                 <div className="flex items-center gap-6 mb-5">
                   {/* Score cirkel */}

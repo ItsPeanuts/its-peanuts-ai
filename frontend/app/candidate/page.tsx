@@ -102,7 +102,7 @@ export default function CandidateDashboard() {
               key={item.href}
               href={item.href}
               style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#6b7280", textDecoration: "none" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#0f766e"; (e.currentTarget as HTMLElement).style.background = "#f0fdfa"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#7C3AED"; (e.currentTarget as HTMLElement).style.background = "#f0fdfa"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#6b7280"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
               {item.label}
@@ -135,7 +135,7 @@ export default function CandidateDashboard() {
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
           {[
-            { label: "Totaal",        value: stats.total,      color: "#0f766e" },
+            { label: "Totaal",        value: stats.total,      color: "#7C3AED" },
             { label: "In behandeling",value: stats.inProgress, color: "#d97706" },
             { label: "Interview",     value: stats.interview,  color: "#7c3aed" },
             { label: "Gem. AI-score", value: stats.avgScore !== null ? `${stats.avgScore}%` : "—", color: "#059669" },
@@ -173,7 +173,7 @@ export default function CandidateDashboard() {
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                    <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#f0fdfa", color: "#0f766e" }}>
+                    <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: "#f0fdfa", color: "#7C3AED" }}>
                       Ingepland
                     </span>
                     {iv.teams_join_url && (
@@ -200,7 +200,7 @@ export default function CandidateDashboard() {
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px 24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>Recente sollicitaties</h2>
-              <Link href="/candidate/sollicitaties" style={{ fontSize: 12, color: "#0f766e", fontWeight: 600, textDecoration: "none" }}>
+              <Link href="/candidate/sollicitaties" style={{ fontSize: 12, color: "#7C3AED", fontWeight: 600, textDecoration: "none" }}>
                 Alle bekijken →
               </Link>
             </div>
@@ -216,7 +216,7 @@ export default function CandidateDashboard() {
                 <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 16px" }}>Bekijk openstaande vacatures en solliciteer!</p>
                 <Link
                   href="/vacatures"
-                  style={{ display: "inline-block", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: "#0f766e", textDecoration: "none" }}
+                  style={{ display: "inline-block", padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", textDecoration: "none" }}
                 >
                   Zoek vacatures
                 </Link>
@@ -256,7 +256,7 @@ export default function CandidateDashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <Link
                   href="/vacatures"
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#fff", background: "#0f766e", textDecoration: "none" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", textDecoration: "none" }}
                 >
                   <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -265,7 +265,7 @@ export default function CandidateDashboard() {
                 </Link>
                 <Link
                   href="/candidate/cv"
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#0f766e", background: "#f0fdfa", textDecoration: "none" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#7C3AED", background: "#f0fdfa", textDecoration: "none" }}
                 >
                   <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -287,12 +287,12 @@ export default function CandidateDashboard() {
             {/* AI info */}
             <div style={{ background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 12, padding: "16px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#7C3AED", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
                   L
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#134e4a" }}>AI-matching actief</div>
               </div>
-              <p style={{ fontSize: 12, color: "#0f766e", lineHeight: 1.5, margin: 0 }}>
+              <p style={{ fontSize: 12, color: "#7C3AED", lineHeight: 1.5, margin: 0 }}>
                 Lisa analyseert je CV en matcht het automatisch met de beste vacatures.
               </p>
             </div>

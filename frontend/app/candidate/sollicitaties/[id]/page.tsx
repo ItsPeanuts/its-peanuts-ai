@@ -196,8 +196,8 @@ export default function SollicitatieDetailPage() {
 
             {/* Chat met Lisa CTA */}
             <div style={{
-              background: "linear-gradient(135deg, #0DA89E18, #0891b218)",
-              border: "1px solid #0DA89E50",
+              background: "linear-gradient(135deg, #7C3AED18, #0891b218)",
+              border: "1px solid #7C3AED50",
               borderRadius: 16,
               padding: "20px 24px",
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
@@ -213,7 +213,7 @@ export default function SollicitatieDetailPage() {
                     width: 44,
                     height: 44,
                     borderRadius: "50%",
-                    background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                    background: "linear-gradient(135deg, #7C3AED, #0891b2)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -245,7 +245,7 @@ export default function SollicitatieDetailPage() {
               <a
                 href={`/candidate/sollicitaties/${appId}/chat`}
                 style={{
-                  background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                  background: "linear-gradient(135deg, #7C3AED, #0891b2)",
                   color: "#fff",
                   padding: "10px 20px",
                   borderRadius: 12,

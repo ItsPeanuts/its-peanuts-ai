@@ -187,7 +187,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         </Link>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
               L
             </div>
             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${connected ? "bg-green-400" : waking ? "bg-yellow-400" : "bg-gray-300"}`} />
@@ -211,11 +211,11 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         {waking ? (
           <div className="flex items-center justify-center h-40">
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
                 L
               </div>
               <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
                 Lisa wordt opgestart...
               </div>
               <p className="text-xs text-gray-400 max-w-xs">
@@ -226,7 +226,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         ) : loading ? (
           <div className="flex items-center justify-center h-40">
             <div className="flex items-center gap-3 text-gray-400 text-sm">
-              <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
               Lisa is aan het laden...
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 className={`flex gap-3 ${msg.role === "candidate" ? "flex-row-reverse" : ""}`}
               >
                 {msg.role === "recruiter" && (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
                     L
                   </div>
                 )}
@@ -253,7 +253,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                         ? "text-white rounded-tr-sm"
                         : "bg-white border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm"
                     }`}
-                    style={msg.role === "candidate" ? { background: "#0DA89E" } : {}}
+                    style={msg.role === "candidate" ? { background: "#7C3AED" } : {}}
                   >
                     {msg.content}
                   </div>
@@ -264,7 +264,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
             {/* Typing indicator */}
             {sending && (
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: "linear-gradient(135deg, #0DA89E, #0891b2)" }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
                   L
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
@@ -303,7 +303,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
               <Link
                 href={`/candidate/sollicitaties/${appId}`}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90"
-                style={{ background: "#0DA89E" }}
+                style={{ background: "#7C3AED" }}
               >
                 Naar sollicitatie →
               </Link>
@@ -316,14 +316,14 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={waking ? "Wachten op server..." : connected ? "Typ je antwoord..." : "Verbinding verbroken..."}
                 disabled={sending || loading || !connected || waking}
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition disabled:opacity-50"
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={!input.trim() || sending || loading || !connected || waking}
                 className="px-5 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-40 hover:opacity-90 flex items-center gap-2"
-                style={{ background: "#0DA89E" }}
+                style={{ background: "#7C3AED" }}
               >
                 {sending ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -82,8 +82,8 @@ export default function SollicitatiePage() {
               href={item.href}
               className={`px-4 py-2 rounded-lg text-sm font-medium no-underline transition-colors ${
                 item.href === "/candidate/sollicitaties"
-                  ? "text-teal-600 bg-teal-50"
-                  : "text-gray-600 hover:text-teal-600 hover:bg-teal-50"
+                  ? "text-purple-600 bg-purple-50"
+                  : "text-gray-600 hover:text-purple-600 hover:bg-purple-50"
               }`}
             >
               {item.label}
@@ -122,7 +122,7 @@ export default function SollicitatiePage() {
             <Link
               href="/vacatures"
               className="inline-block px-6 py-3 rounded-xl text-sm font-bold text-white no-underline hover:opacity-90"
-              style={{ background: "#0DA89E" }}
+              style={{ background: "#7C3AED" }}
             >
               Zoek vacatures
             </Link>
@@ -135,11 +135,11 @@ export default function SollicitatiePage() {
               <Link
                 key={app.application_id}
                 href={`/candidate/sollicitaties/${app.application_id}`}
-                className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 px-5 py-4 no-underline hover:border-teal-100 hover:shadow-sm transition-all group"
+                className="flex items-center gap-4 bg-white rounded-xl border border-gray-100 px-5 py-4 no-underline hover:border-purple-100 hover:shadow-sm transition-all group"
               >
                 <ScoreCircle score={app.match_score} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 text-sm group-hover:text-teal-700 transition-colors">
+                  <div className="font-semibold text-gray-900 text-sm group-hover:text-purple-700 transition-colors">
                     {app.vacancy_title}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">

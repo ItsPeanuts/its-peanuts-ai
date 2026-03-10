@@ -50,7 +50,7 @@ type ScrapedVacancy = {
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
   admin:     { color: "#7c3aed", bg: "#f5f3ff" },
-  employer:  { color: "#0f766e", bg: "#f0fdfa" },
+  employer:  { color: "#7C3AED", bg: "#f0fdfa" },
   candidate: { color: "#1d4ed8", bg: "#dbeafe" },
 };
 
@@ -275,7 +275,7 @@ export default function AdminPage() {
               {[
                 { label: "Gebruikers",      value: stats.total_users,        color: "#7c3aed" },
                 { label: "Kandidaten",      value: stats.total_candidates,   color: "#1d4ed8" },
-                { label: "Werkgevers",      value: stats.total_employers,    color: "#0f766e" },
+                { label: "Werkgevers",      value: stats.total_employers,    color: "#7C3AED" },
                 { label: "Vacatures",       value: stats.total_vacancies,    color: "#d97706" },
                 { label: "Sollicitaties",   value: stats.total_applications, color: "#059669" },
                 { label: "Interviews",      value: stats.total_interviews,   color: "#0891b2" },
@@ -388,7 +388,7 @@ export default function AdminPage() {
                       <td className="px-5 py-3 text-gray-400 text-xs">{v.location || "—"}</td>
                       <td className="px-5 py-3 text-gray-500 text-xs">{v.employer_email}</td>
                       <td className="px-5 py-3">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: "#f0fdfa", color: "#0f766e" }}>{v.application_count}</span>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: "#f0fdfa", color: "#7C3AED" }}>{v.application_count}</span>
                       </td>
                     </tr>
                   ))}
@@ -413,7 +413,7 @@ export default function AdminPage() {
                   { source: "werkzoeken", label: "Werkzoeken.nl",          color: "#0891b2" },
                   { source: "adzuna",     label: "Adzuna API",             color: "#7c3aed" },
                   { source: "jobbird",    label: "Jobbird.com",            color: "#d97706" },
-                  { source: "all",        label: "Alle bronnen",           color: "#0f766e" },
+                  { source: "all",        label: "Alle bronnen",           color: "#7C3AED" },
                 ].map((s) => (
                   <button
                     key={s.source}
@@ -490,7 +490,7 @@ export default function AdminPage() {
                           {sv.status === "pending" && (
                             <button
                               onClick={() => handlePublish(sv.id)}
-                              className="text-xs bg-teal-600 hover:bg-teal-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                              className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
                             >
                               Publiceer
                             </button>

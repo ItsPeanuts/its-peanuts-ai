@@ -146,11 +146,11 @@ export default function ProfielPage() {
                 href={item.href}
                 style={{
                   padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  color: active ? "#0f766e" : "#6b7280",
+                  color: active ? "#7C3AED" : "#6b7280",
                   background: active ? "#f0fdfa" : "transparent",
                   textDecoration: "none",
                 }}
-                onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.color = "#0f766e"; (e.currentTarget as HTMLElement).style.background = "#f0fdfa"; } }}
+                onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.color = "#7C3AED"; (e.currentTarget as HTMLElement).style.background = "#f0fdfa"; } }}
                 onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.color = "#6b7280"; (e.currentTarget as HTMLElement).style.background = "transparent"; } }}
               >
                 {item.label}
@@ -179,7 +179,7 @@ export default function ProfielPage() {
         }}>
           {/* Avatar */}
           <div style={{
-            width: 72, height: 72, borderRadius: "50%", background: "#0f766e",
+            width: 72, height: 72, borderRadius: "50%", background: "#7C3AED",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 26, fontWeight: 700, color: "#fff", flexShrink: 0,
           }}>
@@ -198,7 +198,7 @@ export default function ProfielPage() {
               { label: "Interviews",    value: applications.filter(a => a.status === "interview").length },
             ].map((stat) => (
               <div key={stat.label}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#0f766e" }}>{stat.value}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#7C3AED" }}>{stat.value}</div>
                 <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{stat.label}</div>
               </div>
             ))}
@@ -216,7 +216,7 @@ export default function ProfielPage() {
                   <button
                     onClick={handleStartEdit}
                     disabled={editLoading}
-                    style={{ fontSize: 12, color: "#0f766e", background: "none", border: "1px solid #0f766e", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontWeight: 500 }}
+                    style={{ fontSize: 12, color: "#7C3AED", background: "none", border: "1px solid #7C3AED", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontWeight: 500 }}
                   >
                     {editLoading ? "Laden..." : "Bewerken"}
                   </button>
@@ -247,7 +247,7 @@ export default function ProfielPage() {
                   <button
                     onClick={handleSaveEdit}
                     disabled={saving}
-                    style={{ padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: saving ? "#e5e7eb" : "#0f766e", color: saving ? "#9ca3af" : "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+                    style={{ padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: saving ? "#e5e7eb" : "#7C3AED", color: saving ? "#9ca3af" : "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
                   >
                     {saving ? "Opslaan..." : "Opslaan"}
                   </button>
@@ -289,7 +289,7 @@ export default function ProfielPage() {
                     {latestCv.text_preview.length > 180 && (
                       <button
                         onClick={() => setCvExpanded(p => !p)}
-                        style={{ fontSize: 11, color: "#0f766e", background: "none", border: "none", cursor: "pointer", padding: "4px 0 0", fontWeight: 500 }}
+                        style={{ fontSize: 11, color: "#7C3AED", background: "none", border: "none", cursor: "pointer", padding: "4px 0 0", fontWeight: 500 }}
                       >
                         {cvExpanded ? "Minder tonen" : "Meer tonen"}
                       </button>
@@ -321,7 +321,7 @@ export default function ProfielPage() {
                   display: "inline-flex", alignItems: "center", gap: 6,
                   padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600,
                   cursor: uploading ? "not-allowed" : "pointer",
-                  background: uploading ? "#e5e7eb" : "#0f766e",
+                  background: uploading ? "#e5e7eb" : "#7C3AED",
                   color: uploading ? "#9ca3af" : "#fff",
                 }}
               >
@@ -336,7 +336,7 @@ export default function ProfielPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>Recente sollicitaties</h2>
               {applications.length > 5 && (
-                <Link href="/candidate/sollicitaties" style={{ fontSize: 12, color: "#0f766e", textDecoration: "none" }}>
+                <Link href="/candidate/sollicitaties" style={{ fontSize: 12, color: "#7C3AED", textDecoration: "none" }}>
                   Alle {applications.length}
                 </Link>
               )}

@@ -6,7 +6,7 @@ import { getVacancy, PublicVacancyDetail } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
-const AVATAR_COLORS = ["bg-teal-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500", "bg-indigo-500", "bg-red-500"];
+const AVATAR_COLORS = ["bg-purple-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500", "bg-indigo-500", "bg-red-500"];
 function avatarColor(id: number) { return AVATAR_COLORS[id % AVATAR_COLORS.length]; }
 function getInitials(title: string) {
   return title.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
@@ -66,7 +66,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
         <div className="text-center">
           <div className="text-4xl mb-3">😕</div>
           <p className="font-semibold text-gray-700 mb-4">Vacature niet gevonden</p>
-          <Link href="/vacatures" className="text-sm font-semibold text-teal-600 no-underline">
+          <Link href="/vacatures" className="text-sm font-semibold text-purple-600 no-underline">
             ← Terug naar overzicht
           </Link>
         </div>
@@ -83,9 +83,9 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/" className="hover:text-teal-600 no-underline transition-colors">Home</Link>
+          <Link href="/" className="hover:text-purple-600 no-underline transition-colors">Home</Link>
           <span>/</span>
-          <Link href="/vacatures" className="hover:text-teal-600 no-underline transition-colors">Vacatures</Link>
+          <Link href="/vacatures" className="hover:text-purple-600 no-underline transition-colors">Vacatures</Link>
           <span>/</span>
           <span className="text-gray-900 font-medium">{vacancy.title}</span>
         </div>
@@ -131,7 +131,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
                     )}
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-medium">AI-matching</span>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium">AI-matching</span>
                     <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">Direct solliciteren</span>
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
                 <ul className="space-y-2">
                   {vacancy.intake_questions.map((q) => (
                     <li key={q.id} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">?</span>
+                      <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">?</span>
                       {q.question}
                     </li>
                   ))}
@@ -176,14 +176,14 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
               <Link
                 href={`/vacatures/${vacancy.id}/solliciteer`}
                 className="block w-full text-center py-3 px-4 rounded-xl text-sm font-bold text-white no-underline transition-all mb-3 hover:opacity-90"
-                style={{ background: "#0f766e" }}
+                style={{ background: "#7C3AED" }}
               >
                 Nu solliciteren
               </Link>
 
               <Link
                 href="/candidate/login"
-                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 no-underline transition-colors"
+                className="block w-full text-center py-3 px-4 rounded-xl text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 no-underline transition-colors"
               >
                 Inloggen voor AI-match
               </Link>

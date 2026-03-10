@@ -82,7 +82,7 @@ export default function EmployerLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#0f766e" }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#7C3AED" }}>
               V
             </div>
             <div className="text-left">
@@ -127,17 +127,17 @@ export default function EmployerLoginPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mailadres</label>
                 <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
                   placeholder="bedrijf@voorbeeld.nl"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Wachtwoord</label>
                 <input type="password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
-                style={{ background: "#0f766e" }}>
+                style={{ background: "#7C3AED" }}>
                 {loading ? "Bezig..." : "Inloggen"}
               </button>
             </form>
@@ -147,19 +147,19 @@ export default function EmployerLoginPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bedrijfsnaam / Naam</label>
                 <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)}
                   placeholder="Bedrijf BV"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mailadres</label>
                 <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
                   placeholder="bedrijf@voorbeeld.nl"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Wachtwoord</label>
                 <input type="password" required minLength={8} value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="Minimaal 8 tekens"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">
@@ -168,11 +168,11 @@ export default function EmployerLoginPage() {
                 </label>
                 <input type="text" required value={regToken} onChange={(e) => setRegToken(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
-                style={{ background: "#0f766e" }}>
+                style={{ background: "#7C3AED" }}>
                 {loading ? "Bezig..." : "Account aanmaken"}
               </button>
             </form>
@@ -181,7 +181,7 @@ export default function EmployerLoginPage() {
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <p className="text-sm text-gray-500">
               Bent u kandidaat?{" "}
-              <Link href="/candidate/login" className="text-teal-600 font-semibold no-underline hover:text-teal-700">
+              <Link href="/candidate/login" className="text-purple-600 font-semibold no-underline hover:text-purple-700">
                 Kandidatenportaal
               </Link>
             </p>

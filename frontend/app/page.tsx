@@ -11,7 +11,7 @@ const CATEGORIES = [
 ];
 
 const CARD_COLORS = [
-  "#0f766e", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669",
+  "#7C3AED", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669",
 ];
 const getColor    = (id: number) => CARD_COLORS[id % CARD_COLORS.length];
 const getInitials = (t: string)  =>
@@ -42,7 +42,7 @@ export default function HomePage() {
       <section className="bg-white py-20 border-b border-gray-100">
         <div className="max-w-2xl mx-auto px-6" style={{ textAlign: "center" }}>
 
-          <p className="text-sm font-medium text-teal-700 mb-4">
+          <p className="text-sm font-medium text-purple-700 mb-4">
             AI-powered recruitment platform
           </p>
 
@@ -72,7 +72,7 @@ export default function HomePage() {
             />
             <button
               type="submit"
-              style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+              style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Zoeken
             </button>
@@ -116,7 +116,7 @@ export default function HomePage() {
                   textDecoration: "none",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#0f766e"; (e.currentTarget as HTMLElement).style.color = "#0f766e"; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#7C3AED"; (e.currentTarget as HTMLElement).style.color = "#7C3AED"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; (e.currentTarget as HTMLElement).style.color = "#374151"; }}
               >
                 {cat}
@@ -124,7 +124,7 @@ export default function HomePage() {
             ))}
             <Link
               href="/vacatures"
-              style={{ display: "inline-block", padding: "7px 16px", borderRadius: 100, border: "1px solid transparent", background: "transparent", fontSize: 13, fontWeight: 600, color: "#0f766e", textDecoration: "none" }}
+              style={{ display: "inline-block", padding: "7px 16px", borderRadius: 100, border: "1px solid transparent", background: "transparent", fontSize: 13, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}
             >
               Alle categorieën →
             </Link>
@@ -139,7 +139,7 @@ export default function HomePage() {
             <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Nieuwste vacatures
             </p>
-            <Link href="/vacatures" style={{ fontSize: 13, fontWeight: 600, color: "#0f766e", textDecoration: "none" }}>
+            <Link href="/vacatures" style={{ fontSize: 13, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}>
               Alle vacatures →
             </Link>
           </div>
@@ -177,7 +177,7 @@ export default function HomePage() {
                         </span>
                       )}
                       {v.hours_per_week && (
-                        <span style={{ fontSize: 12, color: "#0f766e", padding: "3px 10px", borderRadius: 100, background: "#f0fdfa", fontWeight: 500 }}>
+                        <span style={{ fontSize: 12, color: "#7C3AED", padding: "3px 10px", borderRadius: 100, background: "#f0fdfa", fontWeight: 500 }}>
                           {v.hours_per_week}u
                         </span>
                       )}
@@ -235,7 +235,7 @@ export default function HomePage() {
             Maak een gratis account, upload je CV en ontvang AI-matches op maat.
           </p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <Link href="/candidate/login" style={{ background: "#0f766e", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+            <Link href="/candidate/login" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
               Maak account aan
             </Link>
             <Link href="/vacatures" style={{ background: "#f9fafb", color: "#374151", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none", border: "1px solid #e5e7eb" }}>

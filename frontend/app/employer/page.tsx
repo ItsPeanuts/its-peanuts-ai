@@ -29,7 +29,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   rejected:    { label: "Afgewezen",    color: "#dc2626", bg: "#fee2e2", next: [] },
 };
 
-const AVATAR_COLORS = ["bg-teal-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500"];
+const AVATAR_COLORS = ["bg-purple-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500"];
 function avatarColor(id: number) { return AVATAR_COLORS[id % AVATAR_COLORS.length]; }
 function getInitials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
@@ -344,7 +344,7 @@ export default function EmployerPage() {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 min-h-screen">
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#0f766e" }}>V</div>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7C3AED" }}>V</div>
             <span className="font-bold text-gray-900 text-sm">VorzaIQ</span>
           </div>
           <div className="text-xs text-gray-400 mt-1 truncate">{userEmail}</div>
@@ -356,7 +356,7 @@ export default function EmployerPage() {
           <button
             onClick={() => { setView("vacancies"); setSelectedVacancy(null); loadApplications(); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              view === "vacancies" ? "text-teal-700 bg-teal-50" : "text-gray-600 hover:bg-gray-50"
+              view === "vacancies" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
             Mijn vacatures
@@ -366,7 +366,7 @@ export default function EmployerPage() {
           <button
             onClick={() => { setView("applications"); setSelectedVacancy(null); loadApplications(); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              view === "applications" && !selectedVacancy ? "text-teal-700 bg-teal-50" : "text-gray-600 hover:bg-gray-50"
+              view === "applications" && !selectedVacancy ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
             Alle sollicitanten
@@ -406,7 +406,7 @@ export default function EmployerPage() {
                   key={v.id}
                   onClick={() => handleVacancyClick(v)}
                   className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                    selectedVacancy === v.id ? "text-teal-700 bg-teal-50 font-medium" : "text-gray-600 hover:bg-gray-50"
+                    selectedVacancy === v.id ? "text-purple-700 bg-purple-50 font-medium" : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   <span className="truncate block pr-6">{v.title}</span>
@@ -458,7 +458,7 @@ export default function EmployerPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-5 mb-6">
               {[
-                { label: "Actieve vacatures", value: vacancies.length, color: "#0f766e" },
+                { label: "Actieve vacatures", value: vacancies.length, color: "#7C3AED" },
                 { label: "Totaal sollicitanten", value: totalApps, color: "#3b82f6" },
                 { label: "Gem. matchscore", value: (() => {
                   const scored = applications.filter((a) => a.match_score !== null);
@@ -490,7 +490,7 @@ export default function EmployerPage() {
                   const vacApps = applications.filter((a) => a.vacancy_id === v.id);
                   const topScore = vacApps.reduce((max, a) => Math.max(max, a.match_score ?? 0), 0);
                   return (
-                    <div key={v.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:border-teal-200 hover:shadow-sm transition-all">
+                    <div key={v.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:border-purple-200 hover:shadow-sm transition-all">
                       <div className="flex items-center gap-4">
                         <div className={`${color} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
                           {getInitials(v.title)}
@@ -515,7 +515,7 @@ export default function EmployerPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleVacancyClick(v)}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors"
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                             >
                               Sollicitanten
                             </button>
@@ -583,7 +583,7 @@ export default function EmployerPage() {
                               <div className="font-semibold text-gray-900">{app.candidate_name}</div>
                               <div className="text-xs text-gray-500 mt-0.5">{app.candidate_email}</div>
                               {!selectedVacancy && (
-                                <div className="text-xs text-teal-600 mt-0.5 font-medium">
+                                <div className="text-xs text-purple-600 mt-0.5 font-medium">
                                   {vacancies.find((v) => v.id === app.vacancy_id)?.title ?? "Vacature"}
                                 </div>
                               )}
@@ -607,7 +607,7 @@ export default function EmployerPage() {
                           {/* AI Details uitklapper */}
                           {(app.ai_strengths || app.ai_gaps) && (
                             <details className="mt-2">
-                              <summary className="text-xs text-teal-600 cursor-pointer font-medium hover:text-teal-700">
+                              <summary className="text-xs text-purple-600 cursor-pointer font-medium hover:text-purple-700">
                                 Zie AI-analyse ▾
                               </summary>
                               <div className="mt-2 space-y-2">
@@ -638,13 +638,13 @@ export default function EmployerPage() {
                             <button
                               onClick={() => toggleChat(app.id)}
                               className="text-xs font-medium cursor-pointer hover:opacity-80 flex items-center gap-1"
-                              style={{ color: "#0f766e", background: "none", border: "none", padding: 0 }}
+                              style={{ color: "#7C3AED", background: "none", border: "none", padding: 0 }}
                             >
                               <span style={{
                                 width: 16,
                                 height: 16,
                                 borderRadius: "50%",
-                                background: "#0f766e",
+                                background: "#7C3AED",
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -675,7 +675,7 @@ export default function EmployerPage() {
                                             width: 20,
                                             height: 20,
                                             borderRadius: "50%",
-                                            background: "#0f766e",
+                                            background: "#7C3AED",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
@@ -689,7 +689,7 @@ export default function EmployerPage() {
                                         <div
                                           className="text-xs px-3 py-2 rounded-xl max-w-xs leading-relaxed"
                                           style={msg.role === "candidate"
-                                            ? { background: "#0f766e", color: "#fff", borderTopRightRadius: 4 }
+                                            ? { background: "#7C3AED", color: "#fff", borderTopRightRadius: 4 }
                                             : { background: "#fff", color: "#374151", border: "1px solid #e5e7eb", borderTopLeftRadius: 4 }
                                           }
                                         >
@@ -792,7 +792,7 @@ export default function EmployerPage() {
                               setInterviewNotes("");
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
-                            style={{ background: "#f0fdfa", color: "#0f766e", border: "1px solid #ccfbf1" }}
+                            style={{ background: "#f0fdfa", color: "#7C3AED", border: "1px solid #ccfbf1" }}
                           >
                             {scheduledInterviews[app.id] ? "Nieuw gesprek" : "Plan gesprek"}
                           </button>
@@ -844,9 +844,9 @@ export default function EmployerPage() {
 
             {/* AI-assistent blok */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl mb-4"
-              style={{ borderLeft: "4px solid #0f766e" }}>
+              style={{ borderLeft: "4px solid #7C3AED" }}>
               <div className="flex items-center gap-2 mb-3">
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0f766e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#7C3AED", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M12 8v4l3 3"/></svg>
                 </div>
                 <span className="text-sm font-bold text-gray-800">AI schrijft de vacature voor jou</span>
@@ -857,28 +857,28 @@ export default function EmployerPage() {
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   placeholder='bijv. "Python developer, 3 jaar ervaring, Amsterdam, hybride, fintech startup"'
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                 />
                 <div className="flex gap-2">
                   <input
                     value={aiWebsite}
                     onChange={(e) => setAiWebsite(e.target.value)}
                     placeholder="Bedrijfswebsite (optioneel) — bijv. https://vorzaiq.nl"
-                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
                   <button
                     type="button"
                     onClick={handleAiGenerate}
                     disabled={aiGenerating || !aiPrompt.trim()}
                     className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90 whitespace-nowrap"
-                    style={{ background: "#0f766e" }}
+                    style={{ background: "#7C3AED" }}
                   >
                     {aiGenerating ? "Genereren..." : "Genereer"}
                   </button>
                 </div>
               </div>
               {aiGenerating && (
-                <p className="text-xs text-teal-600 mt-2 animate-pulse">
+                <p className="text-xs text-purple-600 mt-2 animate-pulse">
                   {aiWebsite ? "AI leest website en schrijft vacature..." : "AI schrijft je vacature..."}
                 </p>
               )}
@@ -890,33 +890,33 @@ export default function EmployerPage() {
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Functietitel *</label>
                   <input required value={title} onChange={(e) => setTitle(e.target.value)}
                     placeholder="bijv. Senior Developer"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Locatie</label>
                     <input value={location} onChange={(e) => setLocation(e.target.value)}
                       placeholder="bijv. Amsterdam"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Uren per week</label>
                     <input value={hours} onChange={(e) => setHours(e.target.value)}
                       placeholder="bijv. 40"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Salarisrange</label>
                   <input value={salary} onChange={(e) => setSalary(e.target.value)}
                     placeholder="bijv. €3.500 - €5.000"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition" />
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Omschrijving</label>
                   <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={5}
                     placeholder="Beschrijf de functie, eisen en wat jouw bedrijf te bieden heeft..."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none" />
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none" />
                 </div>
                 {/* Sollicitatiegesprek type */}
                 <div>
@@ -936,13 +936,13 @@ export default function EmployerPage() {
                         style={{
                           padding: "10px 8px",
                           borderRadius: 10,
-                          border: `2px solid ${vacancyInterviewType === opt.value ? "#0f766e" : "#e5e7eb"}`,
+                          border: `2px solid ${vacancyInterviewType === opt.value ? "#7C3AED" : "#e5e7eb"}`,
                           background: vacancyInterviewType === opt.value ? "#f0fdf4" : "#fff",
                           cursor: "pointer",
                           textAlign: "center" as const,
                         }}
                       >
-                        <div style={{ fontSize: 13, fontWeight: 700, color: vacancyInterviewType === opt.value ? "#0f766e" : "#374151" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: vacancyInterviewType === opt.value ? "#7C3AED" : "#374151" }}>
                           {opt.label}
                         </div>
                         <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{opt.desc}</div>
@@ -952,7 +952,7 @@ export default function EmployerPage() {
                   {(vacancyInterviewType === "virtual" || vacancyInterviewType === "both") && userPlan !== "premium" && (
                     <p style={{ fontSize: 12, color: "#d97706", marginTop: 8 }}>
                       Virtuele Lisa vereist een Premium abonnement.{" "}
-                      <a href="/abonnementen#premium" style={{ color: "#0f766e", fontWeight: 600 }}>Upgrade</a>
+                      <a href="/abonnementen#premium" style={{ color: "#7C3AED", fontWeight: 600 }}>Upgrade</a>
                     </p>
                   )}
                 </div>
@@ -960,7 +960,7 @@ export default function EmployerPage() {
                 <div className="flex gap-3 pt-2">
                   <button type="submit" disabled={creating}
                     className="px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90"
-                    style={{ background: "#0f766e" }}>
+                    style={{ background: "#7C3AED" }}>
                     {creating ? "Aanmaken..." : "Vacature aanmaken"}
                   </button>
                   <button type="button" onClick={() => setView("vacancies")}
@@ -1003,7 +1003,7 @@ export default function EmployerPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-800">{q.question}</p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
                               {q.qtype}
                             </span>
                             {q.options_json && (
@@ -1035,7 +1035,7 @@ export default function EmployerPage() {
                   <select
                     value={newQType}
                     onChange={(e) => setNewQType(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   >
                     <option value="text">Tekst (open vraag)</option>
                     <option value="yes_no">Ja / Nee</option>
@@ -1050,7 +1050,7 @@ export default function EmployerPage() {
                     value={newQText}
                     onChange={(e) => setNewQText(e.target.value)}
                     placeholder='bijv. "Hoeveel jaar ervaring heb je met React?"'
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
                 </div>
                 {(newQType === "single_choice" || newQType === "multi_choice") && (
@@ -1062,7 +1062,7 @@ export default function EmployerPage() {
                       value={newQOptions}
                       onChange={(e) => setNewQOptions(e.target.value)}
                       placeholder='bijv. "0-2 jaar, 2-5 jaar, 5+ jaar"'
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                     />
                   </div>
                 )}
@@ -1070,7 +1070,7 @@ export default function EmployerPage() {
                   onClick={handleAddQuestion}
                   disabled={qSaving || !newQText.trim()}
                   className="px-6 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 hover:opacity-90"
-                  style={{ background: "#0f766e" }}
+                  style={{ background: "#7C3AED" }}
                 >
                   {qSaving ? "Opslaan..." : "Vraag toevoegen"}
                 </button>
@@ -1102,7 +1102,7 @@ export default function EmployerPage() {
               {/* KPI stats */}
               <div className="grid grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: "Vacatures",        value: vacancies.length,       color: "#0f766e" },
+                  { label: "Vacatures",        value: vacancies.length,       color: "#7C3AED" },
                   { label: "Sollicitaties",     value: applications.length,    color: "#3b82f6" },
                   { label: "In interview",      value: statusCounts.interview, color: "#d97706" },
                   { label: "Gem. matchscore",   value: avgScore !== null ? `${avgScore}%` : "—", color: scoreColor },
@@ -1132,7 +1132,7 @@ export default function EmployerPage() {
                               <span className="text-xs font-bold text-gray-800 flex-shrink-0">{count}</span>
                             </div>
                             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#0f766e" }} />
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#7C3AED" }} />
                             </div>
                           </div>
                         );
@@ -1242,7 +1242,7 @@ export default function EmployerPage() {
                       onClick={() => setInterviewType(opt.value)}
                       className="py-2.5 px-3 rounded-xl text-xs font-semibold border-2 transition-all text-center"
                       style={interviewType === opt.value
-                        ? { borderColor: "#0f766e", background: "#f0fdfa", color: "#0f766e" }
+                        ? { borderColor: "#7C3AED", background: "#f0fdfa", color: "#7C3AED" }
                         : { borderColor: "#e5e7eb", background: "#fff", color: "#6b7280" }
                       }
                     >
@@ -1265,7 +1265,7 @@ export default function EmployerPage() {
                     value={interviewDate}
                     onChange={(e) => setInterviewDate(e.target.value)}
                     min={new Date().toISOString().split("T")[0]}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
                 </div>
                 <div>
@@ -1277,7 +1277,7 @@ export default function EmployerPage() {
                     required
                     value={interviewTime}
                     onChange={(e) => setInterviewTime(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
                 </div>
               </div>
@@ -1290,7 +1290,7 @@ export default function EmployerPage() {
                 <select
                   value={interviewDuration}
                   onChange={(e) => setInterviewDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 transition"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 transition"
                 >
                   <option value={15}>15 minuten</option>
                   <option value={30}>30 minuten</option>
@@ -1310,7 +1310,7 @@ export default function EmployerPage() {
                   onChange={(e) => setInterviewNotes(e.target.value)}
                   rows={2}
                   placeholder="Bijv. voorbereiding, locatie, agendapunten..."
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none"
                 />
               </div>
 
@@ -1329,7 +1329,7 @@ export default function EmployerPage() {
                   type="submit"
                   disabled={interviewSaving}
                   className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90 transition"
-                  style={{ background: "#0f766e" }}
+                  style={{ background: "#7C3AED" }}
                 >
                   {interviewSaving ? "Bezig..." : interviewType === "teams" ? "Plan Teams gesprek" : "Plan gesprek"}
                 </button>

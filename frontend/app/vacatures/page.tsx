@@ -13,7 +13,7 @@ const JOB_TYPES = [
 ];
 
 const CARD_COLORS = [
-  "#0f766e", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669", "#0284c7", "#d97706",
+  "#7C3AED", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669", "#0284c7", "#d97706",
 ];
 const getColor    = (id: number) => CARD_COLORS[id % CARD_COLORS.length];
 const getInitials = (t: string)  =>
@@ -98,7 +98,7 @@ export default function VacaturesPage() {
             </div>
             <button
               type="submit"
-              style={{ background: "#0f766e", color: "#fff", border: "none", borderRadius: 10, padding: "0 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+              style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 10, padding: "0 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Zoeken
             </button>
@@ -124,7 +124,7 @@ export default function VacaturesPage() {
                     type="checkbox"
                     checked={jobTypes.includes(t.value)}
                     onChange={() => toggleType(t.value)}
-                    style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#0f766e" }}
+                    style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#7C3AED" }}
                   />
                   <span style={{ fontSize: 13, color: "#374151" }}>{t.label}</span>
                 </label>
@@ -134,7 +134,7 @@ export default function VacaturesPage() {
             {(jobTypes.length > 0 || query || location) && (
               <button
                 onClick={() => { setJobTypes([]); setQuery(""); setLocation(""); load(); }}
-                style={{ marginTop: 16, fontSize: 12, color: "#0f766e", fontWeight: 600, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                style={{ marginTop: 16, fontSize: 12, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", padding: 0, cursor: "pointer" }}
               >
                 Filters wissen
               </button>
@@ -184,7 +184,7 @@ export default function VacaturesPage() {
                       <Link
                         href={`/vacatures/${v.id}`}
                         style={{ fontSize: 14, fontWeight: 600, color: "#111827", textDecoration: "none", display: "block" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#0f766e"}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#7C3AED"}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#111827"}
                       >
                         {v.title}
@@ -204,9 +204,9 @@ export default function VacaturesPage() {
                       )}
                       <Link
                         href={`/vacatures/${v.id}/solliciteer`}
-                        style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#0f766e", padding: "7px 16px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#0d6b63"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "#0f766e"}
+                        style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", padding: "7px 16px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#6D28D9"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "#7C3AED"}
                       >
                         Solliciteer
                       </Link>
@@ -229,11 +229,11 @@ export default function VacaturesPage() {
             <div style={{ marginTop: 24, background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 12, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
               <div>
                 <p style={{ fontWeight: 600, color: "#134e4a", fontSize: 14, marginBottom: 2 }}>Maak je profiel compleet</p>
-                <p style={{ fontSize: 12, color: "#0f766e" }}>Upload je CV en ontvang automatisch AI-matches.</p>
+                <p style={{ fontSize: 12, color: "#7C3AED" }}>Upload je CV en ontvang automatisch AI-matches.</p>
               </div>
               <Link
                 href="/candidate/login"
-                style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#0f766e", padding: "8px 18px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
+                style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", padding: "8px 18px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
               >
                 Start nu
               </Link>

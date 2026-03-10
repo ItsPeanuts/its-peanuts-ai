@@ -485,7 +485,7 @@ export default function VideoInterviewPage() {
 
           <button
             onClick={() => router.push(`/candidate/sollicitaties/${appId}`)}
-            style={{ background: "#0DA89E", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" }}
+            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" }}
           >
             Terug naar sollicitatie
           </button>
@@ -540,7 +540,7 @@ export default function VideoInterviewPage() {
             <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               <div style={{
                 width: 80, height: 80, borderRadius: "50%",
-                background: "linear-gradient(135deg, #0DA89E, #0891b2)",
+                background: "linear-gradient(135deg, #7C3AED, #0891b2)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 32, fontWeight: 800, color: "#fff",
               }}>L</div>
@@ -592,7 +592,7 @@ export default function VideoInterviewPage() {
               <span style={{ fontSize: 12, color: "#9ca3af" }}>{questionNumber}/{totalQuestions}</span>
             </div>
             <div style={{ background: "#374151", borderRadius: 6, height: 6, overflow: "hidden" }}>
-              <div style={{ background: "#0DA89E", height: "100%", width: `${progressPct}%`, borderRadius: 6, transition: "width 0.4s ease" }} />
+              <div style={{ background: "#7C3AED", height: "100%", width: `${progressPct}%`, borderRadius: 6, transition: "width 0.4s ease" }} />
             </div>
           </div>
         </div>
@@ -620,7 +620,7 @@ export default function VideoInterviewPage() {
         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
           {stage === "idle" && (
             <button onClick={startInterview}
-              style={{ background: "#0DA89E", color: "#fff", border: "none", borderRadius: 12, padding: "14px 40px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
+              style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "14px 40px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
               Interview starten
             </button>
           )}

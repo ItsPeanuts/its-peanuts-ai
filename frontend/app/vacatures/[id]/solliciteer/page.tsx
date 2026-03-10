@@ -23,19 +23,19 @@ function StepIndicator({ steps, current }: { steps: string[]; current: number })
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: "50%",
-                background: done || active ? "#0f766e" : "#f3f4f6",
+                background: done || active ? "#7C3AED" : "#f3f4f6",
                 color: done || active ? "#fff" : "#9ca3af",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 12, fontWeight: 700, flexShrink: 0,
               }}>
                 {done ? "✓" : n}
               </div>
-              <span style={{ fontSize: 11, color: active ? "#0f766e" : done ? "#374151" : "#9ca3af", fontWeight: active ? 600 : 400, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 11, color: active ? "#7C3AED" : done ? "#374151" : "#9ca3af", fontWeight: active ? 600 : 400, whiteSpace: "nowrap" }}>
                 {label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div style={{ flex: 1, height: 1, background: done ? "#0f766e" : "#e5e7eb", margin: "0 8px", marginBottom: 20 }} />
+              <div style={{ flex: 1, height: 1, background: done ? "#7C3AED" : "#e5e7eb", margin: "0 8px", marginBottom: 20 }} />
             )}
           </div>
         );
@@ -203,7 +203,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
           </p>
           <Link
             href={`/candidate/cv?next=/vacatures/${vacancyId}/solliciteer`}
-            style={{ display: "inline-block", padding: "10px 24px", background: "#0f766e", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+            style={{ display: "inline-block", padding: "10px 24px", background: "#7C3AED", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
           >
             CV uploaden
           </Link>
@@ -218,7 +218,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
 
         {/* Terug */}
         <div style={{ marginBottom: 20 }}>
-          <Link href={`/vacatures/${vacancyId}`} style={{ fontSize: 13, color: "#0f766e", textDecoration: "none", fontWeight: 500 }}>
+          <Link href={`/vacatures/${vacancyId}`} style={{ fontSize: 13, color: "#7C3AED", textDecoration: "none", fontWeight: 500 }}>
             ← Terug naar vacature
           </Link>
         </div>
@@ -270,14 +270,14 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                       type={type} value={value} placeholder={placeholder}
                       onChange={e => set(e.target.value)}
                       style={{ width: "100%", padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#111827", outline: "none", boxSizing: "border-box" }}
-                      onFocus={e => (e.target as HTMLInputElement).style.borderColor = "#0f766e"}
+                      onFocus={e => (e.target as HTMLInputElement).style.borderColor = "#7C3AED"}
                       onBlur={e => (e.target as HTMLInputElement).style.borderColor = "#e5e7eb"}
                     />
                   </div>
                 ))}
                 <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
                   Al een account?{" "}
-                  <Link href="/candidate/login" style={{ color: "#0f766e", fontWeight: 600, textDecoration: "none" }}>Log hier in</Link>
+                  <Link href="/candidate/login" style={{ color: "#7C3AED", fontWeight: 600, textDecoration: "none" }}>Log hier in</Link>
                 </p>
               </div>
             )}
@@ -290,14 +290,14 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                 </p>
                 <div
                   onClick={() => document.getElementById("cv-input")?.click()}
-                  style={{ border: `2px dashed ${cvFile ? "#0f766e" : "#d1d5db"}`, borderRadius: 12, padding: "40px 24px", textAlign: "center", cursor: "pointer", background: cvFile ? "#f0fdfa" : "#fafafa" }}
+                  style={{ border: `2px dashed ${cvFile ? "#7C3AED" : "#d1d5db"}`, borderRadius: 12, padding: "40px 24px", textAlign: "center", cursor: "pointer", background: cvFile ? "#f0fdfa" : "#fafafa" }}
                 >
                   {cvFile ? (
                     <>
-                      <div style={{ width: 40, height: 40, background: "#0f766e", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                      <div style={{ width: 40, height: 40, background: "#7C3AED", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
                         <svg width="20" height="20" fill="none" stroke="#fff" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       </div>
-                      <p style={{ fontWeight: 600, color: "#0f766e", fontSize: 14, margin: "0 0 4px" }}>{cvFile.name}</p>
+                      <p style={{ fontWeight: 600, color: "#7C3AED", fontSize: 14, margin: "0 0 4px" }}>{cvFile.name}</p>
                       <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Klik om te wijzigen</p>
                     </>
                   ) : (
@@ -326,14 +326,14 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                   placeholder="Schrijf hier je motivatie, of laat AI helpen..."
                   rows={8}
                   style={{ width: "100%", padding: "12px 14px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#111827", outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.6 }}
-                  onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = "#0f766e"}
+                  onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = "#7C3AED"}
                   onBlur={e => (e.target as HTMLTextAreaElement).style.borderColor = "#e5e7eb"}
                 />
                 {isLoggedIn && (
                   <button
                     onClick={handleGenerateMotivation}
                     disabled={genLoading}
-                    style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#0f766e", cursor: genLoading ? "not-allowed" : "pointer", opacity: genLoading ? 0.7 : 1 }}
+                    style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#7C3AED", cursor: genLoading ? "not-allowed" : "pointer", opacity: genLoading ? 0.7 : 1 }}
                   >
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -357,7 +357,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                           <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
                             <input type="radio" name={`q_${q.id}`} value={opt} checked={answers[index]?.answer === opt} onChange={() => {
                               const u = [...answers]; u[index] = { question_id: q.id, answer: opt }; setAnswers(u);
-                            }} style={{ accentColor: "#0f766e" }} />
+                            }} style={{ accentColor: "#7C3AED" }} />
                             {opt}
                           </label>
                         ))}
@@ -367,7 +367,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                         rows={3} placeholder="Jouw antwoord..." value={answers[index]?.answer ?? ""}
                         onChange={e => { const u = [...answers]; u[index] = { question_id: q.id, answer: e.target.value }; setAnswers(u); }}
                         style={{ width: "100%", padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#111827", outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
-                        onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = "#0f766e"}
+                        onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = "#7C3AED"}
                         onBlur={e => (e.target as HTMLTextAreaElement).style.borderColor = "#e5e7eb"}
                       />
                     )}
@@ -412,7 +412,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                         {showChat && (
                           <Link
                             href={`/candidate/sollicitaties/${result.application_id}/chat`}
-                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "#0f766e", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
+                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
                           >
                             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🗨️</div>
                             <div style={{ textAlign: "left" }}>
@@ -448,7 +448,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                   <Link href="/vacatures" style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 13, fontWeight: 500, color: "#374151", background: "#fff", textDecoration: "none" }}>
                     Meer vacatures
                   </Link>
-                  <Link href="/candidate" style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#0f766e", background: "#f0fdfa", textDecoration: "none" }}>
+                  <Link href="/candidate" style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#7C3AED", background: "#f0fdfa", textDecoration: "none" }}>
                     Mijn portaal
                   </Link>
                 </div>
@@ -471,7 +471,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                 <button
                   onClick={handleNext}
                   disabled={submitting}
-                  style={{ padding: "10px 28px", borderRadius: 10, background: "#0f766e", color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1, minWidth: 140 }}
+                  style={{ padding: "10px 28px", borderRadius: 10, background: "#7C3AED", color: "#fff", fontSize: 13, fontWeight: 700, border: "none", cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1, minWidth: 140 }}
                 >
                   {submitting ? "Bezig..."
                     : step === totalSteps ? "Solliciteer nu"
