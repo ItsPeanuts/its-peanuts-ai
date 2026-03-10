@@ -105,6 +105,8 @@ export async function createVacancy(
     salary_range?: string;
     description?: string;
     interview_type?: string;
+    employment_type?: string;
+    work_location?: string;
   }
 ) {
   const res = await fetch(`${BASE}/employer/vacancies`, {
@@ -132,6 +134,8 @@ export type PublicVacancy = {
   hours_per_week: string | null;
   salary_range: string | null;
   description: string | null;
+  employment_type: string | null;
+  work_location: string | null;
   created_at: string;
 };
 
@@ -155,10 +159,20 @@ export type PublicVacancyDetail = PublicVacancy & {
 export async function listVacancies(params?: {
   q?: string;
   location?: string;
+  employment_type?: string;
+  work_location?: string;
+  date_posted?: string;
+  skip?: number;
+  limit?: number;
 }): Promise<PublicVacancy[]> {
   const sp = new URLSearchParams();
   if (params?.q) sp.set("q", params.q);
   if (params?.location) sp.set("location", params.location);
+  if (params?.employment_type) sp.set("employment_type", params.employment_type);
+  if (params?.work_location) sp.set("work_location", params.work_location);
+  if (params?.date_posted) sp.set("date_posted", params.date_posted);
+  if (params?.skip != null) sp.set("skip", String(params.skip));
+  if (params?.limit != null) sp.set("limit", String(params.limit));
   const url = `${BASE}/vacancies${sp.size ? "?" + sp.toString() : ""}`;
 
   const res = await fetch(url);

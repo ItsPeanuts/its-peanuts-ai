@@ -27,6 +27,13 @@ class Vacancy(Base):
     interview_type = Column(String(20), nullable=False, server_default="both")
     # "chat" | "virtual" | "both"
 
+    # Indeed-stijl filters
+    employment_type = Column(String(50), nullable=True)
+    # "fulltime" | "parttime" | "freelance" | "stage" | "tijdelijk"
+
+    work_location = Column(String(50), nullable=True)
+    # "remote" | "hybride" | "op-locatie"
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     employer = relationship("User", back_populates="vacancies", lazy="joined")

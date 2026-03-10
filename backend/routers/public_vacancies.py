@@ -59,10 +59,15 @@ _client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 def list_vacancies(
     q: Optional[str] = None,
     location: Optional[str] = None,
+    employment_type: Optional[str] = None,   # fulltime|parttime|freelance|stage|tijdelijk
+    work_location: Optional[str] = None,      # remote|hybride|op-locatie
+    date_posted: Optional[str] = None,        # today|3days|week|month
     skip: int = 0,
-    limit: int = 20,
+    limit: int = 50,
     db: Session = Depends(get_db),
 ):
+    from datetime import datetime, timedelta, timezone
+
     query = db.query(models.Vacancy).order_by(models.Vacancy.created_at.desc())
 
     if q:
@@ -72,6 +77,17 @@ def list_vacancies(
         )
     if location:
         query = query.filter(models.Vacancy.location.ilike(f"%{location}%"))
+    if employment_type:
+        query = query.filter(models.Vacancy.employment_type == employment_type)
+    if work_location:
+        query = query.filter(models.Vacancy.work_location == work_location)
+    if date_posted:
+        now = datetime.now(timezone.utc)
+        delta_map = {"today": 1, "3days": 3, "week": 7, "month": 30}
+        days = delta_map.get(date_posted)
+        if days:
+            cutoff = now - timedelta(days=days)
+            query = query.filter(models.Vacancy.created_at >= cutoff)
 
     return query.offset(skip).limit(limit).all()
 

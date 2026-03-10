@@ -90,6 +90,8 @@ export default function EmployerPage() {
   const [salary, setSalary] = useState("");
   const [desc, setDesc] = useState("");
   const [vacancyInterviewType, setVacancyInterviewType] = useState<"chat" | "virtual" | "both">("both");
+  const [vacancyEmploymentType, setVacancyEmploymentType] = useState("");
+  const [vacancyWorkLocation, setVacancyWorkLocation] = useState("");
   const [creating, setCreating] = useState(false);
 
   // AI vacature generator
@@ -322,10 +324,10 @@ export default function EmployerPage() {
     setCreating(true);
     setErr("");
     try {
-      await createVacancy(token, { title, location, hours_per_week: hours, salary_range: salary, description: desc, interview_type: vacancyInterviewType });
+      await createVacancy(token, { title, location, hours_per_week: hours, salary_range: salary, description: desc, interview_type: vacancyInterviewType, employment_type: vacancyEmploymentType || undefined, work_location: vacancyWorkLocation || undefined });
       const vacs = await employerVacancies(token);
       setVacancies(vacs || []);
-      setTitle(""); setLocation(""); setHours(""); setSalary(""); setDesc(""); setVacancyInterviewType("both");
+      setTitle(""); setLocation(""); setHours(""); setSalary(""); setDesc(""); setVacancyInterviewType("both"); setVacancyEmploymentType(""); setVacancyWorkLocation("");
       setMsg("Vacature aangemaakt!");
       setView("vacancies");
     } catch (e: unknown) {
@@ -920,6 +922,30 @@ export default function EmployerPage() {
                   <input value={salary} onChange={(e) => setSalary(e.target.value)}
                     placeholder="bijv. €3.500 - €5.000"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dienstverband</label>
+                    <select value={vacancyEmploymentType} onChange={e => setVacancyEmploymentType(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition bg-white">
+                      <option value="">Selecteer...</option>
+                      <option value="fulltime">Fulltime</option>
+                      <option value="parttime">Parttime</option>
+                      <option value="freelance">Freelance</option>
+                      <option value="stage">Stage</option>
+                      <option value="tijdelijk">Tijdelijk</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Werklocatie</label>
+                    <select value={vacancyWorkLocation} onChange={e => setVacancyWorkLocation(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition bg-white">
+                      <option value="">Selecteer...</option>
+                      <option value="remote">Remote</option>
+                      <option value="hybride">Hybride</option>
+                      <option value="op-locatie">Op locatie</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Omschrijving</label>

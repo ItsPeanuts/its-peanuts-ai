@@ -46,6 +46,8 @@ class VacancyBase(BaseModel):
     hours_per_week: Optional[str] = None
     salary_range: Optional[str] = None
     description: Optional[str] = None
+    employment_type: Optional[str] = None   # fulltime|parttime|freelance|stage|tijdelijk
+    work_location: Optional[str] = None     # remote|hybride|op-locatie
 
 
 class VacancyCreate(VacancyBase):
@@ -162,6 +164,8 @@ class PublicVacancyOut(BaseModel):
     hours_per_week: Optional[str] = None
     salary_range: Optional[str] = None
     description: Optional[str] = None
+    employment_type: Optional[str] = None
+    work_location: Optional[str] = None
     created_at: datetime
 
 
