@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
+  <defs>
+    <linearGradient id="iqGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#A78BFA"/>
+      <stop offset="100%" style="stop-color:#C4B5FD"/>
+    </linearGradient>
+  </defs>
+
+  <!-- VORZA — white -->
+  <text
+    x="40"
+    y="82"
+    font-family="'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="64"
+    font-weight="900"
+    letter-spacing="-3"
+    fill="#FFFFFF"
+  >VORZA</text>
+
+  <!-- Thin vertical divider -->
+  <rect x="298" y="22" width="1.5" height="56" fill="#4B5563"/>
+
+  <!-- IQ — light purple -->
+  <text
+    x="316"
+    y="82"
+    font-family="'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="64"
+    font-weight="900"
+    letter-spacing="-3"
+    fill="url(#iqGrad)"
+  >IQ</text>
+
+  <!-- Thin underline accent -->
+  <rect x="40" y="92" width="370" height="2" fill="#A78BFA" opacity="0.3"/>
+  <rect x="40" y="92" width="80" height="2" fill="#A78BFA"/>
+
+</svg>
