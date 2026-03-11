@@ -163,20 +163,30 @@ def ai_enrich_description(title: str, description: str, company_name: str) -> st
 
 
 def _generate_fallback(title: str, description: str, company_name: str) -> str:
-    """Maak een nette beschrijving zonder AI: schoon op + voeg context toe."""
+    """Maak een leesbare beschrijving zonder AI: schoon op en splits in alinea's."""
     cleaned = clean_description(description)
-    if cleaned and len(cleaned) > 100:
+    co = company_name or "dit bedrijf"
+
+    if not cleaned or len(cleaned) < 50:
+        return (
+            f"Wij zoeken een enthousiaste **{title}** voor {co}.\n\n"
+            f"Solliciteer direct via het platform en laat ons meer over je weten."
+        )
+
+    # Al gestructureerd (markdown / meerdere regels)? Geef direct terug.
+    if "\n\n" in cleaned or cleaned.count("\n") > 3:
         return cleaned
 
-    # Beschrijving te kort of leeg — gebruik template
-    co = company_name or "dit bedrijf"
-    parts = [f"Wij zoeken een enthousiaste {title} voor {co}."]
-    if cleaned:
-        parts.append(cleaned)
-    parts.append(
-        "Heb je interesse? Solliciteer direct via het platform en laat ons meer over je weten."
-    )
-    return "\n\n".join(parts)
+    # Ongestructureerde blob: splits op zinsgrenzen in 3 leesbare alinea's
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+    if len(sentences) < 4:
+        return cleaned
+
+    third = max(1, len(sentences) // 3)
+    para1 = " ".join(sentences[:third])
+    para2 = " ".join(sentences[third : third * 2])
+    para3 = " ".join(sentences[third * 2 :])
+    return f"{para1}\n\n{para2}\n\n{para3}"
 
 
 def enrich_for_publish(title: str, description: str, company_name: str,

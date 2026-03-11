@@ -357,6 +357,49 @@ def publish_all_pending(
     return {"published": published}
 
 
+@router.post("/admin/scraped-vacancies/{sv_id}/re-enrich")
+def re_enrich_scraped_vacancy(
+    sv_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Herschrijf de beschrijving van een gepubliceerde vacature met AI.
+    Handig om bestaande rommelige beschrijvingen netjes te maken.
+    """
+    require_role(current_user, "admin")
+    sv = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.id == sv_id).first()
+    if not sv:
+        raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
+    if not sv.vacancy_id:
+        raise HTTPException(status_code=400, detail="Geen gekoppelde vacature — eerst publiceren")
+
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == sv.vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Gekoppelde vacature niet gevonden")
+
+    enriched = enrich_for_publish(
+        title=sv.title,
+        description=sv.description or "",
+        company_name=sv.company_name or "",
+        location=sv.location or "",
+        use_ai=True,
+    )
+    vacancy.description = enriched["description"]
+    if enriched["salary_range"]:
+        vacancy.salary_range = enriched["salary_range"]
+    if enriched["hours_per_week"]:
+        vacancy.hours_per_week = enriched["hours_per_week"]
+    if enriched["employment_type"]:
+        vacancy.employment_type = enriched["employment_type"]
+    if enriched["work_location"]:
+        vacancy.work_location = enriched["work_location"]
+    db.commit()
+
+    logger.info("[scraper-admin] Re-enrich Vacancy %d via AI", sv.vacancy_id)
+    return {"status": "enriched", "vacancy_id": sv.vacancy_id}
+
+
 @router.delete("/admin/scraped-vacancies/{sv_id}")
 def delete_scraped_vacancy(
     sv_id: int,

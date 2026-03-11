@@ -306,9 +306,9 @@ def _scrape_google_jobs() -> list:
 
 def _scrape_google_search_emails() -> list:
     """
-    Zoekt via SerpAPI reguliere Google Search (engine=google, niet google_jobs)
-    naar NL-vacaturepagina's op bedrijfswebsites die een e-mailadres bevatten.
-    Haalt email direct uit het snippet — geen extra page-visits nodig.
+    Zoek via SerpAPI Google Search naar NL-vacaturepagina's op bedrijfswebsites.
+    Stap 1: email uit snippet. Stap 2: bezoek pagina als snippet geen email heeft.
+    Haalt 2 pagina's per query op (start=0 + start=10) voor meer volume.
     Vereist env var: SERPAPI_KEY
     """
     if not SERPAPI_KEY:
@@ -318,64 +318,88 @@ def _scrape_google_search_emails() -> list:
     from urllib.parse import quote, urlparse
 
     SEARCH_QUERIES = [
-        'vacature "stuur je cv" "@" site:.nl -site:linkedin.com -site:indeed.com -site:werkzoeken.nl',
-        'vacature "solliciteer via" "@" site:.nl -site:linkedin.com -site:adzuna.nl -site:nationale-vacaturebank.nl',
-        '"wij zoeken" vacature "hr@" OR "jobs@" OR "recruitment@" site:.nl',
-        'vacature "cv sturen naar" "@" site:.nl -site:werkzoeken.nl -site:monsterboard.nl',
-        '"open sollicitatie" OR "vacature" "stuur een mail naar" "@" site:.nl',
+        # Email-targeted (snel — email staat al in snippet)
+        'vacature "stuur je cv" "@" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature "solliciteer via" "@" site:.nl -site:linkedin.com -site:adzuna.nl',
+        '"wij zoeken" "hr@" OR "jobs@" OR "recruitment@" vacature site:.nl',
+        'vacature "cv sturen naar" "@" site:.nl',
         'vacature "personeel@" OR "werving@" OR "vacatures@" site:.nl',
+        '"open sollicitatie" "stuur" "@" site:.nl',
+        # Brede queries per sector (paginabezoek extraheert email)
+        'vacature ICT developer "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature marketing communicatie "wij zoeken" site:.nl -site:linkedin.com',
+        'vacature sales accountmanager site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature administratief medewerker site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature zorg verpleegkundige site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature logistiek chauffeur site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature horeca manager site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature technisch monteur site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature financieel controller site:.nl -site:linkedin.com -site:indeed.com',
     ]
 
     results = []
     seen: set = set()
 
     for query in SEARCH_QUERIES:
-        url = (
-            f"https://serpapi.com/search.json"
-            f"?engine=google&q={quote(query)}&gl=nl&hl=nl&num=10"
-            f"&api_key={SERPAPI_KEY}"
-        )
-        try:
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            logger.warning("[scraper] SerpAPI Search '%s' fout: %s", query, e)
-            continue
+        for start in (0, 10):   # 2 pagina's per query = 20 resultaten
+            url = (
+                f"https://serpapi.com/search.json"
+                f"?engine=google&q={quote(query)}&gl=nl&hl=nl&num=10&start={start}"
+                f"&api_key={SERPAPI_KEY}"
+            )
+            try:
+                resp = requests.get(url, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as e:
+                logger.warning("[scraper] SerpAPI Search '%s' (start=%d) fout: %s", query, start, e)
+                break   # tweede pagina overslaan als eerste al mislukt
 
-        for item in data.get("organic_results", []):
-            page_url = item.get("link", "")
-            snippet  = item.get("snippet", "")
-            raw_title = item.get("title", "Vacature")
+            for item in data.get("organic_results", []):
+                page_url  = item.get("link", "")
+                snippet   = item.get("snippet", "")
+                raw_title = item.get("title", "Vacature")
 
-            if not page_url or page_url in seen:
-                continue
-            seen.add(page_url)
+                if not page_url or page_url in seen:
+                    continue
+                seen.add(page_url)
 
-            # Email direct uit het snippet halen (geen page-visit nodig)
-            emails = _extract_emails(snippet)
-            if not emails:
-                continue
+                # Stap 1: email direct uit snippet
+                emails = _extract_emails(snippet)
+                description = snippet
 
-            # Titelopruiming: verwijder " | Bedrijfsnaam" suffix
-            clean_title = re.sub(r'\s*[\|\-–]\s*.+$', '', raw_title).strip() or raw_title
+                # Stap 2: bezoek pagina als snippet geen email heeft
+                if not emails:
+                    try:
+                        page_resp = requests.get(page_url, timeout=8, headers=HEADERS)
+                        page_resp.raise_for_status()
+                        page_text = BeautifulSoup(page_resp.text, "html.parser").get_text(" ", strip=True)
+                        emails = _extract_emails(page_text)
+                        if not emails:
+                            continue
+                        description = page_text[:3000]
+                    except Exception:
+                        continue
 
-            # Bedrijfsnaam afleiden uit domein
-            domain = urlparse(page_url).netloc.replace("www.", "")
-            company = domain.split(".")[0].capitalize()
+                # Titelopruiming: verwijder " | Bedrijfsnaam" suffix
+                clean_title = re.sub(r'\s*[\|\-–]\s*.+$', '', raw_title).strip() or raw_title
 
-            results.append({
-                "title": clean_title[:500],
-                "description": snippet,
-                "company_name": company[:500],
-                "contact_email": emails[0],
-                "contact_phone": extract_phone(snippet),
-                "location": "Nederland",
-                "source_url": page_url,
-                "source_name": "google_search",
-            })
+                # Bedrijfsnaam afleiden uit domein
+                domain = urlparse(page_url).netloc.replace("www.", "")
+                company = domain.split(".")[0].capitalize()
 
-        time.sleep(0.5)
+                results.append({
+                    "title": clean_title[:500],
+                    "description": description,
+                    "company_name": company[:500],
+                    "contact_email": emails[0],
+                    "contact_phone": extract_phone(description),
+                    "location": "Nederland",
+                    "source_url": page_url,
+                    "source_name": "google_search",
+                })
+
+            time.sleep(0.5)
 
     logger.info("[scraper] Google Search (SerpAPI) → %d vacatures met e-mail", len(results))
     return results

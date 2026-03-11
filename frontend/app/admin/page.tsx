@@ -183,6 +183,18 @@ export default function AdminPage() {
     }
   }
 
+  async function handleReEnrich(svId: number) {
+    if (!token) return;
+    try {
+      setMsg("AI is beschrijving aan het herschrijven...");
+      await apiFetch(token, `/admin/scraped-vacancies/${svId}/re-enrich`, { method: "POST" });
+      setMsg("Beschrijving herschreven met AI!");
+      setTimeout(() => setMsg(""), 4000);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Herverwerken mislukt");
+    }
+  }
+
   async function handleDeleteScraped(svId: number) {
     if (!token || !confirm("Weet je zeker dat je deze vacature wilt verwijderen?")) return;
     try {
@@ -541,6 +553,15 @@ export default function AdminPage() {
                               className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
                             >
                               Publiceer
+                            </button>
+                          )}
+                          {sv.status === "published" && sv.vacancy_id && (
+                            <button
+                              onClick={() => handleReEnrich(sv.id)}
+                              className="text-xs text-teal-600 hover:text-teal-800 font-medium px-2 py-1 rounded hover:bg-teal-50 transition-colors"
+                              title="Herschrijf beschrijving met AI"
+                            >
+                              Herverwerk
                             </button>
                           )}
                           {sv.status !== "claimed" && (
