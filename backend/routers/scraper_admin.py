@@ -16,11 +16,11 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.db import get_db
+from backend.db import get_db, SessionLocal
 from backend import models
 from backend.routers.auth import get_current_user, require_role
 from backend.security import hash_password, create_access_token
@@ -65,6 +65,11 @@ class ScrapeResult(BaseModel):
     skipped_duplicates: int
 
 
+class ScrapeStarted(BaseModel):
+    status: str
+    message: str
+
+
 class ClaimInfoOut(BaseModel):
     vacancy_title: str
     company_name: Optional[str]
@@ -82,64 +87,88 @@ class ClaimResponse(BaseModel):
     vacancy_id: int
 
 
+# ── Achtergrond-taak: opslaan na scrape ──────────────────────────────────────
+
+def _run_scrape_and_save(source: str, custom_urls: Optional[List[str]]) -> None:
+    """
+    Voert de scraper uit en slaat resultaten op in een eigen DB-sessie.
+    Wordt aangeroepen als BackgroundTask zodat de HTTP-response meteen terugkomt.
+    """
+    db: Session = SessionLocal()
+    try:
+        raw = run_scraper(source=source, custom_urls=custom_urls)
+        saved = 0
+        skipped = 0
+
+        for item in raw:
+            src_url = item.get("source_url") or ""
+            email = item.get("contact_email") or ""
+
+            if src_url:
+                existing = (
+                    db.query(models.ScrapedVacancy)
+                    .filter(models.ScrapedVacancy.source_url == src_url)
+                    .first()
+                )
+            elif email:
+                existing = (
+                    db.query(models.ScrapedVacancy)
+                    .filter(
+                        models.ScrapedVacancy.contact_email == email.lower(),
+                        models.ScrapedVacancy.title == item["title"],
+                    )
+                    .first()
+                )
+            else:
+                existing = None
+
+            if existing:
+                skipped += 1
+                continue
+
+            sv = models.ScrapedVacancy(
+                title=item["title"],
+                description=item.get("description"),
+                company_name=item.get("company_name"),
+                contact_email=email.lower() if email else None,
+                location=item.get("location"),
+                source_url=src_url or None,
+                source_name=item.get("source_name"),
+            )
+            db.add(sv)
+            saved += 1
+
+        db.commit()
+        logger.info(
+            "[scraper-admin] Scrape afgerond: %d gevonden, %d opgeslagen, %d skip",
+            len(raw), saved, skipped,
+        )
+    except Exception as exc:
+        logger.error("[scraper-admin] Scrape mislukt: %s", exc, exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+
 # ── Admin endpoints ───────────────────────────────────────────────────────────
 
-@router.post("/admin/scrape", response_model=ScrapeResult)
+@router.post("/admin/scrape", response_model=ScrapeStarted)
 def trigger_scrape(
     payload: ScrapeRequest,
-    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
     current_user: models.User = Depends(get_current_user),
 ):
-    """Start scraping op basis van de opgegeven bron."""
+    """
+    Start scraping op de achtergrond en retourneert meteen.
+    Resultaten verschijnen in GET /admin/scraped-vacancies zodra de taak klaar is.
+    """
     require_role(current_user, "admin")
-    raw = run_scraper(source=payload.source, custom_urls=payload.urls)
-
-    saved = 0
-    skipped = 0
-
-    for item in raw:
-        # Deduplicatie: op source_url (als aanwezig), anders op email+title
-        src_url = item.get("source_url") or ""
-        email = item.get("contact_email") or ""
-
-        if src_url:
-            existing = (
-                db.query(models.ScrapedVacancy)
-                .filter(models.ScrapedVacancy.source_url == src_url)
-                .first()
-            )
-        elif email:
-            existing = (
-                db.query(models.ScrapedVacancy)
-                .filter(
-                    models.ScrapedVacancy.contact_email == email.lower(),
-                    models.ScrapedVacancy.title == item["title"],
-                )
-                .first()
-            )
-        else:
-            existing = None
-
-        if existing:
-            skipped += 1
-            continue
-
-        sv = models.ScrapedVacancy(
-            title=item["title"],
-            description=item.get("description"),
-            company_name=item.get("company_name"),
-            contact_email=email.lower() if email else None,
-            location=item.get("location"),
-            source_url=src_url or None,
-            source_name=item.get("source_name"),
-        )
-        db.add(sv)
-        saved += 1
-
-    db.commit()
-    logger.info("[scraper-admin] Scrape afgerond: %d gevonden, %d opgeslagen, %d skip", len(raw), saved, skipped)
-
-    return ScrapeResult(scraped=len(raw), saved=saved, skipped_duplicates=skipped)
+    background_tasks.add_task(_run_scrape_and_save, payload.source, payload.urls)
+    logger.info("[scraper-admin] Scrape gestart op achtergrond: source=%s", payload.source)
+    return ScrapeStarted(
+        status="started",
+        message=f"Scraping '{payload.source}' gestart op de achtergrond. Resultaten verschijnen binnen 60 seconden in /admin/scraped-vacancies.",
+    )
 
 
 @router.get("/admin/scraped-vacancies", response_model=List[ScrapedVacancyOut])

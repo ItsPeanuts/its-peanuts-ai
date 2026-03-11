@@ -463,7 +463,7 @@ def _scrape_adzuna(pages: int = 3) -> list:
 
 # ── Jobbird.com ───────────────────────────────────────────────────────────────
 
-def _scrape_jobbird(max_pages: int = 3) -> list:
+def _scrape_jobbird(max_pages: int = 2) -> list:
     """
     Jobbird.com — Nederlandse vacaturesite met JSON API.
     Slaat alle vacatures op, ook zonder e-mail.
@@ -477,14 +477,9 @@ def _scrape_jobbird(max_pages: int = 3) -> list:
     SEARCH_QUERIES = [
         "developer",
         "manager",
-        "accountant",
-        "marketing",
         "HR",
         "sales",
-        "recruiter",
         "engineer",
-        "consultant",
-        "analyst",
     ]
 
     results: list = []
