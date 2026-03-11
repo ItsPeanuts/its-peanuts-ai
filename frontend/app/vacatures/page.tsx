@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
@@ -52,7 +52,7 @@ function parseSalary(raw: string | null): [number, number] | null {
   return [Math.min(...vals), Math.max(...vals)];
 }
 
-export default function VacaturesPage() {
+function VacaturesContent() {
   const searchParams = useSearchParams();
 
   const [vacancies, setVacancies] = useState<PublicVacancy[]>([]);
@@ -515,5 +515,13 @@ export default function VacaturesPage() {
 
       <PublicFooter />
     </div>
+  );
+}
+
+export default function VacaturesPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f9fafb" }}><PublicNav /></div>}>
+      <VacaturesContent />
+    </Suspense>
   );
 }
