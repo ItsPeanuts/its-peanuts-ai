@@ -1259,25 +1259,34 @@ export default function EmployerPage() {
 
             {/* Plans */}
             <div className="p-6 space-y-3">
-              {[
+              [
                 {
-                  name: "Normaal",
-                  price: "€250",
+                  name: "Starter",
+                  price: "€49",
                   period: "/mnd",
                   color: "#2563eb",
                   bg: "#eff6ff",
                   border: "#bfdbfe",
-                  items: ["10 vacatures per jaar", "Onbeperkt chatbot Lisa", "Teams interview planning", "CRM integratie"],
+                  items: ["1 actieve vacature", "AI-matching", "Kandidaatoverzicht"],
                 },
                 {
-                  name: "Premium",
-                  price: "€1.000",
+                  name: "Growth",
+                  price: "€149",
                   period: "/mnd",
                   color: "#7C3AED",
                   bg: "#faf5ff",
                   border: "#c4b5fd",
-                  badge: "Meest gekozen",
-                  items: ["Onbeperkt vacatures", "Virtuele Lisa (AI avatar)", "Prioriteit plaatsing", "Dedicated support"],
+                  badge: "Meest populair",
+                  items: ["5 vacatures", "Prioriteit in zoekresultaten", "AI-screening", "CRM integratie"],
+                },
+                {
+                  name: "Scale",
+                  price: "€349",
+                  period: "/mnd",
+                  color: "#111827",
+                  bg: "#f9fafb",
+                  border: "#e5e7eb",
+                  items: ["Onbeperkte vacatures", "Dedicated support", "Geavanceerde analytics"],
                 },
               ].map((plan) => (
                 <div key={plan.name} style={{ border: `2px solid ${plan.border}`, background: plan.bg, borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 16 }}>
