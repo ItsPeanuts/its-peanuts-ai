@@ -302,6 +302,85 @@ def _scrape_google_jobs() -> list:
     return results
 
 
+# ── SerpAPI Google Search (email-gericht) ─────────────────────────────────────
+
+def _scrape_google_search_emails() -> list:
+    """
+    Zoekt via SerpAPI reguliere Google Search (engine=google, niet google_jobs)
+    naar NL-vacaturepagina's op bedrijfswebsites die een e-mailadres bevatten.
+    Haalt email direct uit het snippet — geen extra page-visits nodig.
+    Vereist env var: SERPAPI_KEY
+    """
+    if not SERPAPI_KEY:
+        logger.warning("[scraper] Google Search: SERPAPI_KEY niet ingesteld — sla over")
+        return []
+
+    from urllib.parse import quote, urlparse
+
+    SEARCH_QUERIES = [
+        'vacature "stuur je cv" "@" site:.nl -site:linkedin.com -site:indeed.com -site:werkzoeken.nl',
+        'vacature "solliciteer via" "@" site:.nl -site:linkedin.com -site:adzuna.nl -site:nationale-vacaturebank.nl',
+        '"wij zoeken" vacature "hr@" OR "jobs@" OR "recruitment@" site:.nl',
+        'vacature "cv sturen naar" "@" site:.nl -site:werkzoeken.nl -site:monsterboard.nl',
+        '"open sollicitatie" OR "vacature" "stuur een mail naar" "@" site:.nl',
+        'vacature "personeel@" OR "werving@" OR "vacatures@" site:.nl',
+    ]
+
+    results = []
+    seen: set = set()
+
+    for query in SEARCH_QUERIES:
+        url = (
+            f"https://serpapi.com/search.json"
+            f"?engine=google&q={quote(query)}&gl=nl&hl=nl&num=10"
+            f"&api_key={SERPAPI_KEY}"
+        )
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning("[scraper] SerpAPI Search '%s' fout: %s", query, e)
+            continue
+
+        for item in data.get("organic_results", []):
+            page_url = item.get("link", "")
+            snippet  = item.get("snippet", "")
+            raw_title = item.get("title", "Vacature")
+
+            if not page_url or page_url in seen:
+                continue
+            seen.add(page_url)
+
+            # Email direct uit het snippet halen (geen page-visit nodig)
+            emails = _extract_emails(snippet)
+            if not emails:
+                continue
+
+            # Titelopruiming: verwijder " | Bedrijfsnaam" suffix
+            clean_title = re.sub(r'\s*[\|\-–]\s*.+$', '', raw_title).strip() or raw_title
+
+            # Bedrijfsnaam afleiden uit domein
+            domain = urlparse(page_url).netloc.replace("www.", "")
+            company = domain.split(".")[0].capitalize()
+
+            results.append({
+                "title": clean_title[:500],
+                "description": snippet,
+                "company_name": company[:500],
+                "contact_email": emails[0],
+                "contact_phone": extract_phone(snippet),
+                "location": "Nederland",
+                "source_url": page_url,
+                "source_name": "google_search",
+            })
+
+        time.sleep(0.5)
+
+    logger.info("[scraper] Google Search (SerpAPI) → %d vacatures met e-mail", len(results))
+    return results
+
+
 # ── Arbeitnow ─────────────────────────────────────────────────────────────────
 
 def _scrape_arbeitnow(pages: int = 3) -> list:
@@ -694,16 +773,16 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
       - "arbeitnow"   → Arbeitnow API (gratis, geen key)
       - "remoteok"    → RemoteOK API (gratis, geen key)
       - "jooble"      → Jooble API (vereist JOOBLE_API_KEY)
-      - "google_jobs" → Google Jobs via SerpAPI (vereist SERPAPI_KEY)
-      - "jobbird"     → Jobbird.com (NL vacaturesite, JSON API)
-      - "indeed"      → Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
-      - "werkzoeken"  → Werkzoeken.nl (BeautifulSoup)
-      - "nvb"         → alias voor "arbeitnow"
-      - "custom"      → custom_urls (lijst van URLs)
-      - "all"         → alle bovenstaande bronnen
+      - "google_jobs"    → Google Jobs via SerpAPI (vereist SERPAPI_KEY)
+      - "google_search"  → Google Search via SerpAPI, email-gericht (vereist SERPAPI_KEY)
+      - "jobbird"        → Jobbird.com (NL vacaturesite, JSON API)
+      - "indeed"         → Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
+      - "werkzoeken"     → Werkzoeken.nl (BeautifulSoup)
+      - "nvb"            → alias voor "arbeitnow"
+      - "custom"         → custom_urls (lijst van URLs)
+      - "all"            → alle bovenstaande bronnen
 
-    ALLE vacatures worden opgeslagen, ook zonder contact_email.
-    contact_email is optioneel: alleen nodig voor de claim-mail flow.
+    Alleen vacatures MÉT contact_email worden opgeslagen — nodig voor claim-flow.
     """
     raw: list = []
 
@@ -715,6 +794,8 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
         raw += _scrape_remoteok()
     if source in ("google_jobs", "all"):
         raw += _scrape_google_jobs()
+    if source in ("google_search", "all"):
+        raw += _scrape_google_search_emails()
     if source in ("werkzoeken", "all"):
         raw += _scrape_werkzoeken()
     if source in ("jobbird", "all"):
