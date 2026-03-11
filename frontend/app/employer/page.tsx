@@ -1259,7 +1259,7 @@ export default function EmployerPage() {
 
             {/* Plans */}
             <div className="p-6 space-y-3">
-              [
+              {[
                 {
                   name: "Starter",
                   price: "€49",
