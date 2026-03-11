@@ -99,6 +99,11 @@ def _save_batch(db: Session, raw: list) -> tuple:
         src_url = item.get("source_url") or ""
         email = item.get("contact_email") or ""
 
+        # Sla vacatures zonder e-mailadres niet op — niet bruikbaar voor claim-flow
+        if not email:
+            skipped += 1
+            continue
+
         if src_url:
             existing = (
                 db.query(models.ScrapedVacancy)

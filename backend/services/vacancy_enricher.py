@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 # ── Regex ─────────────────────────────────────────────────────────────────────
 
 PHONE_RE = re.compile(
-    r'\b('
+    r'(?<!\d)('
     r'\+31[\s\-]?[1-9][\s\-]?(?:\d[\s\-]?){7,8}'   # +31 6 12345678
     r'|0[1-9][\s\-]?(?:\d[\s\-]?){6,8}'              # 06-12345678 / 020-1234567
-    r')\b'
+    r')(?!\d)'
 )
 
 EMAIL_RE = re.compile(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b')
@@ -135,9 +135,12 @@ def ai_enrich_description(title: str, description: str, company_name: str) -> st
     prompt = (
         f"Je bent een recruitment specialist. Herschrijf onderstaande vacaturetekst naar een "
         f"professionele, aantrekkelijke vacature in het Nederlands. "
-        f"Verwijder ALLE contactgegevens (emails, telefoonnummers, URLs). "
-        f"Schrijf 2-3 korte alinea's: wat de functie inhoudt, wat er gevraagd wordt, en wat het bedrijf biedt. "
-        f"Houd het zakelijk maar aansprekend. Geef alleen de tekst terug, geen headers.\n\n"
+        f"Verwijder ALLE contactgegevens (emails, telefoonnummers, URLs, namen van contactpersonen). "
+        f"Gebruik Markdown opmaak met precies deze 3 secties (vette koptekst + opsommingstekens):\n\n"
+        f"**Wat ga je doen?**\n- [taken]\n\n"
+        f"**Wat breng je mee?**\n- [eisen]\n\n"
+        f"**Wat bieden wij?**\n- [voordelen]\n\n"
+        f"Houd het zakelijk en aansprekend. Geef alleen de geformatteerde tekst terug, niets anders.\n\n"
         f"Functietitel: {title}\n"
         f"Bedrijf: {company_name or 'Onbekend bedrijf'}\n"
         f"Originele tekst:\n{truncated}"
