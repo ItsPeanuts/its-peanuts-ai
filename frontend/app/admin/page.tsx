@@ -170,6 +170,18 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePublishAll() {
+    if (!token) return;
+    try {
+      const data = await apiFetch(token, "/admin/scraped-vacancies/publish-all", { method: "POST" });
+      setMsg(`${data.published} vacatures in één keer gepubliceerd!`);
+      setTimeout(() => setMsg(""), 5000);
+      await loadScraped();
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Bulk publiceren mislukt");
+    }
+  }
+
   async function handleDeleteScraped(svId: number) {
     if (!token || !confirm("Weet je zeker dat je deze vacature wilt verwijderen?")) return;
     try {
@@ -449,7 +461,14 @@ export default function AdminPage() {
                   Stap 2 — Keur goed en publiceer
                   <span className="ml-2 text-gray-400 font-normal">({scraped.length})</span>
                 </h2>
-                <div className="flex gap-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePublishAll}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+                  >
+                    Alles publiceren
+                  </button>
+                  <div className="flex gap-1">
                   {(["pending", "published", "claimed", "all"] as const).map((f) => (
                     <button
                       key={f}
@@ -461,6 +480,7 @@ export default function AdminPage() {
                       {f === "pending" ? "Wachtend" : f === "published" ? "Live" : f === "claimed" ? "Geclaimd" : "Alles"}
                     </button>
                   ))}
+                  </div>
                 </div>
               </div>
 
