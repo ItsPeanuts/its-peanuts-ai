@@ -306,10 +306,10 @@ def _scrape_google_jobs() -> list:
 
 def _scrape_google_search_emails() -> list:
     """
-    Zoek via SerpAPI Google Search naar NL-vacaturepagina's op bedrijfswebsites.
-    Stap 1: email uit snippet. Stap 2: bezoek pagina als snippet geen email heeft.
-    Haalt 2 pagina's per query op (start=0 + start=10) voor meer volume.
-    Vereist env var: SERPAPI_KEY
+    SerpAPI Google Search met queries die e-mailprefixen direct benoemen
+    (bijv. '"hr@" vacature site:.nl'). Google indexeert emails op pagina's
+    en toont ze in snippets als we er letterlijk naar zoeken.
+    Vereist SERPAPI_KEY.
     """
     if not SERPAPI_KEY:
         logger.warning("[scraper] Google Search: SERPAPI_KEY niet ingesteld — sla over")
@@ -317,31 +317,34 @@ def _scrape_google_search_emails() -> list:
 
     from urllib.parse import quote, urlparse
 
+    # Zoek op specifieke email-prefixen → Google toont email in snippet
     SEARCH_QUERIES = [
-        # Email-targeted (snel — email staat al in snippet)
-        'vacature "stuur je cv" "@" site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature "solliciteer via" "@" site:.nl -site:linkedin.com -site:adzuna.nl',
-        '"wij zoeken" "hr@" OR "jobs@" OR "recruitment@" vacature site:.nl',
-        'vacature "cv sturen naar" "@" site:.nl',
-        'vacature "personeel@" OR "werving@" OR "vacatures@" site:.nl',
-        '"open sollicitatie" "stuur" "@" site:.nl',
-        # Brede queries per sector (paginabezoek extraheert email)
-        'vacature ICT developer "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature marketing communicatie "wij zoeken" site:.nl -site:linkedin.com',
-        'vacature sales accountmanager site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature administratief medewerker site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature zorg verpleegkundige site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature logistiek chauffeur site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature horeca manager site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature technisch monteur site:.nl -site:linkedin.com -site:indeed.com',
-        'vacature financieel controller site:.nl -site:linkedin.com -site:indeed.com',
+        '"solliciteer@" vacature site:.nl',
+        '"hr@" vacature site:.nl',
+        '"jobs@" vacature site:.nl',
+        '"recruitment@" vacature site:.nl',
+        '"personeel@" vacature site:.nl',
+        '"vacatures@" "wij zoeken" site:.nl',
+        '"werving@" vacature site:.nl',
+        '"hrm@" vacature site:.nl',
+        '"apply@" vacature site:.nl',
+        '"werk@" vacature site:.nl',
+        # Uitzend / detachering bureaus
+        '"info@" uitzendbureau vacature site:.nl',
+        '"werk@" uitzendbureau site:.nl',
+        '"stuur je cv" uitzendbureau "@" site:.nl',
+        '"stuur je cv" detachering "@" site:.nl',
+        # Toepassing-zinnen met email
+        '"stuur je cv naar" "@" vacature site:.nl',
+        '"reageer via" "@" vacature site:.nl',
+        '"solliciteer" "cv" "@" site:.nl -site:linkedin.com -site:indeed.com',
     ]
 
     results = []
     seen: set = set()
 
     for query in SEARCH_QUERIES:
-        for start in (0, 10):   # 2 pagina's per query = 20 resultaten
+        for start in (0, 10):
             url = (
                 f"https://serpapi.com/search.json"
                 f"?engine=google&q={quote(query)}&gl=nl&hl=nl&num=10&start={start}"
@@ -352,8 +355,8 @@ def _scrape_google_search_emails() -> list:
                 resp.raise_for_status()
                 data = resp.json()
             except Exception as e:
-                logger.warning("[scraper] SerpAPI Search '%s' (start=%d) fout: %s", query, start, e)
-                break   # tweede pagina overslaan als eerste al mislukt
+                logger.warning("[scraper] SerpAPI Search '%s' fout: %s", query, e)
+                break
 
             for item in data.get("organic_results", []):
                 page_url  = item.get("link", "")
@@ -364,48 +367,32 @@ def _scrape_google_search_emails() -> list:
                     continue
                 seen.add(page_url)
 
-                # Stap 1: email direct uit snippet
                 emails = _extract_emails(snippet)
-                description = snippet
-
-                # Stap 2: bezoek pagina als snippet geen email heeft
                 if not emails:
-                    try:
-                        page_resp = requests.get(page_url, timeout=8, headers=HEADERS)
-                        page_resp.raise_for_status()
-                        page_text = BeautifulSoup(page_resp.text, "html.parser").get_text(" ", strip=True)
-                        emails = _extract_emails(page_text)
-                        if not emails:
-                            continue
-                        description = page_text[:3000]
-                    except Exception:
-                        continue
+                    continue
 
-                # Titelopruiming: verwijder " | Bedrijfsnaam" suffix
-                clean_title = re.sub(r'\s*[\|\-–]\s*.+$', '', raw_title).strip() or raw_title
-
-                # Bedrijfsnaam afleiden uit domein
-                domain = urlparse(page_url).netloc.replace("www.", "")
+                clean_title = re.sub(r"\s*[\|\-–]\s*.+$", "", raw_title).strip() or raw_title
+                domain  = urlparse(page_url).netloc.replace("www.", "")
                 company = domain.split(".")[0].capitalize()
 
                 results.append({
-                    "title": clean_title[:500],
-                    "description": description,
-                    "company_name": company[:500],
+                    "title":         clean_title[:500],
+                    "description":   snippet,
+                    "company_name":  company[:500],
                     "contact_email": emails[0],
-                    "contact_phone": extract_phone(description),
-                    "location": "Nederland",
-                    "source_url": page_url,
-                    "source_name": "google_search",
+                    "contact_phone": extract_phone(snippet),
+                    "location":      "Nederland",
+                    "source_url":    page_url,
+                    "source_name":   "google_search",
                 })
 
-            time.sleep(0.5)
+            time.sleep(0.3)
 
     logger.info("[scraper] Google Search (SerpAPI) → %d vacatures met e-mail", len(results))
     return results
 
 
-# ── Bedrijven Direct (company career pages) ───────────────────────────────────
+# ── Bedrijven Direct (company career pages via mailto-links) ──────────────────
 
 def _extract_jsonld_job(soup) -> dict:
     """Extraheer JSON-LD JobPosting structured data uit een pagina (als aanwezig)."""
@@ -422,14 +409,41 @@ def _extract_jsonld_job(soup) -> dict:
     return {}
 
 
+def _extract_emails_from_page(soup, page_text: str) -> list:
+    """
+    Haalt emails op uit een pagina via twee methoden:
+    1. mailto: links  — meest betrouwbaar, werkt ook als email niet als tekst staat
+    2. regex op tekst — vangt plain-text emails
+    """
+    emails = []
+    seen_emails: set = set()
+
+    # Methode 1: mailto: links (werkt altijd, ook zonder JavaScript)
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.lower().startswith("mailto:"):
+            addr = href[7:].split("?")[0].strip().lower()
+            if "@" in addr and addr not in seen_emails:
+                validated = _extract_emails(addr)
+                if validated:
+                    emails.append(validated[0])
+                    seen_emails.add(addr)
+
+    # Methode 2: regex op paginatekst
+    for e in _extract_emails(page_text):
+        if e not in seen_emails:
+            emails.append(e)
+            seen_emails.add(e)
+
+    return emails
+
+
 def _scrape_company_career_pages() -> list:
     """
-    Zoekt via SerpAPI naar vacaturepagina's direct op bedrijfswebsites
-    (inurl:vacatures / werken-bij / jobs / careers).
-    Bezoekt elke pagina, probeert eerst JSON-LD JobPosting data te extraheren
-    (gestructureerd: title, desc, salary, location), anders plain text.
-    Haalt email van de pagina zelf.
-    Vereist env var: SERPAPI_KEY
+    Vindt bedrijfswebsites via SerpAPI (inurl:vacatures / werken-bij / jobs),
+    bezoekt elke pagina en extraheert emails via mailto:-links (meest betrouwbaar)
+    én regex. Probeert JSON-LD JobPosting data voor schone vacatureinfo.
+    Vereist SERPAPI_KEY.
     """
     if not SERPAPI_KEY:
         logger.warning("[scraper] Company Direct: SERPAPI_KEY niet ingesteld — sla over")
@@ -438,29 +452,30 @@ def _scrape_company_career_pages() -> list:
     from urllib.parse import quote, urlparse
 
     SEARCH_QUERIES = [
-        # Career-page URL patronen
-        'inurl:vacatures "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com -site:werkzoeken.nl',
-        'inurl:werken-bij "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacature "wij zoeken" site:.nl -site:linkedin.com -site:werkzoeken.nl -site:nationale-vacaturebank.nl',
-        'inurl:jobs "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:careers "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
-        # Per sector op bedrijfssites
-        'inurl:vacatures ICT developer site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures zorg medewerker site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures administratief site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures sales accountmanager site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures marketing site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures technisch monteur site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures logistiek site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures financieel controller site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures horeca site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures onderwijs leerkracht site:.nl -site:linkedin.com -site:indeed.com',
+        # Career-page URL-patronen (breed — email hoeft niet in snippet)
+        'inurl:vacatures site:.nl -site:linkedin.com -site:indeed.com -site:werkzoeken.nl -site:nationale-vacaturebank.nl',
+        'inurl:werken-bij site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacature site:.nl -site:linkedin.com -site:werkzoeken.nl',
+        'inurl:jobs site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:careers site:.nl -site:linkedin.com -site:indeed.com',
+        # Uitzend en detachering (tonen bijna altijd emails)
+        'uitzendbureau vacature site:.nl -site:linkedin.com -site:indeed.com',
+        'detachering vacature site:.nl -site:linkedin.com -site:indeed.com',
+        'werving selectie vacature site:.nl -site:linkedin.com -site:indeed.com',
+        # Per sector
+        'inurl:vacatures developer ICT site:.nl -site:linkedin.com',
+        'inurl:vacatures zorg medewerker site:.nl -site:linkedin.com',
+        'inurl:vacatures sales accountmanager site:.nl -site:linkedin.com',
+        'inurl:vacatures marketing communicatie site:.nl -site:linkedin.com',
+        'inurl:vacatures technisch monteur site:.nl -site:linkedin.com',
+        'inurl:vacatures logistiek chauffeur site:.nl -site:linkedin.com',
+        'inurl:vacatures financieel administratief site:.nl -site:linkedin.com',
         # Per regio
         'inurl:vacatures amsterdam site:.nl -site:linkedin.com -site:indeed.com',
         'inurl:vacatures rotterdam site:.nl -site:linkedin.com -site:indeed.com',
         'inurl:vacatures utrecht site:.nl -site:linkedin.com -site:indeed.com',
         'inurl:vacatures eindhoven site:.nl -site:linkedin.com -site:indeed.com',
-        'inurl:vacatures den haag site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures "den haag" site:.nl -site:linkedin.com -site:indeed.com',
     ]
 
     results = []
@@ -489,7 +504,7 @@ def _scrape_company_career_pages() -> list:
                     continue
                 seen.add(page_url)
 
-                # Bezoek de bedrijfspagina
+                # Bezoek de pagina
                 try:
                     page_resp = requests.get(page_url, timeout=10, headers=HEADERS)
                     page_resp.raise_for_status()
@@ -498,29 +513,28 @@ def _scrape_company_career_pages() -> list:
                 except Exception:
                     continue
 
-                # Email ophalen — vereist, anders skip
-                emails = _extract_emails(page_text)
+                # Email via mailto-links + tekst-regex
+                emails = _extract_emails_from_page(soup, page_text)
                 if not emails:
                     continue
 
-                # Probeer JSON-LD JobPosting (gestructureerde data)
-                job_ld  = _extract_jsonld_job(soup)
-                company = ""
+                # JSON-LD JobPosting voor gestructureerde data
+                job_ld   = _extract_jsonld_job(soup)
+                company  = ""
                 location = ""
 
                 if job_ld:
-                    title = (job_ld.get("title") or raw_title)[:500]
-                    desc  = job_ld.get("description") or page_text[:3000]
+                    title    = (job_ld.get("title") or raw_title)[:500]
+                    desc     = job_ld.get("description") or page_text[:3000]
                     if isinstance(job_ld.get("jobLocation"), dict):
-                        addr = job_ld["jobLocation"].get("address") or {}
+                        addr     = job_ld["jobLocation"].get("address") or {}
                         location = addr.get("addressLocality") or addr.get("addressRegion") or ""
                     if isinstance(job_ld.get("hiringOrganization"), dict):
-                        company = job_ld["hiringOrganization"].get("name") or ""
+                        company  = job_ld["hiringOrganization"].get("name") or ""
                 else:
                     title = re.sub(r"\s*[\|\-–]\s*.+$", "", raw_title).strip() or raw_title
                     desc  = page_text[:3000]
 
-                # Bedrijfsnaam fallback uit domein
                 if not company:
                     domain  = urlparse(page_url).netloc.replace("www.", "")
                     company = domain.split(".")[0].capitalize()
