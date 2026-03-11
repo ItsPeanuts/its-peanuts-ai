@@ -48,6 +48,9 @@ HR_KEYWORDS = {
     "hr", "hrm", "recruitment", "recruiter", "recruiting", "talent",
     "jobs", "vacature", "vacatures", "career", "careers", "hiring",
     "personeel", "werving", "humanresources", "human-resources",
+    # Sollicitatie-trefwoorden — NL bedrijven gebruiken dit als email-prefix
+    "solliciteer", "sollicitaties", "sollicitatie", "apply",
+    "werkenbij", "werk", "stage", "stagebureau",
 }
 
 # Exacte blokkeerlijst
@@ -317,27 +320,31 @@ def _scrape_google_search_emails() -> list:
 
     from urllib.parse import quote, urlparse
 
-    # Zoek op specifieke email-prefixen → Google toont email in snippet
+    # Zoek naar vacaturepagina's waarop emails zichtbaar zijn in de snippet.
+    # Let op: @ teken in queries werkt NIET goed in Google — Google interpreteert
+    # %40 als social media mention waardoor snippets geen emails bevatten.
+    # Gebruik dus trefwoordzoekopdrachten zonder @ in de query.
     SEARCH_QUERIES = [
-        '"solliciteer@" vacature site:.nl',
-        '"hr@" vacature site:.nl',
-        '"jobs@" vacature site:.nl',
-        '"recruitment@" vacature site:.nl',
-        '"personeel@" vacature site:.nl',
-        '"vacatures@" "wij zoeken" site:.nl',
-        '"werving@" vacature site:.nl',
-        '"hrm@" vacature site:.nl',
-        '"apply@" vacature site:.nl',
-        '"werk@" vacature site:.nl',
-        # Uitzend / detachering bureaus
-        '"info@" uitzendbureau vacature site:.nl',
-        '"werk@" uitzendbureau site:.nl',
-        '"stuur je cv" uitzendbureau "@" site:.nl',
-        '"stuur je cv" detachering "@" site:.nl',
-        # Toepassing-zinnen met email
-        '"stuur je cv naar" "@" vacature site:.nl',
-        '"reageer via" "@" vacature site:.nl',
-        '"solliciteer" "cv" "@" site:.nl -site:linkedin.com -site:indeed.com',
+        # Nederlandse sollicitatie-zinnen die vaak naast een email staan
+        'vacature "stuur je cv" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature "solliciteer direct" email site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature "reageer via" email site:.nl -site:linkedin.com -site:indeed.com',
+        '"stuur je motivatiebrief" vacature site:.nl -site:linkedin.com',
+        '"mail je cv" vacature site:.nl -site:linkedin.com -site:indeed.com',
+        '"stuur je sollicitatie" vacature site:.nl -site:linkedin.com',
+        'vacature "per e-mail" solliciteren site:.nl -site:linkedin.com -site:indeed.com',
+        # Werving & selectie / uitzend bureaus — tonen vaak emails
+        'uitzendbureau vacature "reageer" site:.nl -site:linkedin.com -site:indeed.com',
+        'detachering vacature "solliciteer" site:.nl -site:linkedin.com -site:indeed.com',
+        'werving selectie vacature site:.nl -site:linkedin.com -site:indeed.com',
+        # Werkenbij pagina's
+        'werkenbij vacature site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:werkenbij vacature "email" site:.nl -site:linkedin.com',
+        # Sector-specifiek
+        'vacature ICT developer "solliciteer" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature zorg medewerker "reageer" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature logistiek chauffeur "stuur" site:.nl -site:linkedin.com -site:indeed.com',
+        'vacature financieel administratief site:.nl -site:linkedin.com -site:indeed.com',
     ]
 
     results = []
@@ -367,7 +374,23 @@ def _scrape_google_search_emails() -> list:
                     continue
                 seen.add(page_url)
 
+                # Probeer eerst email uit snippet
                 emails = _extract_emails(snippet)
+
+                # Fallback: bezoek de pagina zelf als snippet geen email bevat
+                if not emails:
+                    try:
+                        page_resp = requests.get(page_url, timeout=8, headers=HEADERS)
+                        page_resp.raise_for_status()
+                        page_soup = BeautifulSoup(page_resp.text, "html.parser")
+                        page_text = page_soup.get_text(" ", strip=True)
+                        emails = _extract_emails_from_page(page_soup, page_text)
+                        # Gebruik paginatekst als betere beschrijving
+                        if emails:
+                            snippet = page_text[:1000]
+                    except Exception:
+                        pass
+
                 if not emails:
                     continue
 
@@ -499,22 +522,40 @@ def _scrape_company_career_pages() -> list:
             for item in data.get("organic_results", []):
                 page_url  = item.get("link", "")
                 raw_title = item.get("title", "Vacature")
+                snippet   = item.get("snippet", "")
 
                 if not page_url or page_url in seen:
                     continue
                 seen.add(page_url)
 
-                # Bezoek de pagina
+                # Snelle check: staat email al in de snippet?
+                emails_from_snippet = _extract_emails(snippet)
+
+                # Bezoek de pagina voor mailto-links en volledige tekst
+                soup      = None
+                page_text = snippet
                 try:
                     page_resp = requests.get(page_url, timeout=10, headers=HEADERS)
                     page_resp.raise_for_status()
                     soup      = BeautifulSoup(page_resp.text, "html.parser")
                     page_text = soup.get_text(" ", strip=True)
                 except Exception:
-                    continue
+                    # Kon pagina niet ophalen — gebruik snippet-emails als fallback
+                    if emails_from_snippet:
+                        emails = emails_from_snippet
+                    else:
+                        continue
 
-                # Email via mailto-links + tekst-regex
-                emails = _extract_emails_from_page(soup, page_text)
+                # Email via mailto-links + tekst-regex (als pagina geladen is)
+                if soup is not None:
+                    emails = _extract_emails_from_page(soup, page_text)
+                    # Voeg snippet-emails toe die pagina miste
+                    seen_e: set = set(emails)
+                    for e in emails_from_snippet:
+                        if e not in seen_e:
+                            emails.append(e)
+                            seen_e.add(e)
+
                 if not emails:
                     continue
 
