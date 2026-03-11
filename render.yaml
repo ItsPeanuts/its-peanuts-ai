@@ -80,6 +80,14 @@ services:
       - key: SCRAPERAPI_KEY
         sync: false   # Registreer op scraperapi.com → API Key
 
+      # Jooble API — aggregeert 140+ NL-vacaturesites (gratis: nl.jooble.org/api)
+      - key: JOOBLE_API_KEY
+        sync: false   # Gratis key aanvragen op nl.jooble.org/api
+
+      # SerpAPI — Google Jobs (gratis tier: 100 zoekopdrachten/maand op serpapi.com)
+      - key: SERPAPI_KEY
+        sync: false   # Registreer op serpapi.com → API Key
+
       # Stripe betalingen (abonnementen)
       - key: STRIPE_SECRET_KEY
         sync: false   # sk_live_... of sk_test_... van stripe.com/apikeys

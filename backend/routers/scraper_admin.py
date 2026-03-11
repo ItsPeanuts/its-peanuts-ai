@@ -36,7 +36,7 @@ SYSTEM_EMAIL = "system@itspeanuts.ai"
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class ScrapeRequest(BaseModel):
-    source: str  # "adzuna" | "nvb" | "werkzoeken" | "custom" | "all"
+    source: str  # "adzuna"|"arbeitnow"|"remoteok"|"jooble"|"google_jobs"|"jobbird"|"indeed"|"werkzoeken"|"custom"|"all"
     urls: Optional[List[str]] = None  # alleen bij source="custom"
 
 
@@ -44,7 +44,7 @@ class ScrapedVacancyOut(BaseModel):
     id: int
     title: str
     company_name: Optional[str]
-    contact_email: str
+    contact_email: Optional[str]  # optioneel — niet alle bronnen bevatten een e-mail
     location: Optional[str]
     source_name: Optional[str]
     source_url: Optional[str]
@@ -225,6 +225,44 @@ def publish_scraped_vacancy(
 
     logger.info("[scraper-admin] ScrapedVacancy %d gepubliceerd als Vacancy %d", sv_id, vacancy.id)
     return {"vacancy_id": vacancy.id, "status": "published"}
+
+
+@router.post("/admin/scraped-vacancies/publish-all")
+def publish_all_pending(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Publiceer alle pending ScrapedVacancies in één keer.
+    Handig voor bulk-import na een scrape-run.
+    """
+    require_role(current_user, "admin")
+
+    system_employer = db.query(models.User).filter(models.User.email == SYSTEM_EMAIL).first()
+    if not system_employer:
+        raise HTTPException(status_code=500, detail="Systeem-werkgever niet gevonden. Voer seed opnieuw uit.")
+
+    pending = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.status == "pending").all()
+    published = 0
+
+    for sv in pending:
+        vacancy = models.Vacancy(
+            employer_id=system_employer.id,
+            title=sv.title,
+            description=sv.description or "",
+            location=sv.location,
+            source_type="scraped",
+        )
+        db.add(vacancy)
+        db.flush()  # krijg vacancy.id
+        sv.vacancy_id = vacancy.id
+        sv.status = "published"
+        sv.published_at = datetime.now(timezone.utc)
+        published += 1
+
+    db.commit()
+    logger.info("[scraper-admin] Bulk publish: %d vacatures gepubliceerd", published)
+    return {"published": published}
 
 
 @router.delete("/admin/scraped-vacancies/{sv_id}")

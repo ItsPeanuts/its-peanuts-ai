@@ -1,123 +1,49 @@
 #!/usr/bin/env python3
 """
-Test script voor de vacature scraper.
-Diagnoseert waarom er 0 vacatures worden teruggegeven.
-Compatible met Python 3.9+
+VorzaIQ Scraper Test Suite
+Test alle scrapers live + email-filter unit tests.
+
+Gebruik:
+  python3 test_scraper.py              # alle tests
+  python3 test_scraper.py arbeitnow    # alleen 1 bron testen
+  python3 test_scraper.py --quick      # alleen gratis bronnen (geen API keys nodig)
+
+Kleur-codes:
+  PASS  groen   → werkt correct
+  FAIL  rood    → fout of 0 resultaten
+  WARN  geel    → werkt maar let op (bijv. geen API key)
+  INFO  blauw   → informatief
 """
 
-import sys
 import os
 import re
+import sys
+import time
 import requests
 from typing import Optional, List
 from bs4 import BeautifulSoup
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Inlined scraper helpers (zodat Python 3.9 geen problemen heeft met 3.10+ syntax)
-# ─────────────────────────────────────────────────────────────────────────────
-
-EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b")
-
-HR_KEYWORDS = {
-    "hr", "hrm", "recruitment", "recruiter", "recruiting", "talent",
-    "jobs", "vacature", "vacatures", "career", "careers", "hiring",
-    "personeel", "werving", "humanresources", "human-resources",
-}
-
-EMAIL_BLOCKLIST_EXACT = {
-    "info", "contact", "hallo", "hello", "support", "service", "admin",
-    "office", "mail", "general", "sales", "marketing", "feedback",
-    "help", "helpdesk", "team", "all", "finance", "receptie", "reception",
-    "boekhouding", "administratie", "post", "press", "media", "pr",
-    "enquiries", "enquiry", "privacy", "legal", "juridisch",
-}
-
-EMAIL_BLOCKLIST_CONTAINS = {
-    "noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon",
-    "postmaster", "webmaster", "abuse", "spam", "unsubscribe",
-}
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (compatible; ItsPeanutsBot/1.0; "
-        "+https://its-peanuts-frontend.onrender.com)"
-    )
-}
-
-
-def _extract_emails(text: str) -> List[str]:
-    found = EMAIL_RE.findall(text)
-    result = []
-    seen = set()
-    for email in found:
-        email_lower = email.lower()
-        local_part = email_lower.split("@")[0]
-        if email_lower in seen:
-            continue
-        is_hr = any(kw in local_part for kw in HR_KEYWORDS)
-        if not is_hr:
-            if local_part in EMAIL_BLOCKLIST_EXACT:
-                continue
-            if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
-                continue
-        seen.add(email_lower)
-        result.append(email_lower)
-    return result
-
-
-def _fetch_html(url: str, timeout: int = 15) -> Optional[BeautifulSoup]:
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=timeout)
-        resp.raise_for_status()
-        return BeautifulSoup(resp.text, "html.parser")
-    except Exception as e:
-        print(f"    [fetch fout] {url}: {e}")
-        return None
-
-
-def _find_email_on_company_site(base_url: str) -> Optional[str]:
-    from urllib.parse import urlparse
-    try:
-        parsed = urlparse(base_url)
-        domain_root = f"{parsed.scheme}://{parsed.netloc}"
-    except Exception:
-        return None
-    for path in ["", "/contact", "/contact-us", "/over-ons", "/about", "/jobs", "/vacatures", "/careers"]:
-        try:
-            url = domain_root + path
-            soup = _fetch_html(url, timeout=8)
-            if not soup:
-                continue
-            emails = _extract_emails(soup.get_text(separator=" ", strip=True))
-            if emails:
-                return emails[0]
-        except Exception:
-            continue
-    return None
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# KLEUREN voor terminal output
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── KLEUREN ──────────────────────────────────────────────────────────────────
 GREEN  = "\033[92m"
 RED    = "\033[91m"
 YELLOW = "\033[93m"
 CYAN   = "\033[96m"
+BOLD   = "\033[1m"
 RESET  = "\033[0m"
 
 def ok(msg):   print(f"  {GREEN}PASS{RESET}  {msg}")
 def fail(msg): print(f"  {RED}FAIL{RESET}  {msg}")
-def info(msg): print(f"  {CYAN}INFO{RESET}  {msg}")
 def warn(msg): print(f"  {YELLOW}WARN{RESET}  {msg}")
+def info(msg): print(f"  {CYAN}INFO{RESET}  {msg}")
+def header(t): print(f"\n{BOLD}{'='*60}{RESET}\n{BOLD}{CYAN}{t}{RESET}\n{'='*60}")
 
 pass_count = 0
 fail_count = 0
 
-
 def check(label, got, expected):
     global pass_count, fail_count
     if sorted(got) == sorted(expected):
-        ok(f"{label}: got {got}")
+        ok(f"{label}")
         pass_count += 1
     else:
         fail(f"{label}")
@@ -125,221 +51,402 @@ def check(label, got, expected):
         print(f"        verwacht: {expected}")
         print(f"        gekregen: {got}")
 
+# ─── EMAIL FILTER (lokaal, geen netwerk) ──────────────────────────────────────
+EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b")
+HR_KEYWORDS = {"hr","hrm","recruitment","recruiter","recruiting","talent","jobs",
+               "vacature","vacatures","career","careers","hiring","personeel","werving"}
+EMAIL_BLOCKLIST_EXACT = {"info","contact","hallo","hello","support","service","admin",
+    "office","mail","general","sales","marketing","feedback","help","helpdesk",
+    "team","all","finance","receptie","reception","boekhouding","administratie"}
+EMAIL_BLOCKLIST_CONTAINS = {"noreply","no-reply","donotreply","postmaster","webmaster",
+    "abuse","spam","unsubscribe"}
+FREE_PROVIDERS = {"gmail","hotmail","outlook","yahoo","live","icloud","protonmail",
+    "ziggo","kpnmail","planet","xs4all"}
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PART 1 — Email filter unit tests
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
-print(f"{CYAN}PART 1 — Email filter unit tests{RESET}")
-print(f"{'='*60}")
+def _is_personal_work_email(local, domain):
+    if domain.split(".")[0].lower() in FREE_PROVIDERS:
+        return False
+    clean = local.replace(".","").replace("-","").replace("_","")
+    if not clean.isalpha() or not (2 <= len(clean) <= 30):
+        return False
+    return "." in local or len(local) <= 15
 
-check(
-    "hr@bedrijf.nl (HR trefwoord)",
-    _extract_emails("contact hr@bedrijf.nl voor meer info"),
-    ["hr@bedrijf.nl"],
-)
+def _extract_emails(text):
+    result, seen = [], set()
+    for email in EMAIL_RE.findall(text):
+        el = email.lower()
+        if el in seen: continue
+        parts = el.split("@")
+        if len(parts) != 2: continue
+        local, domain = parts
+        if any(kw in local for kw in HR_KEYWORDS):
+            seen.add(el); result.append(el); continue
+        if _is_personal_work_email(local, domain):
+            seen.add(el); result.append(el); continue
+        if local in EMAIL_BLOCKLIST_EXACT: continue
+        if any(b in local for b in EMAIL_BLOCKLIST_CONTAINS): continue
+        seen.add(el); result.append(el)
+    return result
 
-check(
-    "info@company.nl (geblokkeerd)",
-    _extract_emails("mail naar info@company.nl"),
-    [],
-)
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
+}
 
-check(
-    "recruitment@acme.com (HR trefwoord)",
-    _extract_emails("stuur cv naar recruitment@acme.com"),
-    ["recruitment@acme.com"],
-)
+# ─── ARGUMENT PARSING ─────────────────────────────────────────────────────────
+args = sys.argv[1:]
+quick_mode = "--quick" in args
+specific_source = next((a for a in args if not a.startswith("--")), None)
 
-check(
-    "contact@corp.nl + noreply@corp.nl (beide geblokkeerd)",
-    _extract_emails("contact@corp.nl of noreply@corp.nl"),
-    [],
-)
+# ─── PART 1: Email filter unit tests ──────────────────────────────────────────
+header("PART 1 — Email filter unit tests")
 
-check(
-    "j.doe@bedrijf.nl (persoonlijk)",
-    _extract_emails("solliciteer bij j.doe@bedrijf.nl"),
-    ["j.doe@bedrijf.nl"],
-)
+check("hr@bedrijf.nl → doorlaten (HR keyword)",
+      _extract_emails("hr@bedrijf.nl"), ["hr@bedrijf.nl"])
+check("info@company.nl → blokkeren",
+      _extract_emails("info@company.nl"), [])
+check("noreply@app.nl → blokkeren",
+      _extract_emails("noreply@app.nl"), [])
+check("recruitment@acme.com → doorlaten (HR keyword)",
+      _extract_emails("stuur cv naar recruitment@acme.com"), ["recruitment@acme.com"])
+check("j.doe@bedrijf.nl → doorlaten (persoonlijk zakelijk)",
+      _extract_emails("j.doe@bedrijf.nl"), ["j.doe@bedrijf.nl"])
+check("jan.bakker@mkb.nl → doorlaten (persoonlijk zakelijk)",
+      _extract_emails("jan.bakker@mkb.nl"), ["jan.bakker@mkb.nl"])
+check("marie@startup.io → doorlaten (korte naam)",
+      _extract_emails("marie@startup.io"), ["marie@startup.io"])
+check("jan@gmail.com → blokkeren (gratis provider)",
+      _extract_emails("jan@gmail.com"), [])
+check("solliciteer@company.nl → doorlaten (niet geblokkeerd)",
+      _extract_emails("solliciteer@company.nl"), ["solliciteer@company.nl"])
+check("contact@corp.nl + noreply@corp.nl → beide geblokkeerd",
+      _extract_emails("contact@corp.nl of noreply@corp.nl"), [])
 
-check(
-    "jan.de.vries@mkb.nl (persoonlijk)",
-    _extract_emails("jan.de.vries@mkb.nl"),
-    ["jan.de.vries@mkb.nl"],
-)
+print(f"\n  Email filter: {pass_count} pass / {fail_count} fail")
 
-print(f"\n  Resultaat Part 1: {pass_count} geslaagd, {fail_count} mislukt")
+if specific_source and specific_source != "email":
+    # Sla naar het gevraagde onderdeel
+    pass
+
+# ─── PART 2: API keys check ───────────────────────────────────────────────────
+header("PART 2 — API keys configuratie")
+
+keys = {
+    "ADZUNA_APP_ID":  os.getenv("ADZUNA_APP_ID", ""),
+    "ADZUNA_APP_KEY": os.getenv("ADZUNA_APP_KEY", ""),
+    "SCRAPERAPI_KEY": os.getenv("SCRAPERAPI_KEY", ""),
+    "JOOBLE_API_KEY": os.getenv("JOOBLE_API_KEY", ""),
+    "SERPAPI_KEY":    os.getenv("SERPAPI_KEY", ""),
+}
+
+for key, val in keys.items():
+    if val:
+        ok(f"{key}: geconfigureerd ({val[:8]}...)")
+    else:
+        warn(f"{key}: NIET geconfigureerd — deze scraper wordt overgeslagen")
+
+has_adzuna   = bool(keys["ADZUNA_APP_ID"] and keys["ADZUNA_APP_KEY"])
+has_scraper  = bool(keys["SCRAPERAPI_KEY"])
+has_jooble   = bool(keys["JOOBLE_API_KEY"])
+has_serpapi  = bool(keys["SERPAPI_KEY"])
+
+# ─── LIVE SCRAPER TESTS ───────────────────────────────────────────────────────
+
+def test_source(name, test_fn, requires_key=False, key_present=True, skip_in_quick=False):
+    """Voer een scraper test uit en rapporteer het resultaat."""
+    if specific_source and specific_source != name:
+        return
+    if skip_in_quick and quick_mode:
+        info(f"{name}: overgeslagen (--quick mode)")
+        return
+    if requires_key and not key_present:
+        warn(f"{name}: overgeslagen (geen API key)")
+        return
+
+    print(f"\n  Testen: {BOLD}{name}{RESET}")
+    start = time.time()
+    try:
+        results = test_fn()
+        elapsed = time.time() - start
+        count = len(results) if results else 0
+        with_email = sum(1 for r in (results or []) if r.get("contact_email"))
+
+        if count > 0:
+            ok(f"{name}: {count} vacatures in {elapsed:.1f}s ({with_email} met e-mail)")
+            for r in (results or [])[:3]:
+                title = r.get("title", "?")[:50]
+                email = r.get("contact_email") or "—"
+                loc   = r.get("location") or "?"
+                company = r.get("company_name") or "?"
+                info(f"  • {title} | {company} | {loc} | {email}")
+        else:
+            fail(f"{name}: 0 vacatures (elapsed={elapsed:.1f}s)")
+    except Exception as e:
+        fail(f"{name}: FOUT — {e}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PART 2 — Nationale Vacaturebank HTTP sanity check
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
-print(f"{CYAN}PART 2 — NVB HTTP sanity check{RESET}")
-print(f"{'='*60}")
+# ─── PART 3: Arbeitnow (gratis, geen key) ─────────────────────────────────────
+header("PART 3 — Arbeitnow API (gratis)")
 
-nvb_url = "https://www.nationalevacaturebank.nl/vacature/zoeken"
-print(f"  Ophalen: {nvb_url}")
+def test_arbeitnow():
+    resp = requests.get("https://www.arbeitnow.com/api/job-board-api?page=1", headers=HEADERS, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    jobs = data.get("data", [])
+    results = []
+    for job in jobs[:20]:
+        desc = job.get("description", "") or ""
+        emails = _extract_emails(desc)
+        results.append({
+            "title": job.get("title", "?"),
+            "company_name": job.get("company_name"),
+            "location": job.get("location"),
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
 
-try:
-    resp = requests.get(nvb_url, headers=HEADERS, timeout=15)
-    print(f"  Status code : {resp.status_code}")
+test_source("arbeitnow", test_arbeitnow)
 
-    first500 = resp.text[:500].strip()
-    is_html = first500.lower().startswith("<!doctype") or "<html" in first500.lower()
-    print(f"  Lijkt op HTML: {is_html}")
-    print(f"  Eerste 500 tekens:")
-    print(f"    {repr(first500)}")
 
+# ─── PART 4: RemoteOK (gratis, geen key) ──────────────────────────────────────
+header("PART 4 — RemoteOK API (gratis)")
+
+def test_remoteok():
+    resp = requests.get(
+        "https://remoteok.io/api",
+        headers={"User-Agent": HEADERS["User-Agent"], "Accept": "application/json"},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    results = []
+    for job in data[1:21]:  # eerste item = metadata
+        if not isinstance(job, dict): continue
+        desc = job.get("description", "") or ""
+        emails = _extract_emails(desc)
+        results.append({
+            "title": job.get("position", "?"),
+            "company_name": job.get("company"),
+            "location": job.get("location") or "Remote",
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
+
+test_source("remoteok", test_remoteok)
+
+
+# ─── PART 5: Jobbird.com ──────────────────────────────────────────────────────
+header("PART 5 — Jobbird.com (NL)")
+
+def test_jobbird():
+    jobbird_headers = {**HEADERS, "Accept": "application/json"}
+    resp = requests.get(
+        "https://www.jobbird.com/nl/vacature?s=developer&rad=30&ot=date&format=json&page=1",
+        headers=jobbird_headers, timeout=15,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    jobs = data.get("search", {}).get("jobs", [])
+    results = []
+    for job in jobs[:20]:
+        desc_html = job.get("description", "") or ""
+        desc_text = BeautifulSoup(desc_html, "html.parser").get_text(separator=" ", strip=True)
+        emails = _extract_emails(desc_text)
+        recruiter = job.get("recruiter") or {}
+        results.append({
+            "title": job.get("title", "?"),
+            "company_name": recruiter.get("name"),
+            "location": job.get("place"),
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
+
+test_source("jobbird", test_jobbird)
+
+
+# ─── PART 6: Werkzoeken.nl ────────────────────────────────────────────────────
+header("PART 6 — Werkzoeken.nl (scraper)")
+
+def test_werkzoeken():
+    resp = requests.get("https://www.werkzoeken.nl/vacatures/", headers=HEADERS, timeout=15)
+    resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
-
-    articles = soup.find_all("article")
-    a_tags   = soup.find_all("a")
-    print(f"  Aantal <article> tags   : {len(articles)}")
-    print(f"  Aantal <a> tags         : {len(a_tags)}")
-
-    # Bekende selectors uit de scraper
-    selectors = [
-        "article.vacancy-card",
-        ".vacancy-list-item",
-        "[data-vacancy-id]",
-    ]
-    for sel in selectors:
-        found = soup.select(sel)
-        print(f"  Selector '{sel}': {len(found)} matches")
-
-    # Eerste 5 links met /vacature/ in href
-    vac_links = [a["href"] for a in soup.find_all("a", href=True) if "/vacature/" in a["href"]]
-    print(f"\n  Links met '/vacature/' in href ({len(vac_links)} totaal):")
-    for lnk in vac_links[:5]:
-        print(f"    {lnk}")
-
-    # Dump article-klassen voor diagnose
-    if articles:
-        print(f"\n  Klassen van eerste 3 <article> tags:")
-        for art in articles[:3]:
-            print(f"    class={art.get('class')}, id={art.get('id')}")
-    else:
-        print(f"\n  Geen <article> tags. Top-level divs met klassen (eerste 10):")
-        for div in soup.find_all("div", class_=True)[:10]:
-            print(f"    div.{' '.join(div.get('class', []))}")
-
-    # Zoek alternatieve klasse-patronen
-    print(f"\n  Alle unieke klassen die 'vacanc' of 'vacatur' bevatten:")
-    found_classes = set()
-    for tag in soup.find_all(True):
-        for cls in (tag.get("class") or []):
-            if "vacanc" in cls.lower() or "vacatur" in cls.lower():
-                found_classes.add((tag.name, cls))
-    for tag_name, cls in sorted(found_classes):
-        print(f"    <{tag_name}>.{cls}")
-    if not found_classes:
-        print("    (geen gevonden — site waarschijnlijk geblokkeerd/CAPTCHA)")
-
-    # Toon volledige raw HTML als het geen echte HTML is
-    if not is_html or len(a_tags) < 5:
-        warn("Respons lijkt niet op normale HTML — mogelijk geblokkeerd!")
-        print(f"\n  Volledige ruwe respons (eerste 2000 tekens):")
-        print(resp.text[:2000])
-
-except Exception as e:
-    print(f"  {RED}FOUT: {e}{RESET}")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PART 3 — Company email search test
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
-print(f"{CYAN}PART 3 — Company email search test{RESET}")
-print(f"{'='*60}")
-
-test_url = "https://www.werkenbijjumbo.com"
-print(f"  Zoeken naar e-mail op: {test_url}")
-
-try:
-    email_found = _find_email_on_company_site(test_url)
-    if email_found:
-        ok(f"E-mail gevonden: {email_found}")
-    else:
-        warn("Geen e-mail gevonden op werkenbijjumbo.com")
-        print("  (Dit kan ook komen door anti-bot maatregelen)")
-except Exception as e:
-    print(f"  {RED}FOUT: {e}{RESET}")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PART 4 — Werkzoeken.nl sanity check
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
-print(f"{CYAN}PART 4 — Werkzoeken.nl sanity check{RESET}")
-print(f"{'='*60}")
-
-wz_url = "https://www.werkzoeken.nl/vacatures/"
-print(f"  Ophalen: {wz_url}")
-
-try:
-    resp2 = requests.get(wz_url, headers=HEADERS, timeout=15)
-    print(f"  Status code : {resp2.status_code}")
-
-    soup2 = BeautifulSoup(resp2.text, "html.parser")
-    vac_links2 = [
-        a["href"]
-        for a in soup2.find_all("a", href=True)
+    links = list(dict.fromkeys([
+        ("https://www.werkzoeken.nl" + a["href"]) if not a["href"].startswith("http") else a["href"]
+        for a in soup.find_all("a", href=True)
         if "/vacature/" in a["href"] or "/job/" in a["href"]
-    ]
-    print(f"  Links met '/vacature/' of '/job/': {len(vac_links2)}")
-    for lnk in vac_links2[:5]:
-        print(f"    {lnk}")
+    ]))[:5]
 
-    print(f"\n  Eerste 500 tekens respons:")
-    print(f"    {repr(resp2.text[:500])}")
+    if not links:
+        return []
 
-    if len(vac_links2) == 0:
-        warn("Geen vacature-links gevonden — site reageert mogelijk met CAPTCHA of blokkering")
-        # Zoek naar andere link-patronen
-        all_links = [a["href"] for a in soup2.find_all("a", href=True)]
-        print(f"  Totaal aantal links op pagina: {len(all_links)}")
-        print(f"  Eerste 10 links:")
-        for lnk in all_links[:10]:
-            print(f"    {lnk}")
+    results = []
+    for link in links:
+        try:
+            dsoup = BeautifulSoup(requests.get(link, headers=HEADERS, timeout=10).text, "html.parser")
+            text = dsoup.get_text(separator=" ", strip=True)
+            emails = _extract_emails(text)
+            h1 = dsoup.find("h1")
+            results.append({
+                "title": h1.get_text(strip=True)[:60] if h1 else "?",
+                "company_name": None,
+                "location": "Nederland",
+                "contact_email": emails[0] if emails else None,
+            })
+        except Exception:
+            continue
+    return results
 
-except Exception as e:
-    print(f"  {RED}FOUT: {e}{RESET}")
+test_source("werkzoeken", test_werkzoeken, skip_in_quick=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PART 5 — Diagnose samenvatting
-# ─────────────────────────────────────────────────────────────────────────────
-print(f"\n{'='*60}")
-print(f"{CYAN}PART 5 — Diagnose & mogelijke oorzaken 0 vacatures{RESET}")
-print(f"{'='*60}")
+# ─── PART 7: Adzuna API ───────────────────────────────────────────────────────
+header("PART 7 — Adzuna API (vereist key)")
 
-# Check Adzuna keys
-adzuna_id  = os.getenv("ADZUNA_APP_ID", "")
-adzuna_key = os.getenv("ADZUNA_APP_KEY", "")
-if adzuna_id and adzuna_key:
-    ok(f"Adzuna API keys aanwezig (ID={adzuna_id[:8]}...)")
-else:
-    warn("Adzuna API keys NIET geconfigureerd — Adzuna scraper wordt overgeslagen")
+def test_adzuna():
+    aid = os.getenv("ADZUNA_APP_ID", "")
+    akey = os.getenv("ADZUNA_APP_KEY", "")
+    url = f"https://api.adzuna.com/v1/api/jobs/nl/search/1?app_id={aid}&app_key={akey}&results_per_page=20&content-type=application/json"
+    resp = requests.get(url, headers=HEADERS, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    results = []
+    for job in data.get("results", []):
+        desc = job.get("description", "") or ""
+        emails = _extract_emails(desc)
+        results.append({
+            "title": job.get("title", "?"),
+            "company_name": job.get("company", {}).get("display_name"),
+            "location": job.get("location", {}).get("display_name"),
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
 
-print("""
-  Bekende root causes van 0 vacatures:
+test_source("adzuna", test_adzuna, requires_key=True, key_present=has_adzuna)
 
-  1. NVB/Werkzoeken blokkeren bot-verkeer (403/CAPTCHA/lege HTML)
-     → Kijk naar de statuscodes en HTML hierboven
 
-  2. HTML selectors zijn verouderd (site heeft structuur gewijzigd)
-     → article.vacancy-card, .vacancy-list-item, [data-vacancy-id] matchen niets
+# ─── PART 8: Jooble API ───────────────────────────────────────────────────────
+header("PART 8 — Jooble API (vereist key)")
 
-  3. Scraper filtert te streng op e-mail: `if not emails: continue`
-     → Vacatures worden overgeslagen als er geen e-mail gevonden wordt
-     → FIX: sla vacatures op ook zonder contact_email
+def test_jooble():
+    key = os.getenv("JOOBLE_API_KEY", "")
+    resp = requests.post(
+        f"https://nl.jooble.org/api/{key}",
+        json={"keywords": "developer", "location": "Nederland", "page": 1},
+        headers={"Content-Type": "application/json"},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    results = []
+    for job in data.get("jobs", [])[:20]:
+        desc = job.get("snippet") or job.get("description") or ""
+        emails = _extract_emails(desc)
+        results.append({
+            "title": job.get("title", "?"),
+            "company_name": job.get("company"),
+            "location": job.get("location"),
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
 
-  4. Adzuna API keys niet geconfigureerd
-     → Adzuna-bron retourneert altijd []
+test_source("jooble", test_jooble, requires_key=True, key_present=has_jooble)
+
+
+# ─── PART 9: SerpAPI Google Jobs ──────────────────────────────────────────────
+header("PART 9 — SerpAPI Google Jobs (vereist key)")
+
+def test_serpapi():
+    from urllib.parse import quote
+    key = os.getenv("SERPAPI_KEY", "")
+    url = f"https://serpapi.com/search.json?engine=google_jobs&q={quote('vacature amsterdam')}&gl=nl&hl=nl&api_key={key}"
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    if "error" in data:
+        raise Exception(data["error"])
+    results = []
+    for job in data.get("jobs_results", []):
+        desc = job.get("description") or ""
+        emails = _extract_emails(desc)
+        results.append({
+            "title": job.get("title", "?"),
+            "company_name": job.get("company_name"),
+            "location": job.get("location"),
+            "contact_email": emails[0] if emails else None,
+        })
+    return results
+
+test_source("google_jobs", test_serpapi, requires_key=True, key_present=has_serpapi)
+
+
+# ─── PART 10: Indeed via ScraperAPI ───────────────────────────────────────────
+header("PART 10 — Indeed via ScraperAPI (vereist key, duur in credits)")
+
+def test_indeed():
+    from urllib.parse import quote
+    key = os.getenv("SCRAPERAPI_KEY", "")
+    search_url = "https://nl.indeed.com/vacatures?q=hr%40&l=Nederland&sort=date"
+    scraper_url = f"http://api.scraperapi.com?api_key={key}&url={quote(search_url)}&country_code=nl"
+    resp = requests.get(scraper_url, headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    job_keys = [el.get("data-jk", "") for el in soup.select("[data-jk]") if el.get("data-jk")]
+    info(f"Indeed: {len(job_keys)} job-keys gevonden op zoekpagina")
+    if not job_keys:
+        return []
+    # Haal alleen eerste detail op (credits sparen)
+    jk = job_keys[0]
+    detail_url = f"https://nl.indeed.com/viewjob?jk={jk}"
+    detail_resp = requests.get(
+        f"http://api.scraperapi.com?api_key={key}&url={quote(detail_url)}&country_code=nl&render=true",
+        headers=HEADERS, timeout=60,
+    )
+    detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+    text = detail_soup.get_text(separator=" ", strip=True)
+    emails = _extract_emails(text)
+    h1 = detail_soup.find("h1")
+    return [{
+        "title": h1.get_text(strip=True)[:60] if h1 else "?",
+        "company_name": None,
+        "location": "Nederland",
+        "contact_email": emails[0] if emails else None,
+    }]
+
+test_source("indeed", test_indeed, requires_key=True, key_present=has_scraper, skip_in_quick=True)
+
+
+# ─── SAMENVATTING ─────────────────────────────────────────────────────────────
+header("SAMENVATTING")
+
+print(f"""
+  Email filter unit tests:  {pass_count} pass / {fail_count} fail
+
+  SCRAPER BRONNEN:
+  ┌─────────────────┬──────────────┬─────────────────────────────────────┐
+  │ Bron            │ Key vereist  │ Status                              │
+  ├─────────────────┼──────────────┼─────────────────────────────────────┤
+  │ arbeitnow       │ Nee (gratis) │ Altijd beschikbaar                  │
+  │ remoteok        │ Nee (gratis) │ Altijd beschikbaar                  │
+  │ jobbird         │ Nee          │ NL-specifiek, JSON API              │
+  │ werkzoeken      │ Nee          │ BeautifulSoup, kan geblokkeerd zijn │
+  │ adzuna          │ Ja           │ {'OK - key aanwezig' if has_adzuna else 'ONTBREEKT - adzuna.com/api'}  │
+  │ jooble          │ Ja           │ {'OK - key aanwezig' if has_jooble else 'ONTBREEKT - nl.jooble.org/api'}  │
+  │ google_jobs     │ Ja           │ {'OK - key aanwezig' if has_serpapi else 'ONTBREEKT - serpapi.com'}  │
+  │ indeed          │ Ja           │ {'OK - key aanwezig' if has_scraper else 'ONTBREEKT - scraperapi.com'}  │
+  └─────────────────┴──────────────┴─────────────────────────────────────┘
+
+  AANBEVOLEN VOLGORDE voor live-lancering:
+  1. python3 test_scraper.py remoteok   → gratis, testen
+  2. python3 test_scraper.py arbeitnow  → gratis, testen
+  3. python3 test_scraper.py jobbird    → NL-gericht, testen
+
+  Dan in de admin panel:
+  POST /admin/scrape  body: {{"source": "all"}}
+  POST /admin/scraped-vacancies/publish-all  → publiceer alles in één keer
+
+  Keys aanvragen:
+  • Adzuna:   https://developer.adzuna.com (gratis)
+  • Jooble:   https://nl.jooble.org/api   (gratis, 200/dag)
+  • SerpAPI:  https://serpapi.com         (gratis, 100/mnd)
 """)
-
-print(f"\n{'='*60}")
-print(f"{CYAN}Test voltooid. Part 1: {pass_count} pass / {fail_count} fail{RESET}")
-print(f"{'='*60}\n")
