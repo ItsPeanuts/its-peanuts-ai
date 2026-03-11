@@ -138,7 +138,6 @@ keys = {
     "ADZUNA_APP_ID":  os.getenv("ADZUNA_APP_ID", ""),
     "ADZUNA_APP_KEY": os.getenv("ADZUNA_APP_KEY", ""),
     "SCRAPERAPI_KEY": os.getenv("SCRAPERAPI_KEY", ""),
-    "JOOBLE_API_KEY": os.getenv("JOOBLE_API_KEY", ""),
     "SERPAPI_KEY":    os.getenv("SERPAPI_KEY", ""),
 }
 
@@ -150,7 +149,6 @@ for key, val in keys.items():
 
 has_adzuna   = bool(keys["ADZUNA_APP_ID"] and keys["ADZUNA_APP_KEY"])
 has_scraper  = bool(keys["SCRAPERAPI_KEY"])
-has_jooble   = bool(keys["JOOBLE_API_KEY"])
 has_serpapi  = bool(keys["SERPAPI_KEY"])
 
 # ─── LIVE SCRAPER TESTS ───────────────────────────────────────────────────────
@@ -328,36 +326,8 @@ def test_adzuna():
 test_source("adzuna", test_adzuna, requires_key=True, key_present=has_adzuna)
 
 
-# ─── PART 8: Jooble API ───────────────────────────────────────────────────────
-header("PART 8 — Jooble API (vereist key)")
-
-def test_jooble():
-    key = os.getenv("JOOBLE_API_KEY", "")
-    resp = requests.post(
-        f"https://nl.jooble.org/api/{key}",
-        json={"keywords": "developer", "location": "Nederland", "page": 1},
-        headers={"Content-Type": "application/json"},
-        timeout=20,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    results = []
-    for job in data.get("jobs", [])[:20]:
-        desc = job.get("snippet") or job.get("description") or ""
-        emails = _extract_emails(desc)
-        results.append({
-            "title": job.get("title", "?"),
-            "company_name": job.get("company"),
-            "location": job.get("location"),
-            "contact_email": emails[0] if emails else None,
-        })
-    return results
-
-test_source("jooble", test_jooble, requires_key=True, key_present=has_jooble)
-
-
-# ─── PART 9: SerpAPI Google Jobs ──────────────────────────────────────────────
-header("PART 9 — SerpAPI Google Jobs (vereist key)")
+# ─── PART 8: SerpAPI Google Jobs ──────────────────────────────────────────────
+header("PART 8 — SerpAPI Google Jobs (vereist key)")
 
 def test_serpapi():
     from urllib.parse import quote
@@ -383,8 +353,8 @@ def test_serpapi():
 test_source("google_jobs", test_serpapi, requires_key=True, key_present=has_serpapi)
 
 
-# ─── PART 10: Indeed via ScraperAPI ───────────────────────────────────────────
-header("PART 10 — Indeed via ScraperAPI (vereist key, duur in credits)")
+# ─── PART 9: Indeed via ScraperAPI ────────────────────────────────────────────
+header("PART 9 — Indeed via ScraperAPI (vereist key, duur in credits)")
 
 def test_indeed():
     from urllib.parse import quote
@@ -434,7 +404,6 @@ print(f"""
   │ jobbird         │ Nee          │ NL-specifiek, JSON API              │
   │ werkzoeken      │ Nee          │ BeautifulSoup, kan geblokkeerd zijn │
   │ adzuna          │ Ja           │ {'OK - key aanwezig' if has_adzuna else 'ONTBREEKT - adzuna.com/api'}  │
-  │ jooble          │ Ja           │ {'OK - key aanwezig' if has_jooble else 'ONTBREEKT - nl.jooble.org/api'}  │
   │ google_jobs     │ Ja           │ {'OK - key aanwezig' if has_serpapi else 'ONTBREEKT - serpapi.com'}  │
   │ indeed          │ Ja           │ {'OK - key aanwezig' if has_scraper else 'ONTBREEKT - scraperapi.com'}  │
   └─────────────────┴──────────────┴─────────────────────────────────────┘
@@ -450,6 +419,5 @@ print(f"""
 
   Keys aanvragen:
   • Adzuna:   https://developer.adzuna.com (gratis)
-  • Jooble:   https://nl.jooble.org/api   (gratis, 200/dag)
   • SerpAPI:  https://serpapi.com         (gratis, 100/mnd)
 """)

@@ -36,7 +36,7 @@ SYSTEM_EMAIL = "system@itspeanuts.ai"
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class ScrapeRequest(BaseModel):
-    source: str  # "adzuna"|"arbeitnow"|"remoteok"|"jooble"|"google_jobs"|"jobbird"|"indeed"|"werkzoeken"|"custom"|"all"
+    source: str  # "adzuna"|"arbeitnow"|"remoteok"|"google_jobs"|"jobbird"|"indeed"|"werkzoeken"|"custom"|"all"
     urls: Optional[List[str]] = None  # alleen bij source="custom"
 
 

@@ -5,7 +5,6 @@ Bronnen:
 - Adzuna API (vereist ADZUNA_APP_ID + ADZUNA_APP_KEY)
 - Arbeitnow API (gratis, geen key, Europese vacatures)
 - RemoteOK API (gratis, geen key, remote vacatures wereldwijd)
-- Jooble API (gratis key vereist: JOOBLE_API_KEY, aggregeert 140+ NL-bronnen)
 - SerpAPI Google Jobs (vereist SERPAPI_KEY, beste voor NL vacatures)
 - Jobbird.com (Nederlandse vacaturesite, JSON API)
 - Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
@@ -37,7 +36,6 @@ logger = logging.getLogger(__name__)
 ADZUNA_APP_ID  = os.getenv("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
 SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
-JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "")
 SERPAPI_KEY    = os.getenv("SERPAPI_KEY", "")
 
 # Regex voor e-mailadressen
@@ -217,73 +215,6 @@ def _scrape_remoteok() -> list:
 
 
 # ── Jooble API ────────────────────────────────────────────────────────────────
-
-def _scrape_jooble(keywords: Optional[str] = None, location: str = "Nederland") -> list:
-    """
-    Jooble API — aggregeert 140+ Nederlandse vacaturesites.
-    Gratis tier: 200 zoekresultaten/dag. Key aanvragen: https://nl.jooble.org/api
-    Vereist env var: JOOBLE_API_KEY
-    """
-    if not JOOBLE_API_KEY:
-        logger.warning("[scraper] Jooble: JOOBLE_API_KEY niet ingesteld — sla over")
-        return []
-
-    search_terms = [
-        keywords or "vacature",
-        "developer nederland",
-        "marketing manager",
-        "HR recruiter",
-        "accountant nederland",
-        "sales manager",
-        "fullstack developer",
-    ]
-
-    results = []
-    seen_ids: set = set()
-
-    for term in search_terms[:4]:  # max 4 queries per run
-        try:
-            resp = requests.post(
-                f"https://nl.jooble.org/api/{JOOBLE_API_KEY}",
-                json={"keywords": term, "location": location, "page": 1},
-                headers={"Content-Type": "application/json"},
-                timeout=20,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            logger.warning("[scraper] Jooble fout (term='%s'): %s", term, e)
-            continue
-
-        for job in data.get("jobs", []):
-            job_id = job.get("id") or job.get("link", "")
-            if job_id in seen_ids:
-                continue
-            seen_ids.add(job_id)
-
-            description = job.get("snippet") or job.get("description") or ""
-            emails = _extract_emails(description)
-
-            title    = (job.get("title") or "Vacature")[:500]
-            company  = (job.get("company") or "")[:500] or None
-            loc      = (job.get("location") or location)[:255]
-            src_url  = job.get("link") or ""
-
-            results.append({
-                "title": title,
-                "description": description[:2000],
-                "company_name": company,
-                "contact_email": emails[0] if emails else None,
-                "location": loc,
-                "source_url": src_url,
-                "source_name": "jooble",
-            })
-
-        time.sleep(0.5)
-
-    logger.info("[scraper] Jooble → %d vacatures", len(results))
-    return results
-
 
 # ── SerpAPI Google Jobs ───────────────────────────────────────────────────────
 
@@ -778,8 +709,6 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
         raw += _scrape_arbeitnow()
     if source in ("remoteok", "all"):
         raw += _scrape_remoteok()
-    if source in ("jooble", "all"):
-        raw += _scrape_jooble()
     if source in ("google_jobs", "all"):
         raw += _scrape_google_jobs()
     if source in ("werkzoeken", "all"):
