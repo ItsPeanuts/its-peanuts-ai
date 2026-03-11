@@ -89,63 +89,92 @@ class ClaimResponse(BaseModel):
 
 # ── Achtergrond-taak: opslaan na scrape ──────────────────────────────────────
 
+def _save_batch(db: Session, raw: list) -> tuple:
+    """Sla een lijst scraper-resultaten op. Geeft (saved, skipped) terug."""
+    saved = 0
+    skipped = 0
+    for item in raw:
+        src_url = item.get("source_url") or ""
+        email = item.get("contact_email") or ""
+
+        if src_url:
+            existing = (
+                db.query(models.ScrapedVacancy)
+                .filter(models.ScrapedVacancy.source_url == src_url)
+                .first()
+            )
+        elif email:
+            existing = (
+                db.query(models.ScrapedVacancy)
+                .filter(
+                    models.ScrapedVacancy.contact_email == email.lower(),
+                    models.ScrapedVacancy.title == item["title"],
+                )
+                .first()
+            )
+        else:
+            existing = None
+
+        if existing:
+            skipped += 1
+            continue
+
+        sv = models.ScrapedVacancy(
+            title=item["title"],
+            description=item.get("description"),
+            company_name=item.get("company_name"),
+            contact_email=email.lower() if email else None,
+            location=item.get("location"),
+            source_url=src_url or None,
+            source_name=item.get("source_name"),
+        )
+        db.add(sv)
+        saved += 1
+    return saved, skipped
+
+
 def _run_scrape_and_save(source: str, custom_urls: Optional[List[str]]) -> None:
     """
     Voert de scraper uit en slaat resultaten op in een eigen DB-sessie.
     Wordt aangeroepen als BackgroundTask zodat de HTTP-response meteen terugkomt.
+
+    Bij source='all': elke bron wordt apart gerund en direct gecommit zodat
+    een hangende bron (bijv. werkzoeken) de andere resultaten niet blokkeert.
+    werkzoeken wordt NIET meegenomen in 'all' — te traag/onbetrouwbaar op cloud.
     """
+    # Bij 'all': loop per bron en commit tussendoor
+    if source == "all":
+        sources = ["arbeitnow", "remoteok", "jobbird", "adzuna", "google_jobs", "indeed"]
+    elif source == "custom":
+        sources = ["custom"]
+    else:
+        sources = [source]
+
     db: Session = SessionLocal()
+    total_found = 0
+    total_saved = 0
+    total_skipped = 0
     try:
-        raw = run_scraper(source=source, custom_urls=custom_urls)
-        saved = 0
-        skipped = 0
-
-        for item in raw:
-            src_url = item.get("source_url") or ""
-            email = item.get("contact_email") or ""
-
-            if src_url:
-                existing = (
-                    db.query(models.ScrapedVacancy)
-                    .filter(models.ScrapedVacancy.source_url == src_url)
-                    .first()
+        for src in sources:
+            try:
+                raw = run_scraper(source=src, custom_urls=custom_urls)
+                saved, skipped = _save_batch(db, raw)
+                db.commit()
+                total_found += len(raw)
+                total_saved += saved
+                total_skipped += skipped
+                logger.info(
+                    "[scraper-admin] %s: %d gevonden, %d opgeslagen, %d skip",
+                    src, len(raw), saved, skipped,
                 )
-            elif email:
-                existing = (
-                    db.query(models.ScrapedVacancy)
-                    .filter(
-                        models.ScrapedVacancy.contact_email == email.lower(),
-                        models.ScrapedVacancy.title == item["title"],
-                    )
-                    .first()
-                )
-            else:
-                existing = None
+            except Exception as exc:
+                logger.error("[scraper-admin] %s mislukt: %s", src, exc, exc_info=True)
+                db.rollback()
 
-            if existing:
-                skipped += 1
-                continue
-
-            sv = models.ScrapedVacancy(
-                title=item["title"],
-                description=item.get("description"),
-                company_name=item.get("company_name"),
-                contact_email=email.lower() if email else None,
-                location=item.get("location"),
-                source_url=src_url or None,
-                source_name=item.get("source_name"),
-            )
-            db.add(sv)
-            saved += 1
-
-        db.commit()
         logger.info(
-            "[scraper-admin] Scrape afgerond: %d gevonden, %d opgeslagen, %d skip",
-            len(raw), saved, skipped,
+            "[scraper-admin] Scrape TOTAAL: %d gevonden, %d opgeslagen, %d skip",
+            total_found, total_saved, total_skipped,
         )
-    except Exception as exc:
-        logger.error("[scraper-admin] Scrape mislukt: %s", exc, exc_info=True)
-        db.rollback()
     finally:
         db.close()
 

@@ -141,11 +141,12 @@ export default function AdminPage() {
         body: JSON.stringify({ source }),
       });
       if (data.status === "started") {
-        setScrapeResult("Scraping gestart op de achtergrond — vacatures verschijnen over ~20 seconden...");
+        setScrapeResult("Scraping gestart — eerste vacatures verschijnen binnen 10 seconden...");
+        setTimeout(async () => { await loadScraped(); }, 10000);
         setTimeout(async () => {
           await loadScraped();
           setScrapeResult("Klaar! Bekijk de resultaten hieronder.");
-        }, 22000);
+        }, 40000);
       } else {
         setScrapeResult(`Gevonden: ${data.scraped} · Opgeslagen: ${data.saved} · Duplicaten overgeslagen: ${data.skipped_duplicates}`);
         await loadScraped();
