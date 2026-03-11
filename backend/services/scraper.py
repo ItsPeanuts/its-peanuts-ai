@@ -405,6 +405,143 @@ def _scrape_google_search_emails() -> list:
     return results
 
 
+# ── Bedrijven Direct (company career pages) ───────────────────────────────────
+
+def _extract_jsonld_job(soup) -> dict:
+    """Extraheer JSON-LD JobPosting structured data uit een pagina (als aanwezig)."""
+    import json as _json
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = _json.loads(script.string or "")
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            if isinstance(data, dict) and data.get("@type", "").lower() == "jobposting":
+                return data
+        except Exception:
+            pass
+    return {}
+
+
+def _scrape_company_career_pages() -> list:
+    """
+    Zoekt via SerpAPI naar vacaturepagina's direct op bedrijfswebsites
+    (inurl:vacatures / werken-bij / jobs / careers).
+    Bezoekt elke pagina, probeert eerst JSON-LD JobPosting data te extraheren
+    (gestructureerd: title, desc, salary, location), anders plain text.
+    Haalt email van de pagina zelf.
+    Vereist env var: SERPAPI_KEY
+    """
+    if not SERPAPI_KEY:
+        logger.warning("[scraper] Company Direct: SERPAPI_KEY niet ingesteld — sla over")
+        return []
+
+    from urllib.parse import quote, urlparse
+
+    SEARCH_QUERIES = [
+        # Career-page URL patronen
+        'inurl:vacatures "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com -site:werkzoeken.nl',
+        'inurl:werken-bij "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacature "wij zoeken" site:.nl -site:linkedin.com -site:werkzoeken.nl -site:nationale-vacaturebank.nl',
+        'inurl:jobs "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:careers "wij zoeken" site:.nl -site:linkedin.com -site:indeed.com',
+        # Per sector op bedrijfssites
+        'inurl:vacatures ICT developer site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures zorg medewerker site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures administratief site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures sales accountmanager site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures marketing site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures technisch monteur site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures logistiek site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures financieel controller site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures horeca site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures onderwijs leerkracht site:.nl -site:linkedin.com -site:indeed.com',
+        # Per regio
+        'inurl:vacatures amsterdam site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures rotterdam site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures utrecht site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures eindhoven site:.nl -site:linkedin.com -site:indeed.com',
+        'inurl:vacatures den haag site:.nl -site:linkedin.com -site:indeed.com',
+    ]
+
+    results = []
+    seen: set = set()
+
+    for query in SEARCH_QUERIES:
+        for start in (0, 10):
+            url = (
+                f"https://serpapi.com/search.json"
+                f"?engine=google&q={quote(query)}&gl=nl&hl=nl&num=10&start={start}"
+                f"&api_key={SERPAPI_KEY}"
+            )
+            try:
+                resp = requests.get(url, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as e:
+                logger.warning("[scraper] Company Search '%s' fout: %s", query, e)
+                break
+
+            for item in data.get("organic_results", []):
+                page_url  = item.get("link", "")
+                raw_title = item.get("title", "Vacature")
+
+                if not page_url or page_url in seen:
+                    continue
+                seen.add(page_url)
+
+                # Bezoek de bedrijfspagina
+                try:
+                    page_resp = requests.get(page_url, timeout=10, headers=HEADERS)
+                    page_resp.raise_for_status()
+                    soup      = BeautifulSoup(page_resp.text, "html.parser")
+                    page_text = soup.get_text(" ", strip=True)
+                except Exception:
+                    continue
+
+                # Email ophalen — vereist, anders skip
+                emails = _extract_emails(page_text)
+                if not emails:
+                    continue
+
+                # Probeer JSON-LD JobPosting (gestructureerde data)
+                job_ld  = _extract_jsonld_job(soup)
+                company = ""
+                location = ""
+
+                if job_ld:
+                    title = (job_ld.get("title") or raw_title)[:500]
+                    desc  = job_ld.get("description") or page_text[:3000]
+                    if isinstance(job_ld.get("jobLocation"), dict):
+                        addr = job_ld["jobLocation"].get("address") or {}
+                        location = addr.get("addressLocality") or addr.get("addressRegion") or ""
+                    if isinstance(job_ld.get("hiringOrganization"), dict):
+                        company = job_ld["hiringOrganization"].get("name") or ""
+                else:
+                    title = re.sub(r"\s*[\|\-–]\s*.+$", "", raw_title).strip() or raw_title
+                    desc  = page_text[:3000]
+
+                # Bedrijfsnaam fallback uit domein
+                if not company:
+                    domain  = urlparse(page_url).netloc.replace("www.", "")
+                    company = domain.split(".")[0].capitalize()
+
+                results.append({
+                    "title":         title[:500],
+                    "description":   desc,
+                    "company_name":  company[:500],
+                    "contact_email": emails[0],
+                    "contact_phone": extract_phone(page_text),
+                    "location":      location or "Nederland",
+                    "source_url":    page_url,
+                    "source_name":   "company_direct",
+                })
+
+            time.sleep(0.5)
+
+    logger.info("[scraper] Company Direct → %d vacatures met e-mail", len(results))
+    return results
+
+
 # ── Arbeitnow ─────────────────────────────────────────────────────────────────
 
 def _scrape_arbeitnow(pages: int = 3) -> list:
@@ -797,14 +934,15 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
       - "arbeitnow"   → Arbeitnow API (gratis, geen key)
       - "remoteok"    → RemoteOK API (gratis, geen key)
       - "jooble"      → Jooble API (vereist JOOBLE_API_KEY)
-      - "google_jobs"    → Google Jobs via SerpAPI (vereist SERPAPI_KEY)
-      - "google_search"  → Google Search via SerpAPI, email-gericht (vereist SERPAPI_KEY)
-      - "jobbird"        → Jobbird.com (NL vacaturesite, JSON API)
-      - "indeed"         → Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
-      - "werkzoeken"     → Werkzoeken.nl (BeautifulSoup)
-      - "nvb"            → alias voor "arbeitnow"
-      - "custom"         → custom_urls (lijst van URLs)
-      - "all"            → alle bovenstaande bronnen
+      - "google_jobs"      → Google Jobs via SerpAPI (vereist SERPAPI_KEY)
+      - "google_search"    → Google Search via SerpAPI, email-gericht (vereist SERPAPI_KEY)
+      - "company_direct"   → Bedrijfswebsites direct via SerpAPI inurl:vacatures/werken-bij (vereist SERPAPI_KEY)
+      - "jobbird"          → Jobbird.com (NL vacaturesite, JSON API)
+      - "indeed"           → Indeed.nl via ScraperAPI (vereist SCRAPERAPI_KEY)
+      - "werkzoeken"       → Werkzoeken.nl (BeautifulSoup)
+      - "nvb"              → alias voor "arbeitnow"
+      - "custom"           → custom_urls (lijst van URLs)
+      - "all"              → alle bovenstaande bronnen
 
     Alleen vacatures MÉT contact_email worden opgeslagen — nodig voor claim-flow.
     """
@@ -820,6 +958,8 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
         raw += _scrape_google_jobs()
     if source in ("google_search", "all"):
         raw += _scrape_google_search_emails()
+    if source in ("company_direct", "all"):
+        raw += _scrape_company_career_pages()
     if source in ("werkzoeken", "all"):
         raw += _scrape_werkzoeken()
     if source in ("jobbird", "all"):
