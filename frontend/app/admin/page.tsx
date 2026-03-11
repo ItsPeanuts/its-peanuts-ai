@@ -140,8 +140,16 @@ export default function AdminPage() {
         method: "POST",
         body: JSON.stringify({ source }),
       });
-      setScrapeResult(`Gevonden: ${data.scraped} · Opgeslagen: ${data.saved} · Duplicaten overgeslagen: ${data.skipped_duplicates}`);
-      await loadScraped();
+      if (data.status === "started") {
+        setScrapeResult("Scraping gestart op de achtergrond — vacatures verschijnen over ~20 seconden...");
+        setTimeout(async () => {
+          await loadScraped();
+          setScrapeResult("Klaar! Bekijk de resultaten hieronder.");
+        }, 22000);
+      } else {
+        setScrapeResult(`Gevonden: ${data.scraped} · Opgeslagen: ${data.saved} · Duplicaten overgeslagen: ${data.skipped_duplicates}`);
+        await loadScraped();
+      }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Scrapen mislukt");
     } finally {
