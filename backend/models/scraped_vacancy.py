@@ -31,6 +31,7 @@ class ScrapedVacancy(Base):
     description = Column(Text, nullable=True)
     company_name = Column(String(500), nullable=True)
     contact_email = Column(String(255), nullable=True)  # None als geen e-mail gevonden op de pagina
+    contact_phone = Column(String(50), nullable=True)   # None als geen telefoonnummer gevonden
     location = Column(String(255), nullable=True)
     source_url = Column(String(1000), nullable=True)
     source_name = Column(String(100), nullable=True)  # "adzuna"|"nvb"|"werkzoeken"|"custom"

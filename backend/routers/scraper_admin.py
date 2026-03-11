@@ -25,6 +25,7 @@ from backend import models
 from backend.routers.auth import get_current_user, require_role
 from backend.security import hash_password, create_access_token
 from backend.services.scraper import run_scraper
+from backend.services.vacancy_enricher import enrich_for_publish, extract_phone
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,8 @@ class ScrapedVacancyOut(BaseModel):
     id: int
     title: str
     company_name: Optional[str]
-    contact_email: Optional[str]  # optioneel — niet alle bronnen bevatten een e-mail
+    contact_email: Optional[str]
+    contact_phone: Optional[str]
     location: Optional[str]
     source_name: Optional[str]
     source_url: Optional[str]
@@ -119,11 +121,13 @@ def _save_batch(db: Session, raw: list) -> tuple:
             skipped += 1
             continue
 
+        phone = item.get("contact_phone") or ""
         sv = models.ScrapedVacancy(
             title=item["title"],
             description=item.get("description"),
             company_name=item.get("company_name"),
             contact_email=email.lower() if email else None,
+            contact_phone=phone or None,
             location=item.get("location"),
             source_url=src_url or None,
             source_name=item.get("source_name"),
@@ -221,6 +225,7 @@ def list_scraped_vacancies(
             title=sv.title,
             company_name=sv.company_name,
             contact_email=sv.contact_email,
+            contact_phone=sv.contact_phone,
             location=sv.location,
             source_name=sv.source_name,
             source_url=sv.source_url,
@@ -263,13 +268,21 @@ def publish_scraped_vacancy(
             detail="Systeem-werkgever niet gevonden. Voer seed opnieuw uit.",
         )
 
+    # Verrijk beschrijving + extraheer metadata via AI/regex
+    enriched = enrich_for_publish(
+        title=sv.title,
+        description=sv.description or "",
+        company_name=sv.company_name or "",
+        location=sv.location or "",
+        use_ai=True,
+    )
+
     # Maak Vacancy aan
     vacancy = models.Vacancy(
         employer_id=system_employer.id,
         title=sv.title,
-        description=sv.description or "",
-        location=sv.location,
         source_type="scraped",
+        **enriched,
     )
     db.add(vacancy)
     db.commit()
@@ -304,12 +317,18 @@ def publish_all_pending(
     published = 0
 
     for sv in pending:
+        enriched = enrich_for_publish(
+            title=sv.title,
+            description=sv.description or "",
+            company_name=sv.company_name or "",
+            location=sv.location or "",
+            use_ai=False,  # bulk: geen AI (te traag voor tientallen vacatures)
+        )
         vacancy = models.Vacancy(
             employer_id=system_employer.id,
             title=sv.title,
-            description=sv.description or "",
-            location=sv.location,
             source_type="scraped",
+            **enriched,
         )
         db.add(vacancy)
         db.flush()  # krijg vacancy.id

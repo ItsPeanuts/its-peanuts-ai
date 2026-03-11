@@ -40,7 +40,8 @@ type ScrapedVacancy = {
   id: number;
   title: string;
   company_name: string | null;
-  contact_email: string;
+  contact_email: string | null;
+  contact_phone: string | null;
   location: string | null;
   source_name: string | null;
   status: string;
@@ -494,7 +495,7 @@ export default function AdminPage() {
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Vacature</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bedrijf</th>
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">E-mail</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Contactgegevens</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bron</th>
                       <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                       <th className="px-5 py-3" />
@@ -505,7 +506,21 @@ export default function AdminPage() {
                       <tr key={sv.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-3 font-medium text-gray-800 max-w-xs truncate">{sv.title}</td>
                         <td className="px-5 py-3 text-gray-500 text-xs">{sv.company_name || "—"}</td>
-                        <td className="px-5 py-3 text-gray-500 text-xs">{sv.contact_email}</td>
+                        <td className="px-5 py-3 text-xs space-y-1">
+                          {sv.contact_email && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400">✉</span>
+                              <span className="text-blue-600 font-medium truncate max-w-[180px]">{sv.contact_email}</span>
+                            </div>
+                          )}
+                          {sv.contact_phone && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400">📞</span>
+                              <span className="text-gray-700 font-medium">{sv.contact_phone}</span>
+                            </div>
+                          )}
+                          {!sv.contact_email && !sv.contact_phone && <span className="text-gray-300">—</span>}
+                        </td>
                         <td className="px-5 py-3 text-gray-400 text-xs">{sv.source_name || "—"}</td>
                         <td className="px-5 py-3">
                           <span className="px-2 py-1 rounded-full text-xs font-semibold" style={{

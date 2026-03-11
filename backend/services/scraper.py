@@ -31,6 +31,8 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
+from backend.services.vacancy_enricher import extract_phone
+
 logger = logging.getLogger(__name__)
 
 ADZUNA_APP_ID  = os.getenv("ADZUNA_APP_ID", "")
@@ -205,6 +207,7 @@ def _scrape_remoteok() -> list:
             "description": description[:2000],
             "company_name": company,
             "contact_email": emails[0] if emails else None,
+            "contact_phone": extract_phone(description),
             "location": location,
             "source_url": source_url,
             "source_name": "remoteok",
@@ -287,6 +290,7 @@ def _scrape_google_jobs() -> list:
                 "description": desc[:2000],
                 "company_name": company,
                 "contact_email": emails[0] if emails else None,
+                "contact_phone": extract_phone(desc),
                 "location": location,
                 "source_url": src_url,
                 "source_name": "google_jobs",
@@ -337,6 +341,7 @@ def _scrape_arbeitnow(pages: int = 3) -> list:
                 "description": description[:2000],
                 "company_name": company,
                 "contact_email": emails[0] if emails else None,
+            "contact_phone": extract_phone(description),
                 "location": location,
                 "source_url": job_url,
                 "source_name": "arbeitnow",
@@ -392,6 +397,7 @@ def _scrape_werkzoeken(max_pages: int = 3) -> list:
                     "description": detail_text[:2000],
                     "company_name": company,
                     "contact_email": emails[0] if emails else None,
+                    "contact_phone": extract_phone(detail_text),
                     "location": location,
                     "source_url": link,
                     "source_name": "werkzoeken",
@@ -452,6 +458,7 @@ def _scrape_adzuna(pages: int = 3) -> list:
                 "description": full_desc[:2000],
                 "company_name": company,
                 "contact_email": emails[0] if emails else None,
+            "contact_phone": extract_phone(description),
                 "location": location,
                 "source_url": src_url,
                 "source_name": "adzuna",
@@ -525,6 +532,7 @@ def _scrape_jobbird(max_pages: int = 2) -> list:
                     "description": desc_text[:2000],
                     "company_name": company,
                     "contact_email": emails[0] if emails else None,
+                    "contact_phone": extract_phone(desc_text),
                     "location": location,
                     "source_url": src_url,
                     "source_name": "jobbird",
@@ -624,6 +632,7 @@ def _scrape_indeed(max_pages: int = 2) -> list:
                             "description": detail_text[:2000],
                             "company_name": company,
                             "contact_email": email,
+                            "contact_phone": extract_phone(detail_text),
                             "location": location,
                             "source_url": detail_url,
                             "source_name": "indeed",
