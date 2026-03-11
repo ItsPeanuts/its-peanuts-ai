@@ -111,6 +111,17 @@ def _extract_emails(text: str) -> list:
             continue
         local_part, domain_part = parts[0], parts[1]
 
+        # Blocklist check first — overrides everything else
+        if local_part in EMAIL_BLOCKLIST_EXACT:
+            continue
+        if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
+            continue
+
+        # Block free email providers (gmail, hotmail, etc.)
+        domain_name = domain_part.split(".")[0].lower()
+        if domain_name in FREE_EMAIL_PROVIDERS:
+            continue
+
         if any(kw in local_part for kw in HR_KEYWORDS):
             seen.add(email_lower)
             result.append(email_lower)
@@ -119,11 +130,6 @@ def _extract_emails(text: str) -> list:
         if _is_personal_work_email(local_part, domain_part):
             seen.add(email_lower)
             result.append(email_lower)
-            continue
-
-        if local_part in EMAIL_BLOCKLIST_EXACT:
-            continue
-        if any(blocked in local_part for blocked in EMAIL_BLOCKLIST_CONTAINS):
             continue
 
         seen.add(email_lower)

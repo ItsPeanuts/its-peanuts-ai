@@ -79,12 +79,15 @@ def _extract_emails(text):
         parts = el.split("@")
         if len(parts) != 2: continue
         local, domain = parts
+        # Blocklist first — overrides everything else
+        if local in EMAIL_BLOCKLIST_EXACT: continue
+        if any(b in local for b in EMAIL_BLOCKLIST_CONTAINS): continue
+        # Block free providers
+        if domain.split(".")[0].lower() in FREE_PROVIDERS: continue
         if any(kw in local for kw in HR_KEYWORDS):
             seen.add(el); result.append(el); continue
         if _is_personal_work_email(local, domain):
             seen.add(el); result.append(el); continue
-        if local in EMAIL_BLOCKLIST_EXACT: continue
-        if any(b in local for b in EMAIL_BLOCKLIST_CONTAINS): continue
         seen.add(el); result.append(el)
     return result
 
