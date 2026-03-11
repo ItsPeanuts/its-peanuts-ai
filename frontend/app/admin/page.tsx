@@ -466,8 +466,9 @@ export default function AdminPage() {
                   <button
                     onClick={handlePublishAll}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+                    title="Publiceert alleen vacatures mét e-mailadres"
                   >
-                    Alles publiceren
+                    Alles publiceren (mét e-mail)
                   </button>
                   <div className="flex gap-1">
                   {(["pending", "published", "claimed", "all"] as const).map((f) => (
@@ -531,7 +532,10 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3 text-right space-x-2">
-                          {sv.status === "pending" && (
+                          {sv.status === "pending" && !sv.contact_email && (
+                            <span className="text-xs text-red-400 font-medium px-2 py-1 bg-red-50 rounded-lg">Geen e-mail</span>
+                          )}
+                          {sv.status === "pending" && sv.contact_email && (
                             <button
                               onClick={() => handlePublish(sv.id)}
                               className="text-xs bg-purple-600 hover:bg-purple-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"

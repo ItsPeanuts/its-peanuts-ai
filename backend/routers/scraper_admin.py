@@ -257,6 +257,8 @@ def publish_scraped_vacancy(
         raise HTTPException(status_code=404, detail="ScrapedVacancy niet gevonden")
     if sv.status != "pending":
         raise HTTPException(status_code=409, detail=f"Status is al '{sv.status}', niet pending")
+    if not sv.contact_email:
+        raise HTTPException(status_code=422, detail="Vacature heeft geen e-mailadres — niet publiceerbaar")
 
     # Zoek systeem-werkgever
     system_employer = (
@@ -313,7 +315,15 @@ def publish_all_pending(
     if not system_employer:
         raise HTTPException(status_code=500, detail="Systeem-werkgever niet gevonden. Voer seed opnieuw uit.")
 
-    pending = db.query(models.ScrapedVacancy).filter(models.ScrapedVacancy.status == "pending").all()
+    pending = (
+        db.query(models.ScrapedVacancy)
+        .filter(
+            models.ScrapedVacancy.status == "pending",
+            models.ScrapedVacancy.contact_email.isnot(None),
+            models.ScrapedVacancy.contact_email != "",
+        )
+        .all()
+    )
     published = 0
 
     for sv in pending:
