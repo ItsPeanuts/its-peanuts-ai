@@ -910,6 +910,248 @@ def _scrape_jobbird(max_pages: int = 5) -> list:
     return results
 
 
+# ── Staffing / Detachering / Payroll bureaus ──────────────────────────────────
+
+def _scrape_staffing_agencies() -> list:
+    """
+    Scrapet Nederlandse uitzend-, detacherings- en payrollbureaus direct van hun eigen site.
+
+    Strategie per bureau:
+    1. Haal vacaturelijst op (meerdere pagina's indien aanwezig)
+    2. Verzamel vacature-detail-URLs
+    3. Bezoek detail-pagina's PARALLEL via ThreadPoolExecutor
+    4. Extraheer emails via mailto-links + regex
+
+    Alleen bureaus waarvan bevestigd is dat ze emails tonen op hun vacaturepagina's
+    (getest 2026-03-12). Elk bureau heeft een eigen URL-patroon voor detail-links.
+    """
+    from urllib.parse import urljoin
+
+    # Bureaus definitie:
+    # (name, base_domain, listing_pages, detail_link_regex)
+    # listing_pages: lijst van pagina-URLs om vacaturelinks te verzamelen
+    # detail_link_regex: regex die onderscheidt echte vacature-detail van categorielinks
+    BUREAUS = [
+        # ── IT / Tech detachering ──────────────────────────────────────────────
+        {
+            "name": "yer.nl",
+            "base": "https://www.yer.nl",
+            "listings": [
+                "https://www.yer.nl/vacatures/",
+                "https://www.yer.nl/vacatures/?page=2",
+                "https://www.yer.nl/vacatures/?page=3",
+                "https://www.yer.nl/vacatures/?page=4",
+            ],
+            "detail_re": r"/vacatures/v-\d",
+        },
+        {
+            "name": "sogeti.nl",
+            "base": "https://www.sogeti.nl",
+            "listings": [
+                "https://www.sogeti.nl/vacatures/",
+                "https://www.sogeti.nl/vacatures/?page=2",
+                "https://www.sogeti.nl/vacatures/?page=3",
+            ],
+            "detail_re": r"/vacatures/[a-z][a-z0-9\-]+/?$",
+        },
+        # ── Management / Finance detachering ──────────────────────────────────
+        {
+            "name": "dpa.nl",
+            "base": "https://www.dpa.nl",
+            "listings": [
+                "https://www.dpa.nl/nl/vacatures/",
+                "https://www.dpa.nl/nl/vacatures/?paged=2",
+                "https://www.dpa.nl/nl/vacatures/?paged=3",
+                "https://www.dpa.nl/nl/vacatures/?paged=4",
+            ],
+            "detail_re": r"/nl/vacatures/[a-z][a-z0-9\-]+/\d+",
+        },
+        {
+            "name": "boercroon.nl",
+            "base": "https://www.boercroon.nl",
+            "listings": [
+                "https://www.boercroon.nl/carrieres/vacatures/",
+                "https://www.boercroon.nl/carrieres/vacatures/?page=2",
+            ],
+            "detail_re": r"/carrieres/vacatures/[a-z]",
+        },
+        # ── Zorg / Welzijn ─────────────────────────────────────────────────────
+        {
+            "name": "evean.nl",
+            "base": "https://www.evean.nl",
+            "listings": [
+                "https://www.evean.nl/vacatures/",
+                "https://www.evean.nl/vacatures/?page=2",
+                "https://www.evean.nl/vacatures/?page=3",
+            ],
+            "detail_re": r"/vacatures/[a-z][a-z0-9\-]+/?$",
+        },
+        {
+            "name": "zorgwerk.nl",
+            "base": "https://www.zorgwerk.nl",
+            "listings": [
+                "https://www.zorgwerk.nl/vacatures/",
+                "https://www.zorgwerk.nl/vacatures/?page=2",
+                "https://www.zorgwerk.nl/vacatures/?page=3",
+            ],
+            "detail_re": r"/vacatures?/[a-z0-9][a-z0-9\-]+/?$",
+        },
+        {
+            "name": "prismanet.nl",
+            "base": "https://werkenbij.prismanet.nl",
+            "listings": [
+                "https://werkenbij.prismanet.nl/vacatures/",
+                "https://werkenbij.prismanet.nl/vacatures/?page=2",
+            ],
+            "detail_re": r"/vacatures/[a-z]",
+        },
+        # ── Specialist / Executive search ──────────────────────────────────────
+        {
+            "name": "heidrick.com",
+            "base": "https://www.heidrick.com",
+            "listings": [
+                "https://www.heidrick.com/en/careers/open-positions",
+                "https://www.heidrick.com/en/careers/open-positions?page=2",
+            ],
+            "detail_re": r"/careers/open-positions/[a-z]",
+        },
+        # ── Uitzendbureau generalist ───────────────────────────────────────────
+        {
+            "name": "unique.nl",
+            "base": "https://www.unique.nl",
+            "listings": [
+                "https://www.unique.nl/vacatures/",
+                "https://www.unique.nl/vacatures/?page=2",
+                "https://www.unique.nl/vacatures/?page=3",
+            ],
+            "detail_re": r"/vacatures/[a-z][a-z0-9\-]+-\d+",
+        },
+        # ── Extra zorgorganisaties ─────────────────────────────────────────────
+        {
+            "name": "lunet.nl",
+            "base": "https://www.lunet.nl",
+            "listings": [
+                "https://www.lunet.nl/werken-bij/vacatures/",
+                "https://www.lunet.nl/werken-bij/vacatures/?paged=2",
+            ],
+            "detail_re": r"/werken-bij/vacatures/[a-z]",
+        },
+        {
+            "name": "pluryn.nl",
+            "base": "https://www.pluryn.nl",
+            "listings": [
+                "https://www.pluryn.nl/werken-bij/vacatures/",
+                "https://www.pluryn.nl/werken-bij/vacatures/?paged=2",
+            ],
+            "detail_re": r"/werken-bij/vacatures/[a-z]",
+        },
+    ]
+
+    def _collect_vac_links(bureau: dict) -> list:
+        """Bezoek listing-pagina's en verzamel unieke vacature-detail-URLs."""
+        detail_re = re.compile(bureau["detail_re"], re.I)
+        base = bureau["base"]
+        seen: set = set()
+        links: list = []
+        for pg_url in bureau["listings"]:
+            try:
+                r = requests.get(pg_url, headers=HEADERS, timeout=10)
+                if r.status_code != 200:
+                    break
+                soup = BeautifulSoup(r.text, "html.parser")
+                found_new = 0
+                for a in soup.find_all("a", href=True):
+                    h = a["href"]
+                    if not detail_re.search(h):
+                        continue
+                    full = h if h.startswith("http") else urljoin(base + "/", h.lstrip("/"))
+                    if full not in seen:
+                        seen.add(full)
+                        links.append(full)
+                        found_new += 1
+                if found_new == 0:
+                    break  # geen nieuwe links op volgende pagina — stop
+            except Exception as e:
+                logger.debug("[scraper] Staffing listing fout %s: %s", pg_url, e)
+                break
+        return links
+
+    def _fetch_bureau_detail(name: str, url: str) -> Optional[dict]:
+        """Bezoek één vacature-detailpagina en extraheer info + email."""
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=8)
+            if r.status_code != 200:
+                return None
+            soup = BeautifulSoup(r.text, "html.parser")
+            text = soup.get_text(separator=" ", strip=True)
+            emails = _extract_emails_from_page(soup, text)
+            if not emails:
+                return None  # sla vacatures zonder email over
+
+            # Titel
+            h1 = soup.find("h1")
+            title = h1.get_text(strip=True)[:500] if h1 else "Vacature"
+
+            # Bedrijf via JSON-LD of meta
+            job_ld = _extract_jsonld_job(soup)
+            company = location = ""
+            if job_ld:
+                if isinstance(job_ld.get("hiringOrganization"), dict):
+                    company = (job_ld["hiringOrganization"].get("name") or "")[:500]
+                if isinstance(job_ld.get("jobLocation"), dict):
+                    addr = job_ld["jobLocation"].get("address") or {}
+                    location = addr.get("addressLocality") or addr.get("addressRegion") or ""
+
+            if not company:
+                # Gebruik bureaunaam als bedrijfsnaam fallback
+                company = name
+
+            if not location:
+                loc_el = soup.select_one("[class*='location'], [class*='city'], [class*='locatie'], [class*='stad'], [itemprop='addressLocality']")
+                if loc_el:
+                    location = loc_el.get_text(strip=True)[:255]
+
+            return {
+                "title":         title,
+                "description":   text[:2000],
+                "company_name":  company or name,
+                "contact_email": emails[0],
+                "contact_phone": extract_phone(text),
+                "location":      location or "Nederland",
+                "source_url":    url,
+                "source_name":   f"bureau:{name}",
+            }
+        except Exception as e:
+            logger.debug("[scraper] Bureau detail fout %s (%s): %s", name, url, e)
+            return None
+
+    # ── Stap 1: verzamel alle detail-URLs per bureau (sequentieel per bureau) ──
+    all_tasks: list = []  # (name, url)
+    for bureau in BUREAUS:
+        links = _collect_vac_links(bureau)
+        logger.info("[scraper] %s listing → %d vacature-URLs", bureau["name"], len(links))
+        for link in links:
+            all_tasks.append((bureau["name"], link))
+
+    logger.info("[scraper] Staffing bureaus totaal → %d detail-URLs", len(all_tasks))
+
+    # ── Stap 2: bezoek detail-pagina's PARALLEL ────────────────────────────────
+    results: list = []
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        futures = {
+            executor.submit(_fetch_bureau_detail, name, url): (name, url)
+            for name, url in all_tasks[:500]  # max 500 detail-pagina's per run
+        }
+        for fut in as_completed(futures):
+            item = fut.result()
+            if item:
+                results.append(item)
+
+    with_email = len(results)  # alle items in results hebben een email (filter in _fetch_bureau_detail)
+    logger.info("[scraper] Staffing bureaus → %d vacatures met e-mail", with_email)
+    return results
+
+
 # ── Uitzendbureau.nl ──────────────────────────────────────────────────────────
 
 def _scrape_uitzendbureau(max_cities: int = 10) -> list:
@@ -1210,6 +1452,8 @@ def run_scraper(source: str, custom_urls: Optional[list] = None) -> list:
         raw += _scrape_jobbird()
     if source in ("uitzendbureau", "all"):
         raw += _scrape_uitzendbureau()
+    if source in ("staffing", "all"):
+        raw += _scrape_staffing_agencies()
     if source in ("indeed", "all"):
         raw += _scrape_indeed()
     if source == "custom" or (source == "all" and custom_urls):

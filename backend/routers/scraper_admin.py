@@ -153,7 +153,7 @@ def _run_scrape_and_save(source: str, custom_urls: Optional[List[str]]) -> None:
     """
     # Bij 'all': loop per bron en commit tussendoor
     if source == "all":
-        sources = ["google_search", "company_direct", "arbeitnow", "remoteok", "jobbird", "adzuna", "google_jobs", "indeed"]
+        sources = ["staffing", "jobbird", "uitzendbureau", "arbeitnow", "remoteok", "google_search", "company_direct", "adzuna", "google_jobs", "indeed"]
     elif source == "custom":
         sources = ["custom"]
     else:
