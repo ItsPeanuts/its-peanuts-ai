@@ -28,6 +28,7 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 import requests
@@ -864,30 +865,25 @@ def _scrape_jobbird(max_pages: int = 5) -> list:
 
     logger.info("[scraper] Jobbird listing → %d unieke vacatures verzameld", len(job_metas))
 
-    # Stap 2: bezoek elke detailpagina voor e-mailadressen
-    results: list = []
-    for meta in job_metas:
-        src_url = meta["url"]
+    # Stap 2: bezoek detailpagina's PARALLEL voor e-mailadressen
+    def _fetch_jobbird_detail(meta: dict) -> dict:
+        src_url  = meta["url"]
         desc_text = meta["desc_fallback"]
         emails: list = []
-
         if src_url:
             try:
-                detail_resp = requests.get(src_url, headers=HEADERS, timeout=10)
-                if detail_resp.status_code == 200:
-                    detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
-                    detail_text = detail_soup.get_text(separator=" ", strip=True)
-                    emails = _extract_emails_from_page(detail_soup, detail_text)
+                r = requests.get(src_url, headers=HEADERS, timeout=8)
+                if r.status_code == 200:
+                    soup = BeautifulSoup(r.text, "html.parser")
+                    detail_text = soup.get_text(separator=" ", strip=True)
+                    emails = _extract_emails_from_page(soup, detail_text)
                     if detail_text:
-                        desc_text = detail_text  # gebruik volledige paginatekst als beschrijving
-            except Exception as e:
-                logger.debug("[scraper] Jobbird detail fout %s: %s", src_url, e)
-
-        # Fallback: emails uit de JSON-beschrijving
+                        desc_text = detail_text
+            except Exception:
+                pass
         if not emails and desc_text:
             emails = _extract_emails(desc_text)
-
-        results.append({
+        return {
             "title":         meta["title"],
             "description":   desc_text[:2000],
             "company_name":  meta["company"],
@@ -896,9 +892,18 @@ def _scrape_jobbird(max_pages: int = 5) -> list:
             "location":      meta["location"],
             "source_url":    src_url,
             "source_name":   "jobbird",
-        })
+        }
 
-        time.sleep(0.2)  # beleef de server
+    results: list = []
+    # Max 300 detail-pagina's per run — meer is te traag op cloud-hosting
+    to_fetch = job_metas[:300]
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(_fetch_jobbird_detail, m): m for m in to_fetch}
+        for fut in as_completed(futures):
+            try:
+                results.append(fut.result())
+            except Exception as exc:
+                logger.debug("[scraper] Jobbird detail worker fout: %s", exc)
 
     with_email = sum(1 for r in results if r.get("contact_email"))
     logger.info("[scraper] Jobbird → %d vacatures (%d met e-mail)", len(results), with_email)
@@ -967,21 +972,16 @@ def _scrape_uitzendbureau(max_cities: int = 10) -> list:
 
     logger.info("[scraper] Uitzendbureau listing → %d vacature-URLs", len(detail_urls))
 
-    # Stap 2: bezoek detailpagina's en extraheer data
-    results: list = []
-    for url in detail_urls:
+    # Stap 2: bezoek detailpagina's PARALLEL
+    def _fetch_uitzendbureau_detail(url: str) -> Optional[dict]:
         try:
-            soup = _fetch_html(url, timeout=12)
+            soup = _fetch_html(url, timeout=10)
             if not soup:
-                continue
-
+                return None
             page_text = soup.get_text(separator=" ", strip=True)
             emails = _extract_emails_from_page(soup, page_text)
-
-            # JSON-LD JobPosting voor gestructureerde data
             job_ld = _extract_jsonld_job(soup)
             title = company = location = ""
-
             if job_ld:
                 title    = (job_ld.get("title") or "")[:500]
                 if isinstance(job_ld.get("jobLocation"), dict):
@@ -989,22 +989,18 @@ def _scrape_uitzendbureau(max_cities: int = 10) -> list:
                     location = addr.get("addressLocality") or addr.get("addressRegion") or ""
                 if isinstance(job_ld.get("hiringOrganization"), dict):
                     company  = job_ld["hiringOrganization"].get("name") or ""
-
             if not title:
                 h1 = soup.find("h1")
                 title = h1.get_text(strip=True)[:500] if h1 else "Vacature"
-
             if not company:
-                company_el = soup.select_one("[class*='company'], [class*='employer'], [class*='recruiter']")
-                if company_el:
-                    company = company_el.get_text(strip=True)[:500]
-
+                el = soup.select_one("[class*='company'], [class*='employer'], [class*='recruiter']")
+                if el:
+                    company = el.get_text(strip=True)[:500]
             if not location:
-                loc_el = soup.select_one("[class*='location'], [class*='city'], [class*='stad']")
-                if loc_el:
-                    location = loc_el.get_text(strip=True)[:255]
-
-            results.append({
+                el = soup.select_one("[class*='location'], [class*='city'], [class*='stad']")
+                if el:
+                    location = el.get_text(strip=True)[:255]
+            return {
                 "title":         title,
                 "description":   page_text[:2000],
                 "company_name":  company or None,
@@ -1013,13 +1009,18 @@ def _scrape_uitzendbureau(max_cities: int = 10) -> list:
                 "location":      location or "Nederland",
                 "source_url":    url,
                 "source_name":   "uitzendbureau",
-            })
-
-            time.sleep(0.3)
-
+            }
         except Exception as e:
             logger.debug("[scraper] Uitzendbureau detail fout %s: %s", url, e)
-            continue
+            return None
+
+    results: list = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(_fetch_uitzendbureau_detail, u): u for u in detail_urls[:300]}
+        for fut in as_completed(futures):
+            item = fut.result()
+            if item:
+                results.append(item)
 
     with_email = sum(1 for r in results if r.get("contact_email"))
     logger.info("[scraper] Uitzendbureau → %d vacatures (%d met e-mail)", len(results), with_email)
