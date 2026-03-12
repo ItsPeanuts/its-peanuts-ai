@@ -971,9 +971,10 @@ def _scrape_staffing_agencies() -> list:
             "base": "https://www.boercroon.nl",
             "listings": [
                 "https://www.boercroon.nl/carrieres/vacatures/",
-                "https://www.boercroon.nl/carrieres/vacatures/?page=2",
+                "https://www.boercroon.nl/carrieres/vacatures/page/2/",
             ],
-            "detail_re": r"/carrieres/vacatures/[a-z]",
+            # Individuele vacatures staan op /vacature/[slug]/ (niet /carrieres/vacatures/[slug])
+            "detail_re": r"/vacature/[a-z]",
         },
         # ── Zorg / Welzijn ─────────────────────────────────────────────────────
         {
@@ -1019,12 +1020,40 @@ def _scrape_staffing_agencies() -> list:
         {
             "name": "unique.nl",
             "base": "https://www.unique.nl",
+            # Categoriepagina's bevatten elk ~10 individuele vacature-links
             "listings": [
-                "https://www.unique.nl/vacatures/",
-                "https://www.unique.nl/vacatures/?page=2",
-                "https://www.unique.nl/vacatures/?page=3",
+                "https://www.unique.nl/vacatures/per-vakgebied/financiele-vacatures",
+                "https://www.unique.nl/vacatures/per-vakgebied/administratieve-vacatures",
+                "https://www.unique.nl/vacatures/per-vakgebied/commerciele-vacatures",
+                "https://www.unique.nl/vacatures/per-provincie/noord-holland",
+                "https://www.unique.nl/vacatures/per-provincie/zuid-holland",
+                "https://www.unique.nl/vacatures/per-provincie/utrecht",
+                "https://www.unique.nl/vacatures/per-provincie/noord-brabant",
+                "https://www.unique.nl/vacatures/per-provincie/gelderland",
             ],
-            "detail_re": r"/vacatures/[a-z][a-z0-9\-]+-\d+",
+            # Individuele vacatures staan op /vacature/[slug]-(v\d+) (zonder www)
+            "detail_re": r"/vacature/[a-z0-9][a-z0-9\-]",
+        },
+        # ── Payroll / Salarisadministratie specialist ──────────────────────────
+        {
+            "name": "strictlypeople.nl",
+            "base": "https://www.strictlypeople.nl",
+            "listings": [
+                "https://www.strictlypeople.nl/vacatures/",
+                "https://www.strictlypeople.nl/vacatures/?pagina=2",
+                "https://www.strictlypeople.nl/vacatures/?pagina=3",
+            ],
+            "detail_re": r"/vacatures/vacature-[a-z0-9\-]+\.html",
+        },
+        # ── Internationaal / meertalig recruitment ────────────────────────────
+        {
+            "name": "undutchables.nl",
+            "base": "https://www.undutchables.nl",
+            "listings": [
+                "https://www.undutchables.nl/vacancies/",
+            ],
+            # Vacatures tonen persoonlijk email van recruiter (bijv. anke.vanacht@undutchables.nl)
+            "detail_re": r"/vacancies/[a-z0-9][a-z0-9\-]+",
         },
         # ── Extra zorgorganisaties ─────────────────────────────────────────────
         {
