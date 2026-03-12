@@ -4,6 +4,14 @@ services:
     name: its-peanuts-backend
     env: python
     plan: free
+    # Alleen redeploy als backend-bestanden of config gewijzigd zijn
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - alembic/**
+        - requirements.txt
+        - render.yaml
     buildCommand: pip install -r requirements.txt
     startCommand: python -c "from backend.db import engine; from backend.models import Base; Base.metadata.create_all(bind=engine)" && alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT --ws websockets
     envVars:
@@ -103,6 +111,11 @@ services:
     name: its-peanuts-frontend
     env: node
     plan: free
+    # Alleen redeploy als frontend-bestanden gewijzigd zijn
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - frontend/**
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && node_modules/.bin/next start -p $PORT
     envVars:
