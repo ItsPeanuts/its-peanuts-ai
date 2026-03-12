@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "20260310_005"
-down_revision = "20260310_004"
+down_revision = "e5f6a7b8c9d4"  # revision ID van 004_scraped_vacancy_email_nullable
 branch_labels = None
 depends_on = None
 

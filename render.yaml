@@ -5,7 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT --ws websockets
+    startCommand: python -c "from backend.db import engine; from backend.models import Base; Base.metadata.create_all(bind=engine)" && alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT --ws websockets
     envVars:
       - key: DATABASE_URL
         fromDatabase:
