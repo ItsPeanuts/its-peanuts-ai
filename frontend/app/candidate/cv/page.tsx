@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getCandidateCVs, uploadCV, CandidateCVOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
@@ -14,6 +14,8 @@ const NAV_ITEMS = [
 
 export default function CVBeheerPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -51,6 +53,10 @@ export default function CVBeheerPage() {
 
     try {
       await uploadCV(token, file);
+      if (nextUrl) {
+        router.push(nextUrl);
+        return;
+      }
       const updated = await getCandidateCVs(token);
       setCvs(updated);
       setSuccess(`'${file.name}' is succesvol geüpload en verwerkt.`);

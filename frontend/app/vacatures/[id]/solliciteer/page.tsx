@@ -80,17 +80,14 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     const load = async () => {
       try {
-        const v = await getVacancy(vacancyId);
-        setVacancy(v);
-        setAnswers(v.intake_questions.map(q => ({ question_id: q.id, answer: "" })));
+        const [v, cvs] = await Promise.all([
+          getVacancy(vacancyId),
+          isLoggedIn && token ? getCandidateCVs(token).catch(() => []) : Promise.resolve([]),
+        ]);
+        setVacancy(v as PublicVacancyDetail);
+        setAnswers((v as PublicVacancyDetail).intake_questions.map((q: { id: number }) => ({ question_id: q.id, answer: "" })));
+        if (isLoggedIn) setHasCV((cvs as []).length > 0);
       } catch { /* gebruik mock */ }
-
-      if (isLoggedIn && token) {
-        try {
-          const cvs = await getCandidateCVs(token);
-          setHasCV(cvs.length > 0);
-        } catch { setHasCV(false); }
-      }
       setLoading(false);
     };
     load();

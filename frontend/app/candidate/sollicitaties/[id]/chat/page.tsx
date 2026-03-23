@@ -34,6 +34,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const seenIds = useRef<Set<number>>(new Set());
+  const lastSentContent = useRef<string | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCount = useRef(0);
   const cancelledRef = useRef(false);
@@ -70,6 +71,22 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
 
           if (data.id && seenIds.current.has(data.id)) return;
           if (data.id) seenIds.current.add(data.id);
+
+          // Backend echoot kandidaat-berichten terug — vervang de optimistische temp entry
+          if (data.role === "candidate" && lastSentContent.current === data.content) {
+            lastSentContent.current = null;
+            if (data.id) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.content === data.content && m.id > 1e12 ? { ...m, id: data.id } : m
+                )
+              );
+            }
+            if (data.role === "recruiter") setSending(false);
+            if (data.ended) setChatEnded(true);
+            setLoading(false);
+            return;
+          }
 
           const msg: Message = {
             id: data.id ?? Date.now(),
@@ -170,6 +187,7 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
 
     const tempId = Date.now();
     seenIds.current.add(tempId);
+    lastSentContent.current = content;
     setMessages((prev) => [...prev, { id: tempId, role: "candidate", content }]);
     setInput("");
     setSending(true);
