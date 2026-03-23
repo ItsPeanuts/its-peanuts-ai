@@ -78,6 +78,8 @@ export default function VideoInterviewPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const amberVideoRef = useRef<HTMLVideoElement>(null); // Amber idle/speaking video
   const ttsModeRef = useRef(false); // true = browser TTS, geen D-ID
+  const transcriptRef = useRef(""); // closure-safe transcript voor auto-submit
+  const stopListeningAndAnswerRef = useRef<(() => Promise<void>) | null>(null);
 
   const [stage, setStage] = useState<InterviewStage>("idle");
   const [questionNumber, setQuestionNumber] = useState(0);
@@ -104,7 +106,7 @@ export default function VideoInterviewPage() {
   useEffect(() => {
     const vid = amberVideoRef.current;
     if (!vid) return;
-    if (stage === "speaking" || stage === "intro") {
+    if (stage === "speaking") {
       void vid.play();
     } else {
       vid.pause();
@@ -252,6 +254,7 @@ export default function VideoInterviewPage() {
           }
         }
       }
+      setStage("processing");
       setLiveCaption("");
     },
     [appId, apiPost, sessionData, browserSpeak]
@@ -270,6 +273,7 @@ export default function VideoInterviewPage() {
 
     setStage("listening");
     setTranscript("");
+    transcriptRef.current = "";
 
     const recognition = new SpeechRec();
     recognition.lang = "nl-NL";
@@ -282,6 +286,7 @@ export default function VideoInterviewPage() {
       for (let i = 0; i < event.results.length; i++) {
         full += event.results[i][0].transcript;
       }
+      transcriptRef.current = full;
       setTranscript(full);
     };
 
@@ -291,7 +296,12 @@ export default function VideoInterviewPage() {
       }
     };
 
-    recognition.onend = () => {};
+    recognition.onend = () => {
+      // Auto-submit als de kandidaat iets heeft gezegd
+      if (transcriptRef.current.trim()) {
+        stopListeningAndAnswerRef.current?.();
+      }
+    };
     recognition.start();
   }, []);
 
@@ -315,7 +325,8 @@ export default function VideoInterviewPage() {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    const answer = transcript.trim() || "[Geen antwoord gegeven]";
+    const answer = transcriptRef.current.trim() || "[Geen antwoord gegeven]";
+    transcriptRef.current = "";
     setTranscript("");
     setStage("processing");
 
@@ -337,7 +348,11 @@ export default function VideoInterviewPage() {
       setStage("error");
       setErrorMsg((e as Error).message || "Fout bij verwerken antwoord");
     }
-  }, [appId, apiPost, transcript, speakText, startListening, finishInterview]);
+  }, [appId, apiPost, speakText, startListening, finishInterview]);
+
+  useEffect(() => {
+    stopListeningAndAnswerRef.current = stopListeningAndAnswer;
+  }, [stopListeningAndAnswer]);
 
   // ── startInterview ─────────────────────────────────────────────────────────
 
@@ -355,9 +370,8 @@ export default function VideoInterviewPage() {
         setIsTTSMode(true);
 
         setTimeout(async () => {
-          setStage("intro");
           const introText =
-            `Hallo! Ik ben Lisa, AI HR-recruiter van VorzaIQ. ` +
+            `Hallo! Ik ben Lisa, HR-recruiter van VorzaIQ. ` +
             `Fijn dat u de tijd neemt voor dit interview. ` +
             `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd. ` +
             `Bent u er klaar voor? Dan beginnen we nu.`;
@@ -414,9 +428,8 @@ export default function VideoInterviewPage() {
       });
 
       setTimeout(async () => {
-        setStage("intro");
         const introText =
-          `Hallo! Ik ben Lisa, AI HR-recruiter van VorzaIQ. ` +
+          `Hallo! Ik ben Lisa, HR-recruiter van VorzaIQ. ` +
           `Fijn dat u de tijd neemt voor dit video interview. ` +
           `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
           `Bent u er klaar voor? Dan beginnen we nu.`;
@@ -529,6 +542,12 @@ export default function VideoInterviewPage() {
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <style>{`
+        @keyframes micPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+          50% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(34,197,94,0); }
+        }
+      `}</style>
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
@@ -560,7 +579,7 @@ export default function VideoInterviewPage() {
               loop muted playsInline
               style={{
                 width: "100%", height: "100%", objectFit: "cover", borderRadius: 16,
-                opacity: (stage === "speaking" || stage === "intro") ? 1 : 0.7,
+                opacity: stage === "speaking" ? 1 : 0.3,
                 transition: "opacity 0.4s",
               }}
               src={AMBER_VIDEO_URL}
@@ -602,21 +621,37 @@ export default function VideoInterviewPage() {
           {/* Spreekt / stil indicator */}
           <div style={{
             position: "absolute", top: 12, right: 12,
-            background: stage === "speaking" || stage === "intro" ? "#3b82f6" : "rgba(0,0,0,0.5)",
+            background: stage === "speaking" ? "#3b82f6" : "rgba(0,0,0,0.5)",
             color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
             transition: "background 0.3s",
           }}>
-            {stage === "speaking" || stage === "intro" ? "🎙 Spreekt" : "⏸ Stil"}
+            {stage === "speaking" ? "🎙 Spreekt" : "⏸ Stil"}
           </div>
         </div>
 
         {/* Rechter kolom */}
         <div style={{ width: 280, display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
-            <div style={{ textAlign: "center", color: "#4b5563" }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
-              <div style={{ fontSize: 12 }}>Jij</div>
-            </div>
+            {stage === "listening" ? (
+              <div style={{ textAlign: "center" }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: "50%",
+                  background: "rgba(34,197,94,0.15)", border: "2px solid #22c55e",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 10px",
+                  animation: "micPulse 1.5s ease-in-out infinite",
+                }}>
+                  <span style={{ fontSize: 28 }}>🎤</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#22c55e", fontWeight: 700 }}>Aan het luisteren</div>
+                <div style={{ fontSize: 10, color: "#4b5563", marginTop: 4 }}>Spreek nu...</div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", color: "#4b5563" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>👤</div>
+                <div style={{ fontSize: 12 }}>Jij</div>
+              </div>
+            )}
           </div>
 
           {/* Voortgang */}
