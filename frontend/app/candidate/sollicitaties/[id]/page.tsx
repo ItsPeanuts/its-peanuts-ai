@@ -208,20 +208,12 @@ export default function SollicitatieDetailPage() {
               gap: 16,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ position: "relative" }}>
-                  <div style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #7C3AED, #0891b2)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: 16,
-                    flexShrink: 0,
-                  }}>L</div>
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <video
+                    src="https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4"
+                    autoPlay loop muted playsInline
+                    style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block" }}
+                  />
                   <div style={{
                     position: "absolute",
                     bottom: -2,
@@ -275,12 +267,11 @@ export default function SollicitatieDetailPage() {
               gap: 16,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", fontSize: 20, flexShrink: 0,
-                }}>🎥</div>
+                <video
+                  src="https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4"
+                  autoPlay loop muted playsInline
+                  style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block", flexShrink: 0 }}
+                />
                 <div>
                   <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
                     Video Interview met Lisa

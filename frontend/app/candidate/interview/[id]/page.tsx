@@ -76,6 +76,7 @@ export default function VideoInterviewPage() {
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const amberVideoRef = useRef<HTMLVideoElement>(null); // Amber idle/speaking video
   const ttsModeRef = useRef(false); // true = browser TTS, geen D-ID
 
   const [stage, setStage] = useState<InterviewStage>("idle");
@@ -85,6 +86,7 @@ export default function VideoInterviewPage() {
   const [liveCaption, setLiveCaption] = useState("");
   const [result, setResult] = useState<CompleteResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [ttsMode, setTtsMode] = useState<"openai" | "browser" | "">("");
   const [isTTSMode, setIsTTSMode] = useState(false); // voor UI
   const [sessionData, setSessionData] = useState<{
     did_stream_id: string;
@@ -97,6 +99,18 @@ export default function VideoInterviewPage() {
       router.replace("/candidate/login");
     }
   }, [router]);
+
+  // Controleer video afspelen: alleen bewegen als Lisa spreekt
+  useEffect(() => {
+    const vid = amberVideoRef.current;
+    if (!vid) return;
+    if (stage === "speaking" || stage === "intro") {
+      void vid.play();
+    } else {
+      vid.pause();
+      vid.currentTime = 0;
+    }
+  }, [stage]);
 
   // ── API helpers ────────────────────────────────────────────────────────────
 
@@ -162,52 +176,69 @@ export default function VideoInterviewPage() {
     });
   }, []);
 
-  // ── OpenAI TTS (via backend) ───────────────────────────────────────────────
-
-  const openaiSpeak = useCallback(
-    async (text: string): Promise<void> => {
-      try {
-        const resp = await fetch(
-          `${BASE}/virtual-interview/session/${appId}/tts`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token.current}`,
-            },
-            body: JSON.stringify({ text }),
-          }
-        );
-        if (!resp.ok) throw new Error("TTS endpoint mislukt");
-
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        await new Promise<void>((resolve) => {
-          const audio = new Audio(url);
-          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-          audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-          audio.play().catch(() => resolve());
-        });
-      } catch {
-        // Fallback naar browser TTS als OpenAI TTS niet beschikbaar is
-        await browserSpeak(text);
-      }
-    },
-    [appId, browserSpeak]
-  );
 
   // ── speakText: D-ID of OpenAI TTS ─────────────────────────────────────────
+  // Video en audio starten TEGELIJK zodat lippen en stem gesynchroniseerd zijn.
 
   const speakText = useCallback(
     async (text: string) => {
-      setStage("speaking");
       setLiveCaption(text);
 
       if (ttsModeRef.current) {
-        // OpenAI TTS via backend (klinkt natuurlijk), fallback naar browser TTS
-        await openaiSpeak(text);
+        // Pre-fetch audio VOOR de video start — zo starten ze samen
+        try {
+          const resp = await fetch(
+            `${BASE}/virtual-interview/session/${appId}/tts`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token.current}`,
+              },
+              body: JSON.stringify({ text }),
+            }
+          );
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+            throw new Error(`TTS ${resp.status}: ${err.detail}`);
+          }
+
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+
+          // Laad audio voor om zeker te zijn dat alles klaar is
+          await new Promise<void>((resolve) => {
+            audio.oncanplaythrough = () => resolve();
+            audio.onerror = () => resolve();
+            audio.load();
+            setTimeout(resolve, 500); // fallback
+          });
+
+          // Nu starten video + audio tegelijk
+          setStage("speaking");
+          setTtsMode("openai");
+
+          await new Promise<void>((resolve) => {
+            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch((e) => {
+              console.warn("Audio play blocked:", e);
+              URL.revokeObjectURL(url);
+              resolve();
+            });
+          });
+        } catch (e) {
+          // Fallback naar browser TTS
+          console.warn("OpenAI TTS mislukt, browser TTS als fallback:", e);
+          setTtsMode("browser");
+          setStage("speaking");
+          await browserSpeak(text);
+        }
       } else {
-        // D-ID modus: stuur tekst naar backend, schat spreektijd
+        // D-ID modus: stuur tekst naar backend
+        setStage("speaking");
         if (!sessionData) {
           await new Promise((r) => setTimeout(r, 3000));
         } else {
@@ -223,7 +254,7 @@ export default function VideoInterviewPage() {
       }
       setLiveCaption("");
     },
-    [appId, apiPost, sessionData, openaiSpeak]
+    [appId, apiPost, sessionData, browserSpeak]
   );
 
   // ── STT (Web Speech API) ───────────────────────────────────────────────────
@@ -522,14 +553,15 @@ export default function VideoInterviewPage() {
               style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
           )}
 
-          {/* TTS modus: Amber avatar video (loopt continu als visuele aanwezigheid) */}
+          {/* TTS modus: Amber avatar video — beweegt ALLEEN als Lisa spreekt */}
           {isTTSMode && (
             <video
-              loop autoPlay muted playsInline
+              ref={amberVideoRef}
+              loop muted playsInline
               style={{
                 width: "100%", height: "100%", objectFit: "cover", borderRadius: 16,
-                opacity: (stage === "speaking" || stage === "intro") ? 1 : 0.82,
-                transition: "opacity 0.5s",
+                opacity: (stage === "speaking" || stage === "intro") ? 1 : 0.7,
+                transition: "opacity 0.4s",
               }}
               src={AMBER_VIDEO_URL}
             />
@@ -538,13 +570,12 @@ export default function VideoInterviewPage() {
           {/* Idle/connecting placeholder — alleen D-ID modus vóór verbinding */}
           {!isTTSMode && (stage === "idle" || stage === "connecting") && (
             <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <div style={{
-                width: 80, height: 80, borderRadius: "50%",
-                background: "linear-gradient(135deg, #7C3AED, #0891b2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 32, fontWeight: 800, color: "#fff",
-              }}>L</div>
-              <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · AI Recruiter</div>
+              <video
+                src={AMBER_VIDEO_URL}
+                muted playsInline
+                style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover" }}
+              />
+              <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · HR-Recruiter</div>
               {stage === "connecting" && (
                 <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
               )}
@@ -565,15 +596,18 @@ export default function VideoInterviewPage() {
 
           {/* Lisa label */}
           <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-            Lisa — AI Recruiter
+            Lisa — HR-Recruiter
           </div>
 
-          {/* Spreekt indicator */}
-          {stage === "speaking" && (
-            <div style={{ position: "absolute", top: 12, right: 12, background: "#3b82f6", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700 }}>
-              🎙 Spreekt
-            </div>
-          )}
+          {/* Spreekt / stil indicator */}
+          <div style={{
+            position: "absolute", top: 12, right: 12,
+            background: stage === "speaking" || stage === "intro" ? "#3b82f6" : "rgba(0,0,0,0.5)",
+            color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+            transition: "background 0.3s",
+          }}>
+            {stage === "speaking" || stage === "intro" ? "🎙 Spreekt" : "⏸ Stil"}
+          </div>
         </div>
 
         {/* Rechter kolom */}
@@ -591,6 +625,11 @@ export default function VideoInterviewPage() {
               <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>Voortgang</span>
               <span style={{ fontSize: 12, color: "#9ca3af" }}>{questionNumber}/{totalQuestions}</span>
             </div>
+            {ttsMode && (
+              <div style={{ fontSize: 10, color: ttsMode === "openai" ? "#4ade80" : "#f59e0b", marginBottom: 6 }}>
+                {ttsMode === "openai" ? "🎤 OpenAI stem" : "⚠ Browser stem (robot)"}
+              </div>
+            )}
             <div style={{ background: "#374151", borderRadius: 6, height: 6, overflow: "hidden" }}>
               <div style={{ background: "#7C3AED", height: "100%", width: `${progressPct}%`, borderRadius: 6, transition: "width 0.4s ease" }} />
             </div>
