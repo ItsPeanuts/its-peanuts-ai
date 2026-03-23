@@ -148,7 +148,7 @@ systemctl enable --now peanuts-backend peanuts-frontend
 cat > /etc/nginx/sites-available/its-peanuts << 'NGINXEOF'
 server {
     listen 80;
-    server_name _;
+    server_name vorzaiq.com www.vorzaiq.com;
     client_max_body_size 20M;
 
     # WebSocket support
@@ -166,6 +166,14 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
+    }
+
+    # Backend API (via /api/ prefix)
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     # Frontend (Next.js)

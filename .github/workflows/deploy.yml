@@ -1,0 +1,18 @@
+name: Deploy naar Hetzner
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 116.203.226.16
+          username: root
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: peanuts-deploy
