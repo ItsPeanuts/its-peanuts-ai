@@ -284,10 +284,9 @@ export default function SollicitatieDetailPage() {
                 <div>
                   <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
                     Video Interview met Lisa
-                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#7c3aed", background: "#ede9fe", padding: "2px 8px", borderRadius: 20 }}>PREMIUM</span>
                   </div>
                   <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-                    Doe een video interview met Lisa als realistische AI avatar.
+                    Doe een gesproken video-interview met Lisa, HR-recruiter van VorzaIQ.
                   </div>
                 </div>
               </div>

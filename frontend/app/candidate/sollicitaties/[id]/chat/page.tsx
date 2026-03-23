@@ -9,6 +9,9 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://its-peanuts-backend.onrender.com";
 
+const AMBER_VIDEO_URL =
+  "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";
+
 // Verwijder /api suffix — WebSocket eindpunten zitten op het root domein (/ws/...),
 // niet onder het /api/ nginx-proxy pad.
 const WS_BASE = BASE.replace(/\/api$/, "").replace(/^https?/, (p) =>
@@ -209,9 +212,11 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         </Link>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
-              L
-            </div>
+            <video
+              src={AMBER_VIDEO_URL}
+              autoPlay loop muted playsInline
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${connected ? "bg-green-400" : waking ? "bg-yellow-400" : "bg-gray-300"}`} />
           </div>
           <div>
@@ -233,9 +238,11 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         {waking ? (
           <div className="flex items-center justify-center h-40">
             <div className="flex flex-col items-center gap-4 text-center">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
-                L
-              </div>
+              <video
+                src={AMBER_VIDEO_URL}
+                autoPlay loop muted playsInline
+                className="w-14 h-14 rounded-full object-cover"
+              />
               <div className="flex items-center gap-2 text-gray-500 text-sm">
                 <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
                 Lisa wordt opgestart...
@@ -260,9 +267,11 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
                 className={`flex gap-3 ${msg.role === "candidate" ? "flex-row-reverse" : ""}`}
               >
                 {msg.role === "recruiter" && (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-1" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
-                    L
-                  </div>
+                  <video
+                    src={AMBER_VIDEO_URL}
+                    autoPlay loop muted playsInline
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-1"
+                  />
                 )}
 
                 <div className={`max-w-md ${msg.role === "candidate" ? "items-end" : "items-start"} flex flex-col`}>
@@ -286,9 +295,11 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
             {/* Typing indicator */}
             {sending && (
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: "linear-gradient(135deg, #7C3AED, #0891b2)" }}>
-                  L
-                </div>
+                <video
+                  src={AMBER_VIDEO_URL}
+                  autoPlay loop muted playsInline
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                />
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex gap-1 items-center h-4">
                     <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />

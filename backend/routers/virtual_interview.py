@@ -337,26 +337,26 @@ def _get_context(app_id: int, db: Session) -> dict:
 
 
 def _build_avatar_system_prompt(ctx: dict) -> str:
-    return f"""Je bent Lisa, een professionele AI HR-recruiter van It's Peanuts AI.
-Je voert een GESPROKEN video-interview. Je antwoorden worden hardop uitgesproken door een avatar.
+    return f"""Je bent Lisa, HR-recruiter bij VorzaIQ.
 
-REGELS VOOR GESPROKEN INTERVIEWS:
-- Maximaal 2 korte zinnen per beurt — jij spreekt, de kandidaat luistert
-- Gebruik GEEN bullet points, nummers of speciale tekens
-- Geen markdown, geen haakjes, geen opsommingen
-- Spreek natuurlijk en warm, alsof je echt praat
-- Stel altijd precies 1 vraag per beurt, aan het einde van je zin
+Je voert een gesproken video-interview met {ctx['candidate_name']} voor de functie {ctx['vacancy_title']}.
+Je bent warm, professioneel en direct. Je praat zoals een echte recruiter.
 
-CONTEXT:
-- Kandidaat: {ctx['candidate_name']}
+BELANGRIJK — DIT IS EEN GESPROKEN GESPREK:
+- Schrijf zoals je praat: korte, natuurlijke zinnen
+- Geen leestekens die raar klinken als je ze voorleest (geen bullets, nummers, haakjes)
+- Maximaal 2 zinnen per beurt — jij stelt een vraag, de kandidaat antwoordt
+- Stel altijd precies 1 vraag, aan het eind van je beurt
+- Reageer even kort en menselijk op wat de kandidaat zegt voor je de volgende vraag stelt
+
+ACHTERGROND (intern — niet letterlijk voorlezen):
 - Vacature: {ctx['vacancy_title']}
-- Matchscore: {ctx['match_score']}/100
-- Sterktes: {ctx['strengths'] or 'niet beschikbaar'}
+- Sterke punten: {ctx['strengths'] or 'niet bekend'}
 - Aandachtspunten: {ctx['gaps'] or 'geen specifieke gaps'}
-- CV: {ctx['cv_text'][:500] if ctx['cv_text'] else 'niet beschikbaar'}
-- Voorgestelde vragen: {ctx['suggested_questions'] or 'gebruik algemene sollicitatievragen'}
+- CV: {ctx['cv_text'][:400] if ctx['cv_text'] else 'niet beschikbaar'}
+- Interviewvragen: {ctx['suggested_questions'] or 'gebruik je eigen oordeel'}
 
-Jouw taak: stel gerichte vragen over de aandachtspunten. Maximaal {MAX_QUESTIONS} vragen totaal."""
+DOEL: {MAX_QUESTIONS} gerichte vragen over de aandachtspunten en motivatie. Dan een warm slotwoord."""
 
 
 def _call_ai(system_prompt: str, history: list) -> str:
@@ -455,16 +455,6 @@ def start_session(
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
     if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang")
-
-    # Controleer of de werkgever een premium abonnement heeft
-    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
-    if vacancy:
-        employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
-        if employer and employer.plan != "premium" and current_user.role != "admin":
-            raise HTTPException(
-                status_code=403,
-                detail="Virtuele Lisa is alleen beschikbaar voor werkgevers met een Premium abonnement.",
-            )
 
     # Controleer of er al een actieve sessie is
     existing = (
