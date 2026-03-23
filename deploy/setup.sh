@@ -72,7 +72,7 @@ BOOTSTRAP_TOKEN=Peanuts-Setup-2025!
 ADMIN_EMAIL=admin@itspeanuts.ai
 ADMIN_PASSWORD=AdminPeanuts2025!
 FRONTEND_URL=http://$SERVER_IP
-FROM_EMAIL=ItsPeanuts AI <onboarding@resend.dev>
+FROM_EMAIL="ItsPeanuts AI <onboarding@resend.dev>"
 
 # Vul hieronder je API keys in (nano /opt/its-peanuts/.env):
 OPENAI_API_KEY=
