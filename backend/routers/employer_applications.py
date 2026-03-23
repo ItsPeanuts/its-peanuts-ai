@@ -22,6 +22,7 @@ def list_applications(
         db.query(models.Application)
         .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
         .filter(models.Vacancy.employer_id == current_user.id)
+        .filter(models.Application.status != "auto_rejected")
     )
 
     if vacancy_id is not None:

@@ -15,6 +15,7 @@ from typing import Dict
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
+from openai import OpenAI
 
 from backend.db import SessionLocal
 from backend import models
@@ -28,6 +29,70 @@ from backend.routers.recruiter_chat import (
     _call_ai,
     MAX_QUESTIONS,
 )
+
+_openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("OPENAI_API_KEY") else None
+
+
+def _evaluate_and_filter(app_id: int, db: Session) -> None:
+    """
+    Evalueer de kwaliteit van chatantwoorden na afloop.
+    Kandidaten met slechte antwoorden én CV-match < 90% krijgen status 'auto_rejected'.
+    Kandidaten met CV-match >= 90% worden ALTIJD doorgelaten.
+    """
+    if not _openai_client:
+        return
+
+    # Haal match_score op — 90%+ altijd doorlaten
+    ai_result = db.query(models.AIResult).filter(models.AIResult.application_id == app_id).first()
+    match_score = ai_result.match_score if ai_result else 0
+    if match_score and match_score >= 90:
+        return
+
+    # Haal kandidaat-antwoorden op
+    candidate_msgs = (
+        db.query(models.RecruiterChatMessage)
+        .filter(
+            models.RecruiterChatMessage.application_id == app_id,
+            models.RecruiterChatMessage.role == "candidate",
+        )
+        .all()
+    )
+    if len(candidate_msgs) < 2:
+        return
+
+    answers_text = "\n".join(f"- {m.content}" for m in candidate_msgs)
+
+    eval_prompt = f"""Beoordeel de kwaliteit van onderstaande sollicitant-antwoorden in een chatgesprek.
+
+Antwoorden van de sollicitant:
+{answers_text}
+
+Geef een JSON response: {{"score": 0-100, "reject": true/false, "reason": "..."}}
+
+Beoordelingsregels:
+- score 0-39: antwoorden zijn onzinnig, agressief, totaal irrelevant, of de kandidaat werkt opzettelijk niet mee
+- score 40-100: antwoorden zijn acceptabel (ook al zijn ze kort of bevatten ze taalfouten)
+- reject = true ALLEEN als score <= 39
+- Wees NIET te streng: korte antwoorden, bescheidenheid of taalfouten zijn GEEN reden voor afwijzing
+- Twijfel? Kies dan NIET voor reject"""
+
+    try:
+        resp = _openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": eval_prompt}],
+            max_tokens=150,
+            temperature=0.1,
+            response_format={"type": "json_object"},
+        )
+        result = json.loads(resp.choices[0].message.content)
+
+        if result.get("reject") and (match_score or 0) < 90:
+            app = db.query(models.Application).filter(models.Application.id == app_id).first()
+            if app and app.status not in ("hired", "shortlisted", "interview"):
+                app.status = "auto_rejected"
+                db.commit()
+    except Exception:
+        pass
 
 router = APIRouter(tags=["websocket"])
 
@@ -181,6 +246,10 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                     "content": response_text,
                     "ended": ended,
                 })
+
+                # Chat afgerond → evalueer kwaliteit en filter slechte kandidaten
+                if ended:
+                    await asyncio.to_thread(_evaluate_and_filter, app_id, db)
 
             except WebSocketDisconnect:
                 break
