@@ -9,7 +9,11 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://its-peanuts-backend.onrender.com";
 
-const WS_BASE = BASE.replace(/^https?/, (p) => (p === "https" ? "wss" : "ws"));
+// Verwijder /api suffix — WebSocket eindpunten zitten op het root domein (/ws/...),
+// niet onder het /api/ nginx-proxy pad.
+const WS_BASE = BASE.replace(/\/api$/, "").replace(/^https?/, (p) =>
+  p === "https" ? "wss" : "ws"
+);
 
 type Message = {
   id: number;
