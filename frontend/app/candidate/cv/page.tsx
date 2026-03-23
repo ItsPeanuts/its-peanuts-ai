@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCandidateCVs, uploadCV, CandidateCVOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Vacatures", href: "/vacatures" },
 ];
 
-export default function CVBeheerPage() {
+function CVBeheerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next");
@@ -232,5 +232,13 @@ export default function CVBeheerPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CVBeheerPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontSize: 13, color: "#9ca3af" }}>Laden...</div></div>}>
+      <CVBeheerContent />
+    </Suspense>
   );
 }
