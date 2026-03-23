@@ -99,7 +99,7 @@ $APP_DIR/venv/bin/alembic upgrade head
 echo "[9/9] Frontend bouwen..."
 cd $APP_DIR/frontend
 npm install --silent
-NEXT_PUBLIC_API_BASE="http://$SERVER_IP:8000" npm run build
+NEXT_PUBLIC_API_BASE="https://vorzaiq.com/api" npm run build
 
 # ── 9. Systemd services ───────────────────────────────────────────────────────
 cat > /etc/systemd/system/peanuts-backend.service << SVCEOF
@@ -130,7 +130,7 @@ After=network.target
 User=root
 WorkingDirectory=$APP_DIR/frontend
 Environment=PORT=3000
-Environment=NEXT_PUBLIC_API_BASE=http://$SERVER_IP:8000
+Environment=NEXT_PUBLIC_API_BASE=https://vorzaiq.com/api
 ExecStart=/usr/bin/node node_modules/.bin/next start -p 3000
 Restart=always
 RestartSec=5
@@ -210,8 +210,7 @@ systemctl restart peanuts-backend
 echo "==> Frontend bouwen..."
 cd $APP_DIR/frontend
 npm install --silent
-SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
-NEXT_PUBLIC_API_BASE="http://$SERVER_IP:8000" npm run build
+NEXT_PUBLIC_API_BASE="https://vorzaiq.com/api" npm run build
 systemctl restart peanuts-frontend
 echo ""
 echo "✅ Deploy klaar!"
