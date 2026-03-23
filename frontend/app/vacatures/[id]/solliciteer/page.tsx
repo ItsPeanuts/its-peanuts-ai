@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  applyToVacancy, applyToVacancyAuthenticated, generateMotivationLetter,
+  applyToVacancyAuthenticated, generateMotivationLetter,
   getVacancy, getCandidateCVs, PublicVacancyDetail,
 } from "@/lib/api";
-import { getToken, getRole, setSession } from "@/lib/session";
+import { getToken, getRole } from "@/lib/session";
 
 interface Answer { question_id: number; answer: string; }
 
@@ -57,15 +57,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]         = useState<string | null>(null);
 
-  // Stap-state: voor ingelogde kandidaten beginnen we bij stap 1 (motivatie),
-  // voor niet-ingelogden bij stap 1 (gegevens).
   const [step, setStep] = useState(1);
-
-  // Niet-ingelogd: gegevens
-  const [fullName, setFullName]   = useState("");
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [cvFile, setCvFile]       = useState<File | null>(null);
 
   // Motivatiebrief
   const [motivation, setMotivation]       = useState("");
@@ -95,26 +87,13 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
 
   const hasIntake = (vacancy?.intake_questions.length ?? 0) > 0;
 
-  // Stap-definities afhankelijk van login-status
-  const steps = isLoggedIn
-    ? hasIntake ? ["Motivatie", "Vragen", "Klaar"] : ["Motivatie", "Klaar"]
-    : hasIntake ? ["Gegevens", "CV", "Motivatie", "Vragen", "Klaar"] : ["Gegevens", "CV", "Motivatie", "Klaar"];
-
+  // Stap-definities (altijd ingelogde flow)
+  const steps = hasIntake ? ["Motivatie", "Vragen", "Klaar"] : ["Motivatie", "Klaar"];
   const totalSteps = steps.length - 1; // laatste stap = resultaat
 
   // ── Navigatie ──
   const handleNext = async () => {
     setError(null);
-
-    // Validatie per stap (voor niet-ingelogde flow)
-    if (!isLoggedIn) {
-      if (step === 1) {
-        if (!fullName.trim()) return setError("Vul je volledige naam in.");
-        if (!email.includes("@")) return setError("Vul een geldig e-mailadres in.");
-        if (password.length < 8) return setError("Wachtwoord moet minimaal 8 tekens bevatten.");
-      }
-      if (step === 2 && !cvFile) return setError("Upload je CV (PDF of DOCX).");
-    }
 
     // Als dit de laatste echte stap is → submit
     if (step === totalSteps) {
@@ -128,25 +107,12 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
     setSubmitting(true);
     setError(null);
     try {
-      if (isLoggedIn && token) {
-        // Ingelogde flow
+      if (token) {
         const intakeJson = JSON.stringify(answers);
         const res = await applyToVacancyAuthenticated(token, vacancyId, {
           motivation_letter: motivation || undefined,
           intake_answers_json: intakeJson,
         });
-        setResult({ match_score: res.match_score, explanation: res.explanation, application_id: res.application_id });
-      } else {
-        // Niet-ingelogde flow
-        const fd = new FormData();
-        fd.append("full_name", fullName);
-        fd.append("email", email);
-        fd.append("password", password);
-        fd.append("cv_file", cvFile!);
-        fd.append("intake_answers_json", JSON.stringify(answers));
-        if (motivation) fd.append("motivation_letter", motivation);
-        const res = await applyToVacancy(vacancyId, fd);
-        setSession({ token: res.access_token, role: "candidate", email });
         setResult({ match_score: res.match_score, explanation: res.explanation, application_id: res.application_id });
       }
       setStep(steps.length); // resultaat-stap
@@ -183,6 +149,42 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
     return (
       <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ fontSize: 13, color: "#9ca3af" }}>Laden...</div>
+      </div>
+    );
+  }
+
+  // Niet ingelogd → stuur naar registratie/login
+  if (!isLoggedIn) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "40px 32px", maxWidth: 400, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, background: "linear-gradient(135deg, #7C3AED, #0891b2)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 24 }}>
+            👤
+          </div>
+          <div style={{ fontWeight: 700, color: "#111827", fontSize: 17, marginBottom: 8 }}>
+            Maak eerst een profiel aan
+          </div>
+          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24, lineHeight: 1.6 }}>
+            Om te solliciteren op <strong>{vacancy?.title ?? "deze vacature"}</strong> heb je een kandidaatprofiel nodig met je CV.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <Link
+              href={`/candidate/login?tab=register&next=/vacatures/${vacancyId}/solliciteer`}
+              style={{ display: "block", padding: "12px 24px", background: "#7C3AED", color: "#fff", borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none" }}
+            >
+              Account aanmaken
+            </Link>
+            <Link
+              href={`/candidate/login?next=/vacatures/${vacancyId}/solliciteer`}
+              style={{ display: "block", padding: "12px 24px", background: "#f3f4f6", color: "#374151", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}
+            >
+              Al een account? Inloggen
+            </Link>
+          </div>
+          <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 16 }}>
+            Na het aanmaken van je profiel en het uploaden van je CV kun je direct solliciteren.
+          </p>
+        </div>
       </div>
     );
   }
@@ -250,64 +252,6 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
             {error && (
               <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", color: "#dc2626", fontSize: 13, marginBottom: 20 }}>
                 {error}
-              </div>
-            )}
-
-            {/* ── STAP: Gegevens (niet-ingelogd) ── */}
-            {!isLoggedIn && step === gStep("Gegevens") && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {[
-                  { label: "Volledige naam", value: fullName, set: setFullName, type: "text", placeholder: "Jan de Vries" },
-                  { label: "E-mailadres", value: email, set: setEmail, type: "email", placeholder: "jan@email.nl" },
-                  { label: "Wachtwoord", value: password, set: setPassword, type: "password", placeholder: "Minimaal 8 tekens" },
-                ].map(({ label, value, set, type, placeholder }) => (
-                  <div key={label}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</label>
-                    <input
-                      type={type} value={value} placeholder={placeholder}
-                      onChange={e => set(e.target.value)}
-                      style={{ width: "100%", padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#111827", outline: "none", boxSizing: "border-box" }}
-                      onFocus={e => (e.target as HTMLInputElement).style.borderColor = "#7C3AED"}
-                      onBlur={e => (e.target as HTMLInputElement).style.borderColor = "#e5e7eb"}
-                    />
-                  </div>
-                ))}
-                <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
-                  Al een account?{" "}
-                  <Link href="/candidate/login" style={{ color: "#7C3AED", fontWeight: 600, textDecoration: "none" }}>Log hier in</Link>
-                </p>
-              </div>
-            )}
-
-            {/* ── STAP: CV (niet-ingelogd) ── */}
-            {!isLoggedIn && step === gStep("CV") && (
-              <div>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>
-                  Je CV wordt gebruikt voor de AI-matching. PDF, DOCX of TXT (max 10 MB).
-                </p>
-                <div
-                  onClick={() => document.getElementById("cv-input")?.click()}
-                  style={{ border: `2px dashed ${cvFile ? "#7C3AED" : "#d1d5db"}`, borderRadius: 12, padding: "40px 24px", textAlign: "center", cursor: "pointer", background: cvFile ? "#f0fdfa" : "#fafafa" }}
-                >
-                  {cvFile ? (
-                    <>
-                      <div style={{ width: 40, height: 40, background: "#7C3AED", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                        <svg width="20" height="20" fill="none" stroke="#fff" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      </div>
-                      <p style={{ fontWeight: 600, color: "#7C3AED", fontSize: 14, margin: "0 0 4px" }}>{cvFile.name}</p>
-                      <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>Klik om te wijzigen</p>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ width: 40, height: 40, background: "#f3f4f6", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                        <svg width="20" height="20" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                      </div>
-                      <p style={{ fontWeight: 600, color: "#374151", fontSize: 14, margin: "0 0 4px" }}>Klik om je CV te uploaden</p>
-                      <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>PDF, DOCX of TXT</p>
-                    </>
-                  )}
-                </div>
-                <input id="cv-input" type="file" accept=".pdf,.docx,.txt" style={{ display: "none" }} onChange={e => setCvFile(e.target.files?.[0] ?? null)} />
               </div>
             )}
 

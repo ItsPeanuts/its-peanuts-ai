@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, register, me } from "@/lib/api";
 import { setSession } from "@/lib/session";
 
-export default function CandidateLoginPage() {
+function CandidateLoginContent() {
   const router = useRouter();
-  const [tab, setTab] = useState<"login" | "register">("login");
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || null;
+  const initialTab = (searchParams.get("tab") as "login" | "register") || "login";
+  const [tab, setTab] = useState<"login" | "register">(initialTab);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -29,9 +32,9 @@ export default function CandidateLoginPage() {
       const user = await me(access_token);
       const role = user.role as "candidate" | "employer" | "admin";
       setSession({ token: access_token, role, email: user.email });
-      if (role === "admin") router.push("/admin");
-      else if (role === "employer") router.push("/employer");
-      else router.push("/candidate");
+      if (role === "admin") router.push(nextUrl || "/admin");
+      else if (role === "employer") router.push(nextUrl || "/employer");
+      else router.push(nextUrl || "/candidate");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Inloggen mislukt");
     } finally {
@@ -47,7 +50,7 @@ export default function CandidateLoginPage() {
       const { access_token } = await register(regEmail, regPassword, regName);
       const user = await me(access_token);
       setSession({ token: access_token, role: "candidate", email: user.email });
-      router.push("/candidate");
+      router.push(nextUrl || "/candidate/cv?next=/candidate");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registratie mislukt");
     } finally {
@@ -203,5 +206,13 @@ export default function CandidateLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CandidateLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-sm text-gray-400">Laden...</div></div>}>
+      <CandidateLoginContent />
+    </Suspense>
   );
 }

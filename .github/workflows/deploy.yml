@@ -15,4 +15,54 @@ jobs:
           host: 116.203.226.16
           username: root
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          script: peanuts-deploy
+          script: |
+            set -e
+            APP_DIR="/opt/its-peanuts"
+
+            echo "==> Code ophalen..."
+            cd $APP_DIR && git pull
+
+            echo "==> Python packages bijwerken..."
+            $APP_DIR/venv/bin/pip install -q -r requirements.txt
+
+            echo "==> Migraties uitvoeren..."
+            set -a; source $APP_DIR/.env; set +a
+            $APP_DIR/venv/bin/python -c "from backend.db import engine; from backend.models import Base; Base.metadata.create_all(bind=engine)"
+            $APP_DIR/venv/bin/alembic upgrade head
+
+            echo "==> Backend herstarten..."
+            systemctl restart peanuts-backend
+
+            echo "==> Frontend bouwen..."
+            cd $APP_DIR/frontend
+            npm install --silent
+            NEXT_PUBLIC_API_BASE="https://vorzaiq.com/api" npm run build
+            systemctl restart peanuts-frontend
+
+            echo "==> peanuts-deploy script bijwerken..."
+            cat > /usr/local/bin/peanuts-deploy << 'DEPLOYEOF'
+            #!/bin/bash
+            set -e
+            APP_DIR="/opt/its-peanuts"
+            echo "==> Code ophalen..."
+            cd $APP_DIR && git pull
+            echo "==> Python packages bijwerken..."
+            $APP_DIR/venv/bin/pip install -q -r requirements.txt
+            echo "==> Migraties uitvoeren..."
+            set -a; source $APP_DIR/.env; set +a
+            $APP_DIR/venv/bin/python -c "from backend.db import engine; from backend.models import Base; Base.metadata.create_all(bind=engine)"
+            $APP_DIR/venv/bin/alembic upgrade head
+            echo "==> Backend herstarten..."
+            systemctl restart peanuts-backend
+            echo "==> Frontend bouwen..."
+            cd $APP_DIR/frontend
+            npm install --silent
+            NEXT_PUBLIC_API_BASE="https://vorzaiq.com/api" npm run build
+            systemctl restart peanuts-frontend
+            echo ""
+            echo "✅ Deploy klaar!"
+            DEPLOYEOF
+            chmod +x /usr/local/bin/peanuts-deploy
+
+            echo ""
+            echo "✅ Deploy klaar!"
