@@ -12,7 +12,7 @@ DB_NAME="its_peanuts"
 DB_USER="peanuts_user"
 DB_PASS=$(openssl rand -base64 20 | tr -d '/+=')
 JWT_SECRET=$(openssl rand -base64 32)
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 
 echo "======================================"
 echo "  ItsPeanuts AI — Server Setup"
@@ -202,7 +202,7 @@ systemctl restart peanuts-backend
 echo "==> Frontend bouwen..."
 cd $APP_DIR/frontend
 npm install --silent
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+SERVER_IP=$(curl -4 -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 NEXT_PUBLIC_API_BASE="http://$SERVER_IP:8000" npm run build
 systemctl restart peanuts-frontend
 echo ""
