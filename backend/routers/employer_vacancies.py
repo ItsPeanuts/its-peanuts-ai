@@ -116,6 +116,25 @@ def update_vacancy(
     return vacancy
 
 
+@router.delete("/{vacancy_id}", status_code=204)
+def delete_vacancy(
+    vacancy_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Verwijder een vacature (en alle gerelateerde data via CASCADE)."""
+    require_role(current_user, "employer")
+
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+    if vacancy.employer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
+
+    db.delete(vacancy)
+    db.commit()
+
+
 VALID_STATUSES = {"concept", "actief", "offline"}
 
 

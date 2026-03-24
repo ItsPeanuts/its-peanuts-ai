@@ -8,7 +8,7 @@ import {
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
-  getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy,
+  getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy, deleteVacancy,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession,
 } from "@/lib/api";
@@ -132,6 +132,11 @@ export default function EmployerPage() {
   // Vacature status toggling
   const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
 
+  // Vacature verwijderen
+  const [deleteVacancyId, setDeleteVacancyId] = useState<number | null>(null);
+  const [deleteVacancyTitle, setDeleteVacancyTitle] = useState<string>("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Vacature bewerken modal
   const [editVacancy, setEditVacancy] = useState<Vacancy | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -236,6 +241,22 @@ export default function EmployerPage() {
       setErr(e instanceof Error ? e.message : "Opslaan mislukt");
     } finally {
       setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteVacancy() {
+    if (!deleteVacancyId || !token) return;
+    setDeleteLoading(true);
+    try {
+      await deleteVacancy(token, deleteVacancyId);
+      setVacancies((prev) => prev.filter((v) => v.id !== deleteVacancyId));
+      setDeleteVacancyId(null);
+      setMsg("Vacature verwijderd.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Verwijderen mislukt");
+      setDeleteVacancyId(null);
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -654,6 +675,12 @@ export default function EmployerPage() {
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
                             >
                               Bewerken
+                            </button>
+                            <button
+                              onClick={() => { setDeleteVacancyId(v.id); setDeleteVacancyTitle(v.title); }}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                            >
+                              Verwijderen
                             </button>
                             <button
                               onClick={() => { setPromoVacancy(v); setPromoDays(7); }}
@@ -1704,6 +1731,45 @@ export default function EmployerPage() {
                 style={{ background: "#f97316" }}
               >
                 {promoLoading ? "Bezig..." : "Betalen via Stripe →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Vacature verwijderen bevestiging ── */}
+      {deleteVacancyId !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDeleteVacancyId(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </div>
+              <div>
+                <div className="text-base font-bold text-gray-900">Vacature verwijderen</div>
+                <div className="text-xs text-gray-500 mt-0.5">{deleteVacancyTitle}</div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Weet je zeker dat je deze vacature wilt verwijderen? Alle sollicitaties en data worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteVacancyId(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={handleDeleteVacancy}
+                disabled={deleteLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 transition"
+              >
+                {deleteLoading ? "Bezig..." : "Ja, verwijderen"}
               </button>
             </div>
           </div>

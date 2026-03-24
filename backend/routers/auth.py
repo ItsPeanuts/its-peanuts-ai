@@ -101,6 +101,16 @@ def me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
 
+@router.delete("/me", status_code=204)
+def delete_account(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Verwijder eigen account en alle bijbehorende data (GDPR)."""
+    db.delete(current_user)
+    db.commit()
+
+
 def require_role(user: models.User, role: str):
     if user.role != role and user.role != "admin":
         raise HTTPException(status_code=403, detail=f"{role.capitalize()} role required")

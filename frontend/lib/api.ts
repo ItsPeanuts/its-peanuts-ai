@@ -711,3 +711,25 @@ export async function listVacancyPromotions(
   return data as PromotionOut[];
 }
 
+export async function deleteVacancy(token: string, vacancyId: number): Promise<void> {
+  const res = await fetch(`${BASE}/employer/vacancies/${vacancyId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new Error(data?.detail || data?.raw || "Verwijderen mislukt");
+  }
+}
+
+export async function deleteAccount(token: string): Promise<void> {
+  const res = await fetch(`${BASE}/auth/me`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new Error(data?.detail || "Account verwijderen mislukt");
+  }
+}
+

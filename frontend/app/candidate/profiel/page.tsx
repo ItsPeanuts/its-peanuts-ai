@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   me, getCandidateCVs, uploadCV, getMyApplications,
-  getCVFullText, updateCVText,
+  getCVFullText, updateCVText, deleteAccount,
   CandidateCVOut, ApplicationWithDetails,
 } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -49,6 +49,10 @@ export default function ProfielPage() {
   const [editText, setEditText]     = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [saving, setSaving]         = useState(false);
+
+  // Account verwijderen
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading]         = useState(false);
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
@@ -117,6 +121,21 @@ export default function ProfielPage() {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!token) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAccount(token);
+      clearSession();
+      router.replace("/");
+    } catch (err: unknown) {
+      setUploadMsg({ type: "err", text: (err as Error)?.message || "Account verwijderen mislukt" });
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -385,7 +404,71 @@ export default function ProfielPage() {
           </div>
 
         </div>
+
+        {/* Danger zone */}
+        <div style={{
+          marginTop: 20, background: "#fff", border: "1px solid #fecaca", borderRadius: 16, padding: "20px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 2 }}>Account verwijderen</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>
+              Verwijder je account en alle bijbehorende data permanent. Dit kan niet ongedaan worden gemaakt.
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{
+              flexShrink: 0, padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+              color: "#dc2626", background: "#fff", border: "1px solid #fca5a5", cursor: "pointer",
+            }}
+          >
+            Account verwijderen
+          </button>
+        </div>
+
       </div>
+
+      {/* Bevestiging modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.4)", padding: 16,
+        }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}
+        >
+          <div style={{ background: "#fff", borderRadius: 20, padding: "32px", width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>Account verwijderen</div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{user?.email}</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, marginBottom: 24 }}>
+              Weet je zeker dat je je account wilt verwijderen? Al je sollicitaties, CV&apos;s en gegevens worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 500, color: "#374151", background: "#f3f4f6", border: "none", cursor: "pointer" }}
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                style={{ flex: 1, padding: "10px", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", background: deleteLoading ? "#e5e7eb" : "#dc2626", border: "none", cursor: deleteLoading ? "not-allowed" : "pointer" }}
+              >
+                {deleteLoading ? "Verwijderen..." : "Ja, verwijder mijn account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
