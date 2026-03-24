@@ -30,6 +30,7 @@ from backend.routers import virtual_interview
 from backend.routers import billing as billing_router
 from backend.routers import scraper_admin as scraper_admin_router
 from backend.routers import promotions as promotions_router
+from backend.routers import agents as agents_router
 
 app = FastAPI(title="ItsPeanuts AI", version="1.0.0")
 
@@ -61,6 +62,7 @@ app.include_router(virtual_interview.router)
 app.include_router(billing_router.router)
 app.include_router(scraper_admin_router.router)
 app.include_router(promotions_router.router)
+app.include_router(agents_router.router)
 app.include_router(public_router)
 
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
