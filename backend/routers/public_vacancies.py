@@ -82,9 +82,9 @@ def list_vacancies(
     if location:
         query = query.filter(models.Vacancy.location.ilike(f"%{location}%"))
     if employment_type:
-        query = query.filter(models.Vacancy.employment_type == employment_type)
+        query = query.filter(models.Vacancy.employment_type.ilike(employment_type))
     if work_location:
-        query = query.filter(models.Vacancy.work_location == work_location)
+        query = query.filter(models.Vacancy.work_location.ilike(work_location))
     if date_posted:
         now = datetime.now(timezone.utc)
         delta_map = {"today": 1, "3days": 3, "week": 7, "month": 30}

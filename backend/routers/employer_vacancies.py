@@ -62,13 +62,13 @@ def create_vacancy(
     vacancy = models.Vacancy(
         employer_id=current_user.id,
         title=payload.title,
-        location=payload.location,
-        hours_per_week=payload.hours_per_week,
-        salary_range=payload.salary_range,
-        description=payload.description,
+        location=payload.location or None,
+        hours_per_week=payload.hours_per_week or None,
+        salary_range=payload.salary_range or None,
+        description=payload.description or None,
         interview_type=payload.interview_type or "both",
-        employment_type=payload.employment_type,
-        work_location=payload.work_location,
+        employment_type=payload.employment_type or None,
+        work_location=payload.work_location or None,
     )
     db.add(vacancy)
     db.commit()
