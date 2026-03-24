@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
@@ -73,4 +74,33 @@ def create_vacancy(
     return vacancy
 
 
+VALID_STATUSES = {"concept", "actief", "offline"}
 
+
+class StatusUpdate(BaseModel):
+    status: str  # "concept" | "actief" | "offline"
+
+
+@router.patch("/{vacancy_id}/status", response_model=schemas.VacancyOut)
+def update_vacancy_status(
+    vacancy_id: int,
+    payload: StatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Zet een vacature op concept, actief of offline."""
+    require_role(current_user, "employer")
+
+    if payload.status not in VALID_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Ongeldige status (kies: {', '.join(VALID_STATUSES)})")
+
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+    if vacancy.employer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
+
+    vacancy.status = payload.status
+    db.commit()
+    db.refresh(vacancy)
+    return vacancy

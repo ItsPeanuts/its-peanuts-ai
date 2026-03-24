@@ -59,6 +59,7 @@ class VacancyOut(VacancyBase):
     id: int
     employer_id: int
     interview_type: str = "both"
+    status: str = "concept"  # "concept" | "actief" | "offline"
 
     source_type: Optional[str] = None
     source_filename: Optional[str] = None

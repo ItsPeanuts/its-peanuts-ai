@@ -8,7 +8,7 @@ import {
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
-  getVideoInterviewSession, createPromotionCheckout,
+  getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession,
 } from "@/lib/api";
@@ -21,6 +21,7 @@ type Vacancy = {
   hours_per_week?: string | null;
   salary_range?: string | null;
   description?: string | null;
+  status?: string | null;  // "concept" | "actief" | "offline"
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; next: string[] }> = {
@@ -125,6 +126,9 @@ export default function EmployerPage() {
   const [promoDays, setPromoDays] = useState<7 | 14 | 30>(7);
   const [promoLoading, setPromoLoading] = useState(false);
 
+  // Vacature status toggling
+  const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
+
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
     if (role && role !== "employer" && role !== "admin") { router.push("/candidate"); return; }
@@ -167,6 +171,18 @@ export default function EmployerPage() {
     setSelectedVacancy(v.id);
     setView("applications");
     await loadApplications(v.id);
+  }
+
+  async function handleVacancyStatus(vacancyId: number, newStatus: "concept" | "actief" | "offline") {
+    setStatusUpdating((prev) => ({ ...prev, [vacancyId]: true }));
+    try {
+      await updateVacancyStatus(token, vacancyId, newStatus);
+      setVacancies((prev) => prev.map((v) => v.id === vacancyId ? { ...v, status: newStatus } : v));
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Status bijwerken mislukt");
+    } finally {
+      setStatusUpdating((prev) => ({ ...prev, [vacancyId]: false }));
+    }
   }
 
   async function handleStatusChange(appId: number, newStatus: string) {
@@ -535,7 +551,22 @@ export default function EmployerPage() {
                           {getInitials(v.title)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900">{v.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900">{v.title}</span>
+                            {(() => {
+                              const s = v.status || "concept";
+                              const cfg = s === "actief"
+                                ? { label: "Online", color: "#059669", bg: "#d1fae5" }
+                                : s === "offline"
+                                ? { label: "Offline", color: "#6b7280", bg: "#f3f4f6" }
+                                : { label: "Concept", color: "#d97706", bg: "#fef3c7" };
+                              return (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ color: cfg.color, background: cfg.bg }}>
+                                  {cfg.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <div className="text-xs text-gray-500 mt-0.5">
                             {v.location && `${v.location} · `}{v.hours_per_week && `${v.hours_per_week}u/week · `}{v.salary_range || ""}
                           </div>
@@ -570,6 +601,23 @@ export default function EmployerPage() {
                             >
                               Promoten
                             </button>
+                            {(v.status || "concept") !== "actief" ? (
+                              <button
+                                disabled={statusUpdating[v.id]}
+                                onClick={() => handleVacancyStatus(v.id, "actief")}
+                                className="px-4 py-2 rounded-lg text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors"
+                              >
+                                {statusUpdating[v.id] ? "..." : "Online zetten"}
+                              </button>
+                            ) : (
+                              <button
+                                disabled={statusUpdating[v.id]}
+                                onClick={() => handleVacancyStatus(v.id, "offline")}
+                                className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                              >
+                                {statusUpdating[v.id] ? "..." : "Offline halen"}
+                              </button>
+                            )}
                             <Link
                               href={`/vacatures/${v.id}`}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 no-underline transition-colors"

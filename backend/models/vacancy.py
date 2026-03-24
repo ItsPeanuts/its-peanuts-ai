@@ -34,6 +34,10 @@ class Vacancy(Base):
     work_location = Column(String(50), nullable=True)
     # "remote" | "hybride" | "op-locatie"
 
+    # Publicatiestatus: concept (standaard) → actief → offline
+    status = Column(String(20), nullable=False, server_default="concept")
+    # "concept" | "actief" | "offline"
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     employer = relationship("User", back_populates="vacancies", lazy="joined")

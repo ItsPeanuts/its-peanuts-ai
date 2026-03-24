@@ -68,7 +68,11 @@ def list_vacancies(
 ):
     from datetime import datetime, timedelta, timezone
 
-    query = db.query(models.Vacancy).order_by(models.Vacancy.created_at.desc())
+    query = (
+        db.query(models.Vacancy)
+        .filter(models.Vacancy.status == "actief")
+        .order_by(models.Vacancy.created_at.desc())
+    )
 
     if q:
         query = query.filter(
@@ -94,7 +98,11 @@ def list_vacancies(
 
 @router.get("/{vacancy_id}", response_model=schemas.PublicVacancyDetail)
 def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
-    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    vacancy = (
+        db.query(models.Vacancy)
+        .filter(models.Vacancy.id == vacancy_id, models.Vacancy.status == "actief")
+        .first()
+    )
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacature niet gevonden")
 

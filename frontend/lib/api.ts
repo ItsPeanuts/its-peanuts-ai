@@ -628,6 +628,21 @@ export async function createCheckoutSession(
   return data as { checkout_url: string };
 }
 
+export async function updateVacancyStatus(
+  token: string,
+  vacancyId: number,
+  status: "concept" | "actief" | "offline",
+): Promise<{ id: number; status: string }> {
+  const res = await fetch(`${BASE}/employer/vacancies/${vacancyId}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Status bijwerken mislukt");
+  return data;
+}
+
 // ── Vacature Promoties ──────────────────────────────────────────────────────
 
 export interface PromotionOut {
