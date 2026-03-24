@@ -67,6 +67,8 @@ def create_vacancy(
         salary_range=payload.salary_range,
         description=payload.description,
         interview_type=payload.interview_type or "both",
+        employment_type=payload.employment_type,
+        work_location=payload.work_location,
     )
     db.add(vacancy)
     db.commit()

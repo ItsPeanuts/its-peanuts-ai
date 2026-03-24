@@ -456,6 +456,16 @@ def start_session(
     if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
+    # Controleer of werkgever een Premium abonnement heeft
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+    if vacancy and current_user.role != "admin":
+        employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+        if not employer or (employer.plan or "gratis") != "premium":
+            raise HTTPException(
+                status_code=403,
+                detail="Virtueel interview vereist een Premium abonnement van de werkgever",
+            )
+
     # Controleer of er al een actieve sessie is
     existing = (
         db.query(models.VirtualInterviewSession)

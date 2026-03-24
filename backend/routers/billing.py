@@ -129,7 +129,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     else:
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        except stripe.errors.SignatureVerificationError:
+        except stripe.error.SignatureVerificationError:
             raise HTTPException(status_code=400, detail="Ongeldige Stripe handtekening")
 
     if event["type"] == "checkout.session.completed":

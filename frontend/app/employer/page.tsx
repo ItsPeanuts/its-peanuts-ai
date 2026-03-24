@@ -1532,7 +1532,7 @@ export default function EmployerPage() {
                 onClick={async () => {
                   setPromoLoading(true);
                   try {
-                    const { checkout_url } = await createPromotionCheckout(token, promoVacancy.id, promoDays);
+                    const { checkout_url } = await createPromotionCheckout(token!, promoVacancy.id, promoDays);
                     window.location.href = checkout_url;
                   } catch (e: unknown) {
                     setErr(e instanceof Error ? e.message : "Promotie starten mislukt");
