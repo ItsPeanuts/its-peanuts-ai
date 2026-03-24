@@ -8,7 +8,9 @@ import {
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
+  getVideoInterviewSession,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
+  VideoInterviewSession,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
@@ -112,6 +114,11 @@ export default function EmployerPage() {
   const [appAnswers, setAppAnswers] = useState<Record<number, { question: string; answer: string }[]>>({});
   const [appAnswersLoading, setAppAnswersLoading] = useState<Record<number, boolean>>({});
   const [appAnswersOpen, setAppAnswersOpen] = useState<Record<number, boolean>>({});
+
+  // Video interview per sollicitatie
+  const [videoInterviews, setVideoInterviews] = useState<Record<number, VideoInterviewSession | null>>({});
+  const [videoInterviewLoading, setVideoInterviewLoading] = useState<Record<number, boolean>>({});
+  const [videoInterviewOpen, setVideoInterviewOpen] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
@@ -228,6 +235,22 @@ export default function EmployerPage() {
         setChatMessages((prev) => ({ ...prev, [appId]: [] }));
       } finally {
         setChatLoading((prev) => ({ ...prev, [appId]: false }));
+      }
+    }
+  }
+
+  async function toggleVideoInterview(appId: number) {
+    const nowOpen = !videoInterviewOpen[appId];
+    setVideoInterviewOpen((prev) => ({ ...prev, [appId]: nowOpen }));
+    if (nowOpen && videoInterviews[appId] === undefined) {
+      setVideoInterviewLoading((prev) => ({ ...prev, [appId]: true }));
+      try {
+        const session = await getVideoInterviewSession(token!, appId);
+        setVideoInterviews((prev) => ({ ...prev, [appId]: session }));
+      } catch {
+        setVideoInterviews((prev) => ({ ...prev, [appId]: null }));
+      } finally {
+        setVideoInterviewLoading((prev) => ({ ...prev, [appId]: false }));
       }
     }
   }
@@ -708,6 +731,63 @@ export default function EmployerPage() {
                                         </div>
                                       </div>
                                     ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Video interview transcript */}
+                          <div className="mt-2">
+                            <button
+                              onClick={() => toggleVideoInterview(app.id)}
+                              className="text-xs font-medium cursor-pointer hover:opacity-80 flex items-center gap-1.5"
+                              style={{ color: "#0284c7", background: "none", border: "none", padding: 0 }}
+                            >
+                              <span style={{ fontSize: 13 }}>🎬</span>
+                              Video interview {videoInterviewOpen[app.id] ? "▴" : "▾"}
+                            </button>
+                            {videoInterviewOpen[app.id] && (
+                              <div className="mt-2 border border-blue-100 rounded-xl overflow-hidden">
+                                {videoInterviewLoading[app.id] ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                ) : !videoInterviews[app.id] ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">
+                                    Kandidaat heeft nog geen video interview gedaan.
+                                  </div>
+                                ) : videoInterviews[app.id]!.status !== "completed" ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">
+                                    Interview is nog niet afgerond (status: {videoInterviews[app.id]!.status}).
+                                  </div>
+                                ) : (
+                                  <div className="p-3 bg-blue-50 space-y-2">
+                                    {/* Score */}
+                                    {videoInterviews[app.id]!.score !== null && (
+                                      <div className="flex items-center gap-3 bg-white rounded-lg p-2.5">
+                                        <div className="text-xs font-semibold text-blue-700">Interview score</div>
+                                        <div className="flex-1">
+                                          <ScoreBar score={videoInterviews[app.id]!.score} />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* Transcript */}
+                                    {!!videoInterviews[app.id]!.transcript?.length && (
+                                      <div className="max-h-72 overflow-y-auto space-y-1.5">
+                                        {videoInterviews[app.id]!.transcript!.map((t, i) => (
+                                          <div key={i} className={`flex gap-2 ${t.role === "candidate" ? "flex-row-reverse" : ""}`}>
+                                            <div
+                                              className="text-xs px-3 py-2 rounded-xl max-w-xs leading-relaxed"
+                                              style={t.role === "candidate"
+                                                ? { background: "#0284c7", color: "#fff", borderTopRightRadius: 4 }
+                                                : { background: "#fff", color: "#374151", border: "1px solid #bfdbfe", borderTopLeftRadius: 4 }
+                                              }
+                                            >
+                                              {t.content}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>

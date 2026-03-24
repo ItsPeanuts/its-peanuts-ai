@@ -210,12 +210,12 @@ export default function VideoInterviewPage() {
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
 
-          // Laad audio voor om zeker te zijn dat alles klaar is
+          // Laad audio voor — kortere timeout voor snellere reactie
           await new Promise<void>((resolve) => {
             audio.oncanplaythrough = () => resolve();
             audio.onerror = () => resolve();
             audio.load();
-            setTimeout(resolve, 500); // fallback
+            setTimeout(resolve, 150); // max 150ms wachten
           });
 
           // Nu starten video + audio tegelijk
@@ -547,6 +547,10 @@ export default function VideoInterviewPage() {
           0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
           50% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(34,197,94,0); }
         }
+        @keyframes dot {
+          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1.2); }
+        }
       `}</style>
       {/* Header */}
       <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -598,6 +602,23 @@ export default function VideoInterviewPage() {
               {stage === "connecting" && (
                 <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
               )}
+            </div>
+          )}
+
+          {/* "Lisa denkt na..." indicator tijdens processing */}
+          {stage === "processing" && !liveCaption && (
+            <div style={{
+              position: "absolute", bottom: 16, left: 16, right: 16,
+              background: "rgba(0,0,0,0.6)", color: "#9ca3af",
+              padding: "10px 14px", borderRadius: 10, fontSize: 13,
+              backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "0ms" }}>●</span>
+                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "300ms" }}>●</span>
+                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "600ms" }}>●</span>
+              </div>
+              Lisa denkt na...
             </div>
           )}
 

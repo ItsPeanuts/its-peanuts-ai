@@ -442,6 +442,27 @@ export async function getEmployerApplications(
   return data as ApplicationWithCandidate[];
 }
 
+export type VideoInterviewSession = {
+  id: number;
+  status: string;
+  score: number | null;
+  transcript: Array<{ role: string; content: string; timestamp: string }> | null;
+  followup_interview_id: number | null;
+};
+
+export async function getVideoInterviewSession(
+  token: string,
+  appId: number
+): Promise<VideoInterviewSession | null> {
+  const res = await fetch(`${BASE}/virtual-interview/session/${appId}`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  if (res.status === 404) return null;
+  const data = await parseJson(res);
+  if (!res.ok) return null;
+  return data as VideoInterviewSession;
+}
+
 export async function updateApplicationStatus(
   token: string,
   applicationId: number,
