@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend import models, schemas
 from backend.routers.auth import get_current_user, require_role
+from backend.services.email import send_status_update_email
 
 router = APIRouter(prefix="/employer", tags=["employer-applications"])
 
@@ -75,4 +76,20 @@ def update_status(
     app.status = payload.status
     db.commit()
     db.refresh(app)
+
+    # Stuur e-mail naar kandidaat bij aangenomen of afgewezen
+    if payload.status in ("hired", "rejected"):
+        try:
+            candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
+            vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+            if candidate and vacancy:
+                send_status_update_email(
+                    candidate_email=candidate.email,
+                    candidate_name=candidate.full_name or candidate.email,
+                    vacancy_title=vacancy.title,
+                    new_status=payload.status,
+                )
+        except Exception:
+            pass  # E-mail fout is niet fataal
+
     return app

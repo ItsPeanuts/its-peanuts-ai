@@ -628,6 +628,32 @@ export async function createCheckoutSession(
   return data as { checkout_url: string };
 }
 
+export interface VacancyUpdatePayload {
+  title: string;
+  location?: string;
+  hours_per_week?: string;
+  salary_range?: string;
+  description?: string;
+  employment_type?: string;
+  work_location?: string;
+  interview_type?: string;
+}
+
+export async function updateVacancy(
+  token: string,
+  vacancyId: number,
+  payload: VacancyUpdatePayload,
+): Promise<{ id: number; title: string; status: string }> {
+  const res = await fetch(`${BASE}/employer/vacancies/${vacancyId}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacature bijwerken mislukt");
+  return data;
+}
+
 export async function updateVacancyStatus(
   token: string,
   vacancyId: number,

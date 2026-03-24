@@ -8,7 +8,7 @@ import {
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
-  getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus,
+  getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession,
 } from "@/lib/api";
@@ -21,7 +21,10 @@ type Vacancy = {
   hours_per_week?: string | null;
   salary_range?: string | null;
   description?: string | null;
-  status?: string | null;  // "concept" | "actief" | "offline"
+  status?: string | null;           // "concept" | "actief" | "offline"
+  employment_type?: string | null;
+  work_location?: string | null;
+  interview_type?: string | null;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; next: string[] }> = {
@@ -129,6 +132,18 @@ export default function EmployerPage() {
   // Vacature status toggling
   const [statusUpdating, setStatusUpdating] = useState<Record<number, boolean>>({});
 
+  // Vacature bewerken modal
+  const [editVacancy, setEditVacancy] = useState<Vacancy | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editHours, setEditHours] = useState("");
+  const [editSalary, setEditSalary] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editEmploymentType, setEditEmploymentType] = useState("");
+  const [editWorkLocation, setEditWorkLocation] = useState("");
+  const [editInterviewType, setEditInterviewType] = useState("both");
+  const [editSaving, setEditSaving] = useState(false);
+
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
     if (role && role !== "employer" && role !== "admin") { router.push("/candidate"); return; }
@@ -182,6 +197,45 @@ export default function EmployerPage() {
       setErr(e instanceof Error ? e.message : "Status bijwerken mislukt");
     } finally {
       setStatusUpdating((prev) => ({ ...prev, [vacancyId]: false }));
+    }
+  }
+
+  function openEditVacancy(v: Vacancy) {
+    setEditVacancy(v);
+    setEditTitle(v.title || "");
+    setEditLocation(v.location || "");
+    setEditHours(v.hours_per_week || "");
+    setEditSalary(v.salary_range || "");
+    setEditDesc(v.description || "");
+    setEditEmploymentType(v.employment_type || "");
+    setEditWorkLocation(v.work_location || "");
+    setEditInterviewType(v.interview_type || "both");
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editVacancy) return;
+    setEditSaving(true);
+    try {
+      const updated = await updateVacancy(token!, editVacancy.id, {
+        title: editTitle,
+        location: editLocation,
+        hours_per_week: editHours,
+        salary_range: editSalary,
+        description: editDesc,
+        employment_type: editEmploymentType,
+        work_location: editWorkLocation,
+        interview_type: editInterviewType,
+      });
+      setVacancies((prev) => prev.map((v) =>
+        v.id === editVacancy.id ? { ...v, ...updated, title: editTitle, location: editLocation, hours_per_week: editHours, salary_range: editSalary, description: editDesc, employment_type: editEmploymentType, work_location: editWorkLocation, interview_type: editInterviewType } : v
+      ));
+      setEditVacancy(null);
+      setMsg("Vacature opgeslagen.");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Opslaan mislukt");
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -594,6 +648,12 @@ export default function EmployerPage() {
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                             >
                               Intakevragen
+                            </button>
+                            <button
+                              onClick={() => openEditVacancy(v)}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
+                            >
+                              Bewerken
                             </button>
                             <button
                               onClick={() => { setPromoVacancy(v); setPromoDays(7); }}
@@ -1471,6 +1531,105 @@ export default function EmployerPage() {
             <div className="px-6 pb-5 text-center">
               <span className="text-xs text-gray-400">Vragen? Mail ons op <a href="mailto:info@itspeanuts.ai" className="text-purple-600 no-underline">info@itspeanuts.ai</a></span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* === VACATURE BEWERKEN MODAL === */}
+      {editVacancy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditVacancy(null); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white px-7 pt-7 pb-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <div className="text-lg font-bold text-gray-900">Vacature bewerken</div>
+                <div className="text-sm text-gray-400 mt-0.5 truncate max-w-xs">{editVacancy.title}</div>
+              </div>
+              <button onClick={() => setEditVacancy(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="px-7 py-6 space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Functietitel *</label>
+                <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Locatie</label>
+                  <input value={editLocation} onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="bijv. Amsterdam"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Uren per week</label>
+                  <input value={editHours} onChange={(e) => setEditHours(e.target.value)}
+                    placeholder="bijv. 40"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Salarisrange</label>
+                <input value={editSalary} onChange={(e) => setEditSalary(e.target.value)}
+                  placeholder="bijv. €3.500 - €5.000"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dienstverband</label>
+                  <select value={editEmploymentType} onChange={(e) => setEditEmploymentType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition bg-white">
+                    <option value="">Selecteer...</option>
+                    <option value="fulltime">Fulltime</option>
+                    <option value="parttime">Parttime</option>
+                    <option value="freelance">Freelance</option>
+                    <option value="stage">Stage</option>
+                    <option value="tijdelijk">Tijdelijk</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Werklocatie</label>
+                  <select value={editWorkLocation} onChange={(e) => setEditWorkLocation(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition bg-white">
+                    <option value="">Selecteer...</option>
+                    <option value="remote">Remote</option>
+                    <option value="hybride">Hybride</option>
+                    <option value="op-locatie">Op locatie</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Omschrijving</label>
+                <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={6}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition resize-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gesprek met Lisa</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: "chat",    label: "Chatbot",    desc: "Alle plannen" },
+                    { value: "virtual", label: "Virtueel",   desc: "Alleen Premium" },
+                    { value: "both",    label: "Beide",      desc: "Kandidaat kiest" },
+                  ] as const).map((opt) => (
+                    <label key={opt.value} onClick={() => setEditInterviewType(opt.value)}
+                      className={`cursor-pointer rounded-xl border-2 px-3 py-2.5 text-center transition-all ${editInterviewType === opt.value ? "border-purple-500 bg-purple-50" : "border-gray-200 hover:border-gray-300"}`}>
+                      <div className="text-xs font-bold text-gray-800">{opt.label}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={editSaving}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90 transition"
+                  style={{ background: "#7C3AED" }}>
+                  {editSaving ? "Opslaan..." : "Opslaan"}
+                </button>
+                <button type="button" onClick={() => setEditVacancy(null)}
+                  className="px-5 py-3 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
+                  Annuleren
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

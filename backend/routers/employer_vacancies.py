@@ -76,6 +76,46 @@ def create_vacancy(
     return vacancy
 
 
+class VacancyUpdate(BaseModel):
+    title: str
+    location: str = ""
+    hours_per_week: str = ""
+    salary_range: str = ""
+    description: str = ""
+    employment_type: str = ""
+    work_location: str = ""
+    interview_type: str = "both"
+
+
+@router.put("/{vacancy_id}", response_model=schemas.VacancyOut)
+def update_vacancy(
+    vacancy_id: int,
+    payload: VacancyUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Bewerk een bestaande vacature."""
+    require_role(current_user, "employer")
+
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+    if not vacancy:
+        raise HTTPException(status_code=404, detail="Vacature niet gevonden")
+    if vacancy.employer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
+
+    vacancy.title = payload.title
+    vacancy.location = payload.location or None
+    vacancy.hours_per_week = payload.hours_per_week or None
+    vacancy.salary_range = payload.salary_range or None
+    vacancy.description = payload.description or None
+    vacancy.employment_type = payload.employment_type or None
+    vacancy.work_location = payload.work_location or None
+    vacancy.interview_type = payload.interview_type or "both"
+    db.commit()
+    db.refresh(vacancy)
+    return vacancy
+
+
 VALID_STATUSES = {"concept", "actief", "offline"}
 
 

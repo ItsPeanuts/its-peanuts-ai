@@ -246,6 +246,79 @@ def send_claim_notification(
     )
 
 
+# ── Kandidaat: status update (aangenomen / afgewezen) ────────────────────────
+
+def send_status_update_email(
+    candidate_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    new_status: str,  # "hired" of "rejected"
+) -> None:
+    """Stuur kandidaat een e-mail als hun status op aangenomen of afgewezen gezet wordt."""
+    if new_status == "hired":
+        header_bg = "#059669"
+        header_sub = "Goed nieuws!"
+        heading = "Gefeliciteerd — je bent aangenomen!"
+        body = f"""
+        <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">
+          Hi {candidate_name}, we hebben goed nieuws voor je!<br>
+          De werkgever heeft besloten jou aan te nemen voor de functie
+          <strong style="color:#059669;">{vacancy_title}</strong>.
+        </p>
+        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+          De werkgever neemt binnenkort contact met je op voor de volgende stappen.
+          Je kunt je sollicitatie ook terugvinden in je kandidaatdashboard.
+        </p>
+        """
+        link_color = "#059669"
+        subject = f"Gefeliciteerd! Je bent aangenomen: {vacancy_title}"
+    else:  # rejected
+        header_bg = "#6b7280"
+        header_sub = "Status update"
+        heading = "Bedankt voor je sollicitatie"
+        body = f"""
+        <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">
+          Hi {candidate_name}, bedankt voor je sollicitatie op
+          <strong style="color:#374151;">{vacancy_title}</strong>.
+        </p>
+        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+          Na zorgvuldige overweging heeft de werkgever besloten met andere kandidaten
+          verder te gaan. We wensen je veel succes bij je zoektocht.
+          Bekijk onze andere openstaande vacatures — misschien is er een betere match!
+        </p>
+        """
+        link_color = "#6b7280"
+        subject = f"Update sollicitatie: {vacancy_title}"
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:{header_bg};padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-top:4px;">{header_sub}</div>
+    </div>
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">{heading}</h1>
+      {body}
+      <a href="{FRONTEND_URL}/candidate/sollicitaties"
+         style="display:inline-block;padding:13px 28px;background:{link_color};color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        Bekijk je sollicitaties
+      </a>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        Dit is een automatische melding van ItsPeanuts AI.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(to=candidate_email, subject=subject, html=html)
+
+
 # ── Admin: nieuwe promotie-betaling ontvangen ─────────────────────────────────
 
 def send_promotion_notification(
