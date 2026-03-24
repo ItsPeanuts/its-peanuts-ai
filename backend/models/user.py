@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base
@@ -18,11 +18,15 @@ class User(Base):
     # "candidate" | "employer" | "admin"
     role = Column(String(50), nullable=False, index=True)
 
-    # employer plan: "normal" | "pro"
+    # employer plan: "gratis" | "normaal" | "premium"
     plan = Column(String(50), nullable=True, default=None)
+
+    # organisatie (multi-user werkgever); None = individueel
+    org_id = Column(Integer, ForeignKey("organisations.id"), nullable=True, index=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    vacancies = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
+    vacancies    = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
+    organisation = relationship("Organisation", back_populates="users")
 
 

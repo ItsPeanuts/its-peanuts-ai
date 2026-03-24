@@ -11,6 +11,17 @@ from backend.routers.auth import get_current_user, require_role
 router = APIRouter(prefix="/employer/vacancies", tags=["employer-vacancies"])
 
 
+def _employer_ids(db: Session, current_user: models.User) -> list:
+    """Alle employer-IDs zichtbaar voor current_user.
+    Org-lid: alle users in die org. Individueel: alleen zichzelf."""
+    if current_user.org_id:
+        rows = db.query(models.User.id).filter(
+            models.User.org_id == current_user.org_id
+        ).all()
+        return [r.id for r in rows]
+    return [current_user.id]
+
+
 @router.get("", response_model=List[schemas.VacancyOut])
 def list_vacancies(
     db: Session = Depends(get_db),
@@ -20,7 +31,7 @@ def list_vacancies(
 
     rows = (
         db.query(models.Vacancy)
-        .filter(models.Vacancy.employer_id == current_user.id)
+        .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
         .order_by(models.Vacancy.id.desc())
         .all()
     )
@@ -100,7 +111,7 @@ def update_vacancy(
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacature niet gevonden")
-    if vacancy.employer_id != current_user.id:
+    if vacancy.employer_id not in _employer_ids(db, current_user):
         raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
 
     vacancy.title = payload.title
@@ -128,7 +139,7 @@ def delete_vacancy(
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacature niet gevonden")
-    if vacancy.employer_id != current_user.id:
+    if vacancy.employer_id not in _employer_ids(db, current_user):
         raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
 
     db.delete(vacancy)
@@ -158,7 +169,7 @@ def update_vacancy_status(
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacature niet gevonden")
-    if vacancy.employer_id != current_user.id:
+    if vacancy.employer_id not in _employer_ids(db, current_user):
         raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
 
     vacancy.status = payload.status

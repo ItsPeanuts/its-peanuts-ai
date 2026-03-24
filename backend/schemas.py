@@ -22,6 +22,18 @@ class EmployerRegister(BaseModel):
     bootstrap_token: str
 
 
+class OrganisationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    created_at: datetime
+    user_count: int = 0
+
+
+class OrganisationCreate(BaseModel):
+    name: str
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -29,6 +41,8 @@ class UserOut(BaseModel):
     full_name: str
     role: str
     plan: Optional[str] = None
+    org_id: Optional[int] = None
+    org_name: Optional[str] = None
 
 
 class Token(BaseModel):

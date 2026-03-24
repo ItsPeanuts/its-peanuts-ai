@@ -750,3 +750,71 @@ export async function getRecommendations(token: string): Promise<RecommendationO
   return data as RecommendationOut[];
 }
 
+// ── Admin: Organisaties ───────────────────────────────────────────────────
+
+export interface AdminOrganisation {
+  id: number;
+  name: string;
+  user_count: number;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  full_name: string;
+  role: string;
+  plan: string | null;
+  org_id: number | null;
+}
+
+export async function getAdminOrganisations(token: string): Promise<AdminOrganisation[]> {
+  const res = await fetch(`${BASE}/admin/organisations`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Organisaties ophalen mislukt");
+  return data as AdminOrganisation[];
+}
+
+export async function createAdminOrganisation(token: string, name: string): Promise<AdminOrganisation> {
+  const res = await fetch(`${BASE}/admin/organisations`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Organisatie aanmaken mislukt");
+  return data as AdminOrganisation;
+}
+
+export async function deleteAdminOrganisation(token: string, id: number): Promise<void> {
+  const res = await fetch(`${BASE}/admin/organisations/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new Error(data?.detail || data?.raw || "Organisatie verwijderen mislukt");
+  }
+}
+
+export async function getAdminUsers(token: string): Promise<AdminUser[]> {
+  const res = await fetch(`${BASE}/admin/users`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Gebruikers ophalen mislukt");
+  return data as AdminUser[];
+}
+
+export async function patchUserOrganisation(token: string, userId: number, orgId: number | null): Promise<AdminUser> {
+  const res = await fetch(`${BASE}/admin/users/${userId}/organisation`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ org_id: orgId }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Organisatie koppeling mislukt");
+  return data as AdminUser;
+}
+

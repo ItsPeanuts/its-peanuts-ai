@@ -38,9 +38,27 @@ class UserAdminOut(BaseModel):
     full_name: Optional[str]
     role: str
     plan: Optional[str]
+    org_id: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+
+class OrganisationAdminOut(BaseModel):
+    id: int
+    name: str
+    user_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class OrganisationCreateRequest(BaseModel):
+    name: str
+
+
+class PatchUserOrgRequest(BaseModel):
+    org_id: Optional[int] = None
 
 
 class PatchUserRequest(BaseModel):
@@ -186,3 +204,70 @@ def list_all_vacancies(
             "application_count": app_count,
         })
     return result
+
+
+# ── Organisatie endpoints ──────────────────────────────────────────────────
+
+@router.get("/organisations", response_model=List[OrganisationAdminOut])
+def list_organisations(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "admin")
+    orgs = db.query(models.Organisation).order_by(models.Organisation.id.desc()).all()
+    result = []
+    for org in orgs:
+        count = db.query(models.User).filter(models.User.org_id == org.id).count()
+        result.append(OrganisationAdminOut(id=org.id, name=org.name, user_count=count))
+    return result
+
+
+@router.post("/organisations", response_model=OrganisationAdminOut, status_code=201)
+def create_organisation(
+    payload: OrganisationCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "admin")
+    org = models.Organisation(name=payload.name.strip())
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return OrganisationAdminOut(id=org.id, name=org.name, user_count=0)
+
+
+@router.delete("/organisations/{org_id}", status_code=204)
+def delete_organisation(
+    org_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "admin")
+    org = db.query(models.Organisation).filter(models.Organisation.id == org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organisatie niet gevonden")
+    # Ontkoppel alle gebruikers van deze org
+    db.query(models.User).filter(models.User.org_id == org_id).update({"org_id": None})
+    db.delete(org)
+    db.commit()
+
+
+@router.patch("/users/{user_id}/organisation", response_model=UserAdminOut)
+def patch_user_organisation(
+    user_id: int,
+    payload: PatchUserOrgRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "admin")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    if payload.org_id is not None:
+        org = db.query(models.Organisation).filter(models.Organisation.id == payload.org_id).first()
+        if not org:
+            raise HTTPException(status_code=404, detail="Organisatie niet gevonden")
+    user.org_id = payload.org_id
+    db.commit()
+    db.refresh(user)
+    return user

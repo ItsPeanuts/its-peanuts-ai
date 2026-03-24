@@ -1,4 +1,5 @@
 from backend.models.base import Base
+from backend.models.organisation import Organisation
 from backend.models.user import User
 from backend.models.vacancy import Vacancy
 from backend.models.candidate_cv import CandidateCV
@@ -14,6 +15,7 @@ from backend.models.promotion import PromotionRequest
 
 __all__ = [
     "Base",
+    "Organisation",
     "User",
     "Vacancy",
     "CandidateCV",

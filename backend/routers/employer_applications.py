@@ -11,6 +11,15 @@ from backend.services.email import send_status_update_email
 router = APIRouter(prefix="/employer", tags=["employer-applications"])
 
 
+def _employer_ids(db: Session, current_user: models.User) -> list:
+    if current_user.org_id:
+        rows = db.query(models.User.id).filter(
+            models.User.org_id == current_user.org_id
+        ).all()
+        return [r.id for r in rows]
+    return [current_user.id]
+
+
 @router.get("/applications", response_model=List[schemas.ApplicationWithCandidateOut])
 def list_applications(
     vacancy_id: Optional[int] = Query(default=None),
@@ -22,7 +31,7 @@ def list_applications(
     q = (
         db.query(models.Application)
         .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
-        .filter(models.Vacancy.employer_id == current_user.id)
+        .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
         .filter(models.Application.status != "auto_rejected")
     )
 
@@ -67,7 +76,7 @@ def update_status(
         db.query(models.Application)
         .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
         .filter(models.Application.id == application_id)
-        .filter(models.Vacancy.employer_id == current_user.id)
+        .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
         .first()
     )
     if not app:
