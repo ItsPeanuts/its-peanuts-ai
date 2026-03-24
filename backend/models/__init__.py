@@ -10,6 +10,7 @@ from backend.models.interview_session import InterviewSession
 from backend.models.crm_sync import CRMSync
 from backend.models.virtual_interview import VirtualInterviewSession
 from backend.models.scraped_vacancy import ScrapedVacancy
+from backend.models.promotion import PromotionRequest
 
 __all__ = [
     "Base",
@@ -25,6 +26,7 @@ __all__ = [
     "CRMSync",
     "VirtualInterviewSession",
     "ScrapedVacancy",
+    "PromotionRequest",
 ]
 
 

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 FROM_EMAIL     = os.getenv("FROM_EMAIL", "ItsPeanuts AI <noreply@itspeanuts.nl>")
 FRONTEND_URL   = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+ADMIN_EMAIL    = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
 
 
 def _send(to: str, subject: str, html: str) -> None:
@@ -241,5 +242,87 @@ def send_claim_notification(
     _send(
         to=employer_email,
         subject=f"Iemand heeft gesolliciteerd op '{vacancy_title}' — activeer uw gratis account",
+        html=html,
+    )
+
+
+# ── Admin: nieuwe promotie-betaling ontvangen ─────────────────────────────────
+
+def send_promotion_notification(
+    vacancy_title: str,
+    employer_name: str,
+    employer_email: str,
+    duration_days: int,
+    total_price: float,
+    promotion_id: int,
+) -> None:
+    """Stuur admin een melding zodra een werkgever een promotie heeft betaald."""
+    html = f"""
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">🚀 Nieuwe promotie-betaling ontvangen</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        Actie vereist: campagnes instellen
+      </h1>
+      <p style="font-size:14px;color:#6b7280;margin:0 0 24px;">
+        Er is een betaalde promotieaanvraag ontvangen. Stel de campagnes in op alle platforms.
+      </p>
+
+      <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:10px;width:40%;">Vacature</td>
+            <td style="font-size:14px;font-weight:700;color:#111827;padding-bottom:10px;">{vacancy_title}</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:10px;">Werkgever</td>
+            <td style="font-size:14px;color:#374151;padding-bottom:10px;">{employer_name} ({employer_email})</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:10px;">Duur</td>
+            <td style="font-size:14px;color:#374151;padding-bottom:10px;">{duration_days} dagen</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding-bottom:10px;">Bedrag</td>
+            <td style="font-size:15px;font-weight:800;color:#059669;padding-bottom:10px;">€{total_price:.0f} ontvangen</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Platforms</td>
+            <td style="font-size:14px;color:#374151;">Facebook · Instagram · Google · TikTok · LinkedIn</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:16px 20px;margin-bottom:24px;">
+        <div style="font-size:13px;color:#92400e;font-weight:600;margin-bottom:6px;">⚡ Actie vereist</div>
+        <ol style="font-size:13px;color:#78350f;margin:0;padding-left:18px;line-height:1.8;">
+          <li>Stel campagnes in op Facebook Business Manager</li>
+          <li>Maak Google Ads campagne aan</li>
+          <li>Zet LinkedIn Campaign Manager op</li>
+          <li>Stel TikTok for Business campagne in</li>
+          <li>Markeer promotie #{promotion_id} als "active" in admin panel</li>
+        </ol>
+      </div>
+
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        Promotie ID: #{promotion_id} · Ga naar het admin panel voor details.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=ADMIN_EMAIL,
+        subject=f"🚀 Nieuwe promotie betaald: {vacancy_title} — €{total_price:.0f} voor {duration_days} dagen",
         html=html,
     )

@@ -8,7 +8,7 @@ import {
   getEmployerApplications, updateApplicationStatus,
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
-  getVideoInterviewSession,
+  getVideoInterviewSession, createPromotionCheckout,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession,
 } from "@/lib/api";
@@ -119,6 +119,11 @@ export default function EmployerPage() {
   const [videoInterviews, setVideoInterviews] = useState<Record<number, VideoInterviewSession | null>>({});
   const [videoInterviewLoading, setVideoInterviewLoading] = useState<Record<number, boolean>>({});
   const [videoInterviewOpen, setVideoInterviewOpen] = useState<Record<number, boolean>>({});
+
+  // Promotie modal
+  const [promoVacancy, setPromoVacancy] = useState<Vacancy | null>(null);
+  const [promoDays, setPromoDays] = useState<7 | 14 | 30>(7);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   useEffect(() => {
     if (!token) { router.push("/employer/login"); return; }
@@ -558,6 +563,12 @@ export default function EmployerPage() {
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                             >
                               Intakevragen
+                            </button>
+                            <button
+                              onClick={() => { setPromoVacancy(v); setPromoDays(7); }}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 transition-colors"
+                            >
+                              Promoten
                             </button>
                             <Link
                               href={`/vacatures/${v.id}`}
@@ -1411,6 +1422,82 @@ export default function EmployerPage() {
 
             <div className="px-6 pb-5 text-center">
               <span className="text-xs text-gray-400">Vragen? Mail ons op <a href="mailto:info@itspeanuts.ai" className="text-purple-600 no-underline">info@itspeanuts.ai</a></span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === PROMOTIE MODAL === */}
+      {promoVacancy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-7">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <div className="text-xl font-bold text-gray-900">Vacature promoten</div>
+                <div className="text-sm text-gray-500 mt-1 leading-snug">&ldquo;{promoVacancy.title}&rdquo;</div>
+              </div>
+              <button onClick={() => setPromoVacancy(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none mt-0.5">✕</button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Je vacature wordt gepromoot op <strong>alle platforms</strong>:
+            </p>
+            <div className="flex flex-wrap gap-2 mb-5">
+              {["Facebook", "Instagram", "Google", "TikTok", "LinkedIn"].map((p) => (
+                <span key={p} className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">{p}</span>
+              ))}
+            </div>
+
+            <p className="text-sm font-semibold text-gray-700 mb-3">Kies duur:</p>
+            <div className="space-y-2 mb-6">
+              {([7, 14, 30] as const).map((d) => {
+                const prices: Record<number, string> = { 7: "€299", 14: "€499", 30: "€899" };
+                return (
+                  <label
+                    key={d}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border cursor-pointer transition-all ${promoDays === d ? "border-orange-400 bg-orange-50" : "border-gray-200 hover:border-orange-200"}`}
+                    onClick={() => setPromoDays(d)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${promoDays === d ? "border-orange-500" : "border-gray-300"}`}>
+                        {promoDays === d && <div className="w-2 h-2 rounded-full bg-orange-500" />}
+                      </div>
+                      <span className="text-sm font-medium text-gray-800">{d} dagen</span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">{prices[d]}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="text-xs text-gray-400 mb-5">Betaling via iDEAL, Visa of Mastercard · incl. BTW</div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPromoVacancy(null)}
+                className="flex-1 py-3 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+              >
+                Annuleren
+              </button>
+              <button
+                disabled={promoLoading}
+                onClick={async () => {
+                  setPromoLoading(true);
+                  try {
+                    const { checkout_url } = await createPromotionCheckout(token, promoVacancy.id, promoDays);
+                    window.location.href = checkout_url;
+                  } catch (e: unknown) {
+                    setErr(e instanceof Error ? e.message : "Promotie starten mislukt");
+                    setPromoVacancy(null);
+                  } finally {
+                    setPromoLoading(false);
+                  }
+                }}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 hover:opacity-90 transition"
+                style={{ background: "#f97316" }}
+              >
+                {promoLoading ? "Bezig..." : "Betalen via Stripe →"}
+              </button>
             </div>
           </div>
         </div>

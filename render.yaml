@@ -106,6 +106,10 @@ services:
       - key: STRIPE_PRICE_PREMIUM_JAAR
         sync: false   # Stripe Price ID voor Premium jaarlijks
 
+      # Stripe promoties (vacature advertenties op social media)
+      - key: STRIPE_WEBHOOK_PROMOTIONS
+        sync: false   # Aparte webhook secret voor /promotions/webhook (mag ook zelfde zijn als STRIPE_WEBHOOK_SECRET)
+
   # Frontend (Next.js)
   - type: web
     name: its-peanuts-frontend
@@ -121,6 +125,8 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_BASE
         value: https://its-peanuts-backend.onrender.com
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false   # pk_live_... of pk_test_... van stripe.com/apikeys
 
 databases:
   # PostgreSQL database (free tier: 1GB, 90 dagen op free plan)

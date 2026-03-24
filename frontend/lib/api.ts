@@ -628,3 +628,45 @@ export async function createCheckoutSession(
   return data as { checkout_url: string };
 }
 
+// ── Vacature Promoties ──────────────────────────────────────────────────────
+
+export interface PromotionOut {
+  id: number;
+  vacancy_id: number;
+  duration_days: number;
+  total_price: number;
+  status: "pending_payment" | "paid" | "active" | "completed" | "cancelled";
+  platforms: string[];
+  created_at: string;
+  paid_at: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+}
+
+export async function createPromotionCheckout(
+  token: string,
+  vacancyId: number,
+  durationDays: 7 | 14 | 30,
+): Promise<{ checkout_url: string }> {
+  const res = await fetch(`${BASE}/promotions/vacancies/${vacancyId}/checkout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ duration_days: durationDays }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Promotie checkout aanmaken mislukt");
+  return data as { checkout_url: string };
+}
+
+export async function listVacancyPromotions(
+  token: string,
+  vacancyId: number,
+): Promise<PromotionOut[]> {
+  const res = await fetch(`${BASE}/promotions/vacancies/${vacancyId}`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Promoties ophalen mislukt");
+  return data as PromotionOut[];
+}
+
