@@ -733,3 +733,20 @@ export async function deleteAccount(token: string): Promise<void> {
   }
 }
 
+export interface RecommendationOut {
+  vacancy_id: number;
+  title: string;
+  location?: string | null;
+  match_score: number;
+  reason: string;
+}
+
+export async function getRecommendations(token: string): Promise<RecommendationOut[]> {
+  const res = await fetch(`${BASE}/candidate/recommendations`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Aanbevelingen ophalen mislukt");
+  return data as RecommendationOut[];
+}
+

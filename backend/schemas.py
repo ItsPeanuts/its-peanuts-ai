@@ -154,6 +154,18 @@ class AIResultOut(BaseModel):
 
 
 # ----------------------------
+# Aanbevelingen (recommendations)
+# ----------------------------
+
+class RecommendationOut(BaseModel):
+    vacancy_id: int
+    title: str
+    location: Optional[str] = None
+    match_score: int   # 0-100
+    reason: str        # 1-2 zinnen NL, waarom goede match
+
+
+# ----------------------------
 # Public Vacancies
 # ----------------------------
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { me, getMyApplications, getMyInterviews, ApplicationWithDetails, InterviewSession } from "@/lib/api";
+import { me, getMyApplications, getMyInterviews, getRecommendations, ApplicationWithDetails, InterviewSession, RecommendationOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -44,6 +44,12 @@ export default function CandidateDashboard() {
   const [interviews, setInterviews]   = useState<InterviewSession[]>([]);
   const [loading, setLoading]         = useState(true);
 
+  // Lisa aanbevelingen
+  const [recommendations, setRecommendations] = useState<RecommendationOut[]>([]);
+  const [recoLoading, setRecoLoading]         = useState(false);
+  const [recoLoaded, setRecoLoaded]           = useState(false);
+  const [recoErr, setRecoErr]                 = useState<string | null>(null);
+
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
     if (role && role !== "candidate" && role !== "admin") { router.replace("/employer"); return; }
@@ -76,6 +82,21 @@ export default function CandidateDashboard() {
       return Math.round(scored.reduce((s, a) => s + (a.match_score ?? 0), 0) / scored.length);
     })(),
   };
+
+  async function handleGetRecommendations() {
+    if (!token || recoLoading) return;
+    setRecoLoading(true);
+    setRecoErr(null);
+    try {
+      const recs = await getRecommendations(token);
+      setRecommendations(recs);
+      setRecoLoaded(true);
+    } catch (e: unknown) {
+      setRecoErr(e instanceof Error ? e.message : "Ophalen mislukt");
+    } finally {
+      setRecoLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -258,43 +279,105 @@ export default function CandidateDashboard() {
                   href="/vacatures"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", textDecoration: "none" }}
                 >
-                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   Zoek vacatures
                 </Link>
                 <Link
                   href="/candidate/cv"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#7C3AED", background: "#f0fdfa", textDecoration: "none" }}
                 >
-                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                   Upload CV
                 </Link>
                 <Link
                   href="/candidate/sollicitaties"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, color: "#374151", background: "#f9fafb", textDecoration: "none" }}
                 >
-                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   Alle sollicitaties
+                </Link>
+                <Link
+                  href="/candidate/profiel"
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, color: "#374151", background: "#f9fafb", textDecoration: "none" }}
+                >
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Profiel & instellingen
                 </Link>
               </div>
             </div>
 
-            {/* AI info */}
-            <div style={{ background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 12, padding: "16px 20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#7C3AED", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
-                  L
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#134e4a" }}>AI-matching actief</div>
+            {/* Lisa aanbevelingen */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#7C3AED", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14, flexShrink: 0 }}>L</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Lisa&apos;s aanbevelingen</div>
               </div>
-              <p style={{ fontSize: 12, color: "#7C3AED", lineHeight: 1.5, margin: 0 }}>
-                Lisa analyseert je CV en matcht het automatisch met de beste vacatures.
-              </p>
+
+              {!recoLoaded && !recoLoading && (
+                <>
+                  <p style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6, margin: "0 0 14px" }}>
+                    Laat Lisa je CV vergelijken met openstaande vacatures en ontdek de beste matches.
+                  </p>
+                  <button
+                    onClick={handleGetRecommendations}
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", border: "none", cursor: "pointer" }}
+                  >
+                    Analyseer mijn matches
+                  </button>
+                </>
+              )}
+
+              {recoLoading && (
+                <div style={{ textAlign: "center", padding: "16px 0" }}>
+                  <div style={{ fontSize: 12, color: "#7C3AED", fontWeight: 500 }}>Lisa analyseert...</div>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>Dit duurt even</div>
+                </div>
+              )}
+
+              {recoErr && (
+                <div style={{ fontSize: 12, color: "#dc2626", background: "#fee2e2", borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>
+                  {recoErr}
+                </div>
+              )}
+
+              {recoLoaded && recommendations.length === 0 && (
+                <div style={{ fontSize: 12, color: "#6b7280", textAlign: "center", padding: "12px 0" }}>
+                  Geen passende vacatures gevonden op dit moment.
+                </div>
+              )}
+
+              {recoLoaded && recommendations.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {recommendations.map((r) => (
+                    <div key={r.vacancy_id} style={{ background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb", padding: "12px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6, marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", flex: 1 }}>{r.title}</div>
+                        <span style={{
+                          flexShrink: 0, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 100,
+                          color: r.match_score >= 70 ? "#059669" : r.match_score >= 40 ? "#d97706" : "#dc2626",
+                          background: r.match_score >= 70 ? "#d1fae5" : r.match_score >= 40 ? "#fef3c7" : "#fee2e2",
+                        }}>
+                          {r.match_score}%
+                        </span>
+                      </div>
+                      {r.location && <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>{r.location}</div>}
+                      <div style={{ fontSize: 11, color: "#6b7280", lineHeight: 1.5, marginBottom: 8 }}>{r.reason}</div>
+                      <Link
+                        href={`/vacatures/${r.vacancy_id}`}
+                        style={{ fontSize: 12, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}
+                      >
+                        Bekijk vacature →
+                      </Link>
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleGetRecommendations}
+                    style={{ width: "100%", padding: "8px", borderRadius: 8, fontSize: 12, fontWeight: 500, color: "#6b7280", background: "none", border: "1px solid #e5e7eb", cursor: "pointer", marginTop: 2 }}
+                  >
+                    Opnieuw analyseren
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>
