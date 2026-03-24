@@ -337,26 +337,27 @@ def _get_context(app_id: int, db: Session) -> dict:
 
 
 def _build_avatar_system_prompt(ctx: dict) -> str:
-    return f"""Je bent Lisa, HR-recruiter bij VorzaIQ.
+    return f"""Je bent Lisa, enthousiaste HR-recruiter bij VorzaIQ.
 
-Je voert een gesproken video-interview met {ctx['candidate_name']} voor de functie {ctx['vacancy_title']}.
-Je bent warm, professioneel en direct. Je praat zoals een echte recruiter.
+Je voert een gesproken video-interview met {ctx['candidate_name']} voor de positie {ctx['vacancy_title']}.
+Je bent warm, nieuwsgierig en direct. Praat alsof je echt tegenover iemand zit — energiek en vriendelijk.
 
-BELANGRIJK — DIT IS EEN GESPROKEN GESPREK:
-- Schrijf zoals je praat: korte, natuurlijke zinnen
-- Geen leestekens die raar klinken als je ze voorleest (geen bullets, nummers, haakjes)
-- Maximaal 2 zinnen per beurt — jij stelt een vraag, de kandidaat antwoordt
-- Stel altijd precies 1 vraag, aan het eind van je beurt
-- Reageer even kort en menselijk op wat de kandidaat zegt voor je de volgende vraag stelt
+SPREEKTAALREGELS (strikt volgen):
+- Maximaal 2 zinnen per beurt, NOOIT meer
+- Reageer eerst in één zin op wat de kandidaat zei (kort, menselijk: "Interessant!", "Goed punt.", "Mooi!")
+- Stel dan exact 1 vervolgvraag
+- Gebruik altijd "je" en "jij", nooit "u"
+- Geen opsommingen, bullets, nummers of haakjes
+- Schrijf zoals je praat: vloeiend, informeel maar professioneel
 
-ACHTERGROND (intern — niet letterlijk voorlezen):
-- Vacature: {ctx['vacancy_title']}
-- Sterke punten: {ctx['strengths'] or 'niet bekend'}
+CONTEXT (intern — niet letterlijk noemen):
+- Functie: {ctx['vacancy_title']}
+- Sterke punten kandidaat: {ctx['strengths'] or 'niet bekend'}
 - Aandachtspunten: {ctx['gaps'] or 'geen specifieke gaps'}
-- CV: {ctx['cv_text'][:400] if ctx['cv_text'] else 'niet beschikbaar'}
-- Interviewvragen: {ctx['suggested_questions'] or 'gebruik je eigen oordeel'}
+- CV samenvatting: {ctx['cv_text'][:300] if ctx['cv_text'] else 'niet beschikbaar'}
+- Suggesties voor vragen: {ctx['suggested_questions'] or 'gebruik je eigen oordeel'}
 
-DOEL: {MAX_QUESTIONS} gerichte vragen over de aandachtspunten en motivatie. Dan een warm slotwoord."""
+DOEL: stel precies {MAX_QUESTIONS} gerichte vragen, eindig warm en kort."""
 
 
 def _call_ai(system_prompt: str, history: list) -> str:
@@ -366,8 +367,8 @@ def _call_ai(system_prompt: str, history: list) -> str:
         resp = _ai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "system", "content": system_prompt}] + history,
-            max_tokens=150,
-            temperature=0.7,
+            max_tokens=250,
+            temperature=0.75,
         )
         return resp.choices[0].message.content.strip()
     except Exception as e:
@@ -822,9 +823,10 @@ def text_to_speech(
 
     try:
         response = _ai_client.audio.speech.create(
-            model="tts-1-hd",
+            model="tts-1",         # Sneller dan tts-1-hd, aanvaardbare kwaliteit voor gesprek
             voice="nova",          # Natuurlijke vrouwenstem (klinkt goed in het Nederlands)
             input=payload.text,
+            speed=1.05,            # Iets sneller — gesprekstempo
             response_format="mp3",
         )
         audio_bytes = response.content

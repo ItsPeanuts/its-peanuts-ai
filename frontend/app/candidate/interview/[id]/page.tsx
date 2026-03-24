@@ -80,6 +80,7 @@ export default function VideoInterviewPage() {
   const ttsModeRef = useRef(false); // true = browser TTS, geen D-ID
   const transcriptRef = useRef(""); // closure-safe transcript voor auto-submit
   const stopListeningAndAnswerRef = useRef<(() => Promise<void>) | null>(null);
+  const didSpeakDoneRef = useRef<(() => void) | null>(null); // D-ID stream/done event callback
 
   const [stage, setStage] = useState<InterviewStage>("idle");
   const [questionNumber, setQuestionNumber] = useState(0);
@@ -239,19 +240,32 @@ export default function VideoInterviewPage() {
           await browserSpeak(text);
         }
       } else {
-        // D-ID modus: stuur tekst naar backend
+        // D-ID modus: wacht op DataChannel stream/done event (of fallback timer)
         setStage("speaking");
         if (!sessionData) {
           await new Promise((r) => setTimeout(r, 3000));
         } else {
-          try {
-            await apiPost(`/virtual-interview/session/${appId}/speak`, { text });
+          await new Promise<void>((resolve) => {
+            // Fallback timer: schat spreektijd + D-ID verwerkingstijd
             const words = text.split(" ").length;
-            const durationMs = Math.max(2000, (words / 150) * 60000);
-            await new Promise((resolve) => setTimeout(resolve, durationMs));
-          } catch {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-          }
+            const fallbackMs = Math.max(5000, words * 380 + 2500);
+            const timeout = setTimeout(() => {
+              didSpeakDoneRef.current = null;
+              resolve();
+            }, fallbackMs);
+
+            didSpeakDoneRef.current = () => {
+              clearTimeout(timeout);
+              didSpeakDoneRef.current = null;
+              resolve();
+            };
+
+            apiPost(`/virtual-interview/session/${appId}/speak`, { text }).catch(() => {
+              clearTimeout(timeout);
+              didSpeakDoneRef.current = null;
+              resolve();
+            });
+          });
         }
       }
       setStage("processing");
@@ -278,8 +292,10 @@ export default function VideoInterviewPage() {
     const recognition = new SpeechRec();
     recognition.lang = "nl-NL";
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = true; // blijf luisteren tot kandidaat klaar is
     recognitionRef.current = recognition;
+
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let full = "";
@@ -288,6 +304,15 @@ export default function VideoInterviewPage() {
       }
       transcriptRef.current = full;
       setTranscript(full);
+
+      // Auto-submit na 2.5s stilte als kandidaat genoeg heeft gezegd (≥5 woorden)
+      if (silenceTimer) clearTimeout(silenceTimer);
+      const wordCount = full.trim().split(/\s+/).filter(Boolean).length;
+      if (wordCount >= 5) {
+        silenceTimer = setTimeout(() => {
+          stopListeningAndAnswerRef.current?.();
+        }, 2500);
+      }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -297,6 +322,7 @@ export default function VideoInterviewPage() {
     };
 
     recognition.onend = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
       // Auto-submit als de kandidaat iets heeft gezegd
       if (transcriptRef.current.trim()) {
         stopListeningAndAnswerRef.current?.();
@@ -371,10 +397,8 @@ export default function VideoInterviewPage() {
 
         setTimeout(async () => {
           const introText =
-            `Hallo! Ik ben Lisa, HR-recruiter van VorzaIQ. ` +
-            `Fijn dat u de tijd neemt voor dit interview. ` +
-            `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd. ` +
-            `Bent u er klaar voor? Dan beginnen we nu.`;
+            `Hoi! Ik ben Lisa van VorzaIQ. ` +
+            `Fijn dat je er bent — laten we direct beginnen.`;
           await speakText(introText);
 
           const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
@@ -416,6 +440,22 @@ export default function VideoInterviewPage() {
         }
       };
 
+      // D-ID DataChannel: luister op stream/done event voor exacte lip-sync timing
+      pc.ondatachannel = (event) => {
+        const ch = event.channel;
+        ch.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data as string);
+            const evtName = (msg.event || msg.type || msg.status || "").toString();
+            if (evtName === "stream/done" || evtName === "done" || evtName === "stream/ready") {
+              didSpeakDoneRef.current?.();
+            }
+          } catch {
+            // negeer parse fouten
+          }
+        };
+      };
+
       await pc.setRemoteDescription(
         new RTCSessionDescription({ type: "offer", sdp: data.offer.sdp })
       );
@@ -429,10 +469,8 @@ export default function VideoInterviewPage() {
 
       setTimeout(async () => {
         const introText =
-          `Hallo! Ik ben Lisa, HR-recruiter van VorzaIQ. ` +
-          `Fijn dat u de tijd neemt voor dit video interview. ` +
-          `Ik ga u een aantal vragen stellen. Spreek duidelijk en neem rustig de tijd voor uw antwoorden. ` +
-          `Bent u er klaar voor? Dan beginnen we nu.`;
+          `Hoi! Ik ben Lisa van VorzaIQ. ` +
+          `Leuk dat je er bent — we starten direct.`;
         await speakText(introText);
         const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
           transcript: "[Interview gestart - kandidaat is aanwezig]",
@@ -445,7 +483,7 @@ export default function VideoInterviewPage() {
         } else {
           await finishInterview();
         }
-      }, 2000);
+      }, 1200);
     } catch (e: unknown) {
       setStage("error");
       setErrorMsg((e as Error).message || "Verbinding mislukt");
