@@ -319,6 +319,76 @@ def send_status_update_email(
     _send(to=candidate_email, subject=subject, html=html)
 
 
+# ── Werkgever: team-uitnodiging ───────────────────────────────────────────────
+
+def send_team_invite_email(
+    to_email: str,
+    full_name: str,
+    inviter_name: str,
+    org_name: str,
+    temp_password: str,
+) -> None:
+    """Welkomstmail voor nieuw toegevoegd teamlid."""
+    html = f"""
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#0f766e;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">Je bent toegevoegd aan een team</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        Welkom, {full_name}!
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;">
+        <strong>{inviter_name}</strong> heeft je toegevoegd aan het team van <strong>{org_name}</strong> op ItsPeanuts AI.
+        Hieronder vind je je inloggegevens.
+      </p>
+
+      <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <div style="font-size:12px;color:#0f766e;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Jouw inloggegevens</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:13px;color:#6b7280;padding-bottom:8px;width:40%;">E-mailadres</td>
+            <td style="font-size:14px;font-weight:600;color:#111827;padding-bottom:8px;">{to_email}</td>
+          </tr>
+          <tr>
+            <td style="font-size:13px;color:#6b7280;">Tijdelijk wachtwoord</td>
+            <td style="font-size:14px;font-weight:700;color:#0f766e;font-family:monospace;">{temp_password}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">
+        Wijzig je wachtwoord na je eerste inlog via je profielpagina.
+      </p>
+
+      <a href="{FRONTEND_URL}/employer"
+         style="display:inline-block;padding:13px 28px;background:#0f766e;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        Naar het werkgeversdashboard
+      </a>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        Je ontvangt dit bericht omdat je bent toegevoegd aan een team op ItsPeanuts AI.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=to_email,
+        subject=f"Je bent uitgenodigd voor het team van {org_name} — ItsPeanuts AI",
+        html=html,
+    )
+
+
 # ── Admin: nieuwe promotie-betaling ontvangen ─────────────────────────────────
 
 def send_promotion_notification(

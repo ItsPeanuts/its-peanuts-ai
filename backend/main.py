@@ -24,6 +24,7 @@ from backend.routers import crm_integration
 from backend.routers import integrations_status
 from backend.routers import intake as intake_router
 from backend.routers import admin as admin_router
+from backend.routers import employer_team as employer_team_router
 from backend.routers import ws_chat
 from backend.routers import virtual_interview
 from backend.routers import billing as billing_router
@@ -54,6 +55,7 @@ app.include_router(crm_integration.router)
 app.include_router(integrations_status.router)
 app.include_router(intake_router.router)
 app.include_router(admin_router.router)
+app.include_router(employer_team_router.router)
 app.include_router(ws_chat.router)
 app.include_router(virtual_interview.router)
 app.include_router(billing_router.router)

@@ -9,8 +9,9 @@ import {
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
   getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy, deleteVacancy,
+  getTeamMembers, addTeamMember, removeTeamMember,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
-  VideoInterviewSession,
+  VideoInterviewSession, TeamMember, AddTeamMemberResponse,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
 
@@ -64,7 +65,17 @@ export default function EmployerPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
-  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions" | "analytics">("vacancies");
+  const [view, setView] = useState<"vacancies" | "applications" | "new-vacancy" | "questions" | "analytics" | "team">("vacancies");
+
+  // Team state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamErr, setTeamErr] = useState("");
+  const [teamMsg, setTeamMsg] = useState("");
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [newMemberResult, setNewMemberResult] = useState<AddTeamMemberResponse | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -197,6 +208,44 @@ export default function EmployerPage() {
       setApplications(apps);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Kon sollicitaties niet laden");
+    }
+  }
+
+  async function loadTeam() {
+    setTeamLoading(true);
+    try {
+      const members = await getTeamMembers(token!);
+      setTeamMembers(members);
+    } catch (e: unknown) {
+      setTeamErr(e instanceof Error ? e.message : "Team laden mislukt");
+    } finally {
+      setTeamLoading(false);
+    }
+  }
+
+  async function handleAddTeamMember(e: React.FormEvent) {
+    e.preventDefault();
+    setTeamErr(""); setTeamMsg(""); setNewMemberResult(null);
+    setAddingMember(true);
+    try {
+      const result = await addTeamMember(token!, newMemberName, newMemberEmail);
+      setNewMemberResult(result);
+      setNewMemberName(""); setNewMemberEmail("");
+      await loadTeam();
+    } catch (e: unknown) {
+      setTeamErr(e instanceof Error ? e.message : "Toevoegen mislukt");
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  async function handleRemoveTeamMember(userId: number) {
+    if (!confirm("Teamlid verwijderen? Hun account wordt verwijderd.")) return;
+    try {
+      await removeTeamMember(token!, userId);
+      await loadTeam();
+    } catch (e: unknown) {
+      setTeamErr(e instanceof Error ? e.message : "Verwijderen mislukt");
     }
   }
 
@@ -532,6 +581,15 @@ export default function EmployerPage() {
             }`}
           >
             Analytics
+          </button>
+
+          <button
+            onClick={() => { setView("team"); loadTeam(); }}
+            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              view === "team" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Team beheren
           </button>
 
           <Link
@@ -1525,6 +1583,121 @@ export default function EmployerPage() {
             </>
           );
         })()}
+
+        {/* === TEAM BEHEREN === */}
+        {view === "team" && (
+          <>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">Team beheren</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Voeg collega&apos;s toe met hetzelfde e-maildomein (max. 3 naast jezelf).
+                Teamleden kunnen alle vacatures en sollicitanten zien en beheren.
+              </p>
+            </div>
+
+            {teamErr && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{teamErr}</div>
+            )}
+
+            {newMemberResult && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="font-semibold text-green-800 mb-1">Teamlid toegevoegd!</div>
+                <div className="text-sm text-green-700">
+                  {newMemberResult.full_name} ({newMemberResult.email}) is aangemaakt.
+                </div>
+                <div className="mt-2 text-sm text-green-800">
+                  Tijdelijk wachtwoord:{" "}
+                  <span className="font-mono font-bold bg-green-100 px-2 py-0.5 rounded">{newMemberResult.temp_password}</span>
+                </div>
+                <div className="text-xs text-green-600 mt-1">Geef dit wachtwoord door aan je collega. Een welkomstmail is ook verstuurd.</div>
+              </div>
+            )}
+
+            {/* Huidige teamleden */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-800">Teamleden ({teamMembers.length})</h2>
+              </div>
+              {teamLoading ? (
+                <div className="p-5 text-sm text-gray-400">Laden...</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-500 border-b border-gray-100">
+                      <th className="px-5 py-3 font-medium">Naam</th>
+                      <th className="px-5 py-3 font-medium">E-mail</th>
+                      <th className="px-5 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamMembers.map((m) => (
+                      <tr key={m.id} className="border-b border-gray-50 last:border-0">
+                        <td className="px-5 py-3 font-medium text-gray-800">
+                          {m.full_name}
+                          {m.is_self && (
+                            <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Jij</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-gray-500">{m.email}</td>
+                        <td className="px-5 py-3 text-right">
+                          {!m.is_self && (
+                            <button
+                              onClick={() => handleRemoveTeamMember(m.id)}
+                              className="text-red-500 hover:text-red-700 text-xs"
+                            >
+                              Verwijder
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Nieuw teamlid toevoegen */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h2 className="font-semibold text-gray-800 mb-4">Collega toevoegen</h2>
+              <form onSubmit={handleAddTeamMember} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Naam</label>
+                    <input
+                      type="text"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      placeholder="Volledige naam"
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">E-mailadres</label>
+                    <input
+                      type="email"
+                      value={newMemberEmail}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      placeholder={`collega@${userEmail.split("@")[1] || "bedrijf.nl"}`}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">
+                  Alleen e-mailadressen met @{userEmail.split("@")[1] || "jouwdomein.nl"} zijn toegestaan.
+                </div>
+                <button
+                  type="submit"
+                  disabled={addingMember}
+                  className="px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {addingMember ? "Toevoegen..." : "Toevoegen"}
+                </button>
+              </form>
+            </div>
+          </>
+        )}
       </main>
 
       {/* ── Upgrade modal (gratis plan, 2e vacature) ── */}

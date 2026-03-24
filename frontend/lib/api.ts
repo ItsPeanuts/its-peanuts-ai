@@ -818,3 +818,47 @@ export async function patchUserOrganisation(token: string, userId: number, orgId
   return data as AdminUser;
 }
 
+// ── Werkgever: team-beheer ────────────────────────────────────────────────────
+
+export interface TeamMember {
+  id: number;
+  full_name: string;
+  email: string;
+  is_self: boolean;
+}
+
+export interface AddTeamMemberResponse extends TeamMember {
+  temp_password: string;
+}
+
+export async function getTeamMembers(token: string): Promise<TeamMember[]> {
+  const res = await fetch(`${BASE}/employer/team`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Team ophalen mislukt");
+  return data as TeamMember[];
+}
+
+export async function addTeamMember(token: string, full_name: string, email: string): Promise<AddTeamMemberResponse> {
+  const res = await fetch(`${BASE}/employer/team`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ full_name, email }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Teamlid toevoegen mislukt");
+  return data as AddTeamMemberResponse;
+}
+
+export async function removeTeamMember(token: string, userId: number): Promise<void> {
+  const res = await fetch(`${BASE}/employer/team/${userId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await parseJson(res);
+    throw new Error(data?.detail || data?.raw || "Teamlid verwijderen mislukt");
+  }
+}
+
