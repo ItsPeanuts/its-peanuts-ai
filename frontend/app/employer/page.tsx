@@ -137,6 +137,9 @@ export default function EmployerPage() {
   const [deleteVacancyTitle, setDeleteVacancyTitle] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Overflow actiemenu per vacaturekaart
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+
   // Vacature bewerken modal
   const [editVacancy, setEditVacancy] = useState<Vacancy | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -169,6 +172,16 @@ export default function EmployerPage() {
       }
     })();
   }, [router, role, token]);
+
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const handler = (e: MouseEvent) => {
+      const el = document.getElementById(`vmenu-${openMenuId}`);
+      if (el && !el.contains(e.target as Node)) setOpenMenuId(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openMenuId]);
 
   function handleNewVacancy() {
     if (userPlan === "gratis" && vacancies.length >= 1) {
@@ -657,60 +670,109 @@ export default function EmployerPage() {
                               <div className="text-xs text-gray-400">top score</div>
                             </div>
                           )}
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
+                            {/* Primaire CTA */}
                             <button
                               onClick={() => handleVacancyClick(v)}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                             >
                               Sollicitanten
                             </button>
-                            <button
-                              onClick={() => handleOpenQuestions(v)}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
-                            >
-                              Intakevragen
-                            </button>
-                            <button
-                              onClick={() => openEditVacancy(v)}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
-                            >
-                              Bewerken
-                            </button>
-                            <button
-                              onClick={() => { setDeleteVacancyId(v.id); setDeleteVacancyTitle(v.title); }}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                            >
-                              Verwijderen
-                            </button>
-                            <button
-                              onClick={() => { setPromoVacancy(v); setPromoDays(7); }}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 transition-colors"
-                            >
-                              Promoten
-                            </button>
-                            {(v.status || "concept") !== "actief" ? (
+
+                            {/* ⋯ overflow actiemenu */}
+                            <div id={`vmenu-${v.id}`} style={{ position: "relative" }}>
                               <button
-                                disabled={statusUpdating[v.id]}
-                                onClick={() => handleVacancyStatus(v.id, "actief")}
-                                className="px-4 py-2 rounded-lg text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50 transition-colors"
+                                onClick={() => setOpenMenuId(openMenuId === v.id ? null : v.id)}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 bg-gray-50 hover:bg-gray-100 hover:text-gray-700 transition-colors text-base leading-none"
+                                title="Meer acties"
                               >
-                                {statusUpdating[v.id] ? "..." : "Online zetten"}
+                                ⋯
                               </button>
-                            ) : (
-                              <button
-                                disabled={statusUpdating[v.id]}
-                                onClick={() => handleVacancyStatus(v.id, "offline")}
-                                className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                              >
-                                {statusUpdating[v.id] ? "..." : "Offline halen"}
-                              </button>
-                            )}
-                            <Link
-                              href={`/vacatures/${v.id}`}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 no-underline transition-colors"
-                            >
-                              Vacature →
-                            </Link>
+                              {openMenuId === v.id && (
+                                <div style={{
+                                  position: "absolute", right: 0, top: "calc(100% + 6px)",
+                                  background: "#fff", border: "1px solid #e5e7eb",
+                                  borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+                                  zIndex: 40, minWidth: 200, overflow: "hidden",
+                                }}>
+                                  <button
+                                    onClick={() => { setOpenMenuId(null); openEditVacancy(v); }}
+                                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#374151", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Bewerken
+                                  </button>
+                                  <button
+                                    onClick={() => { setOpenMenuId(null); handleOpenQuestions(v); }}
+                                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#374151", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                    Intakevragen
+                                  </button>
+                                  <a
+                                    href={`/vacatures/${v.id}`}
+                                    onClick={() => setOpenMenuId(null)}
+                                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#374151", textDecoration: "none" }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                    Vacature bekijken
+                                  </a>
+
+                                  <div style={{ height: 1, background: "#f3f4f6", margin: "3px 0" }} />
+
+                                  {(v.status || "concept") !== "actief" ? (
+                                    <button
+                                      disabled={statusUpdating[v.id]}
+                                      onClick={() => { setOpenMenuId(null); handleVacancyStatus(v.id, "actief"); }}
+                                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#059669", background: "none", border: "none", cursor: "pointer", textAlign: "left", opacity: statusUpdating[v.id] ? 0.5 : 1 }}
+                                      onMouseEnter={e => (e.currentTarget.style.background = "#f0fdf4")}
+                                      onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                    >
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                      {statusUpdating[v.id] ? "Bezig..." : "Online zetten"}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      disabled={statusUpdating[v.id]}
+                                      onClick={() => { setOpenMenuId(null); handleVacancyStatus(v.id, "offline"); }}
+                                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#6b7280", background: "none", border: "none", cursor: "pointer", textAlign: "left", opacity: statusUpdating[v.id] ? 0.5 : 1 }}
+                                      onMouseEnter={e => (e.currentTarget.style.background = "#f9fafb")}
+                                      onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                    >
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                      {statusUpdating[v.id] ? "Bezig..." : "Offline halen"}
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => { setOpenMenuId(null); setPromoVacancy(v); setPromoDays(7); }}
+                                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#ea580c", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#fff7ed")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    Promoten
+                                  </button>
+
+                                  <div style={{ height: 1, background: "#f3f4f6", margin: "3px 0" }} />
+
+                                  <button
+                                    onClick={() => { setOpenMenuId(null); setDeleteVacancyId(v.id); setDeleteVacancyTitle(v.title); }}
+                                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", fontSize: 13, color: "#dc2626", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#fff1f2")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    Verwijderen
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
