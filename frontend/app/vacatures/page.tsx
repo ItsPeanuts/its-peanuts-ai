@@ -52,6 +52,34 @@ function parseSalary(raw: string | null): [number, number] | null {
   return [Math.min(...vals), Math.max(...vals)];
 }
 
+/** Parseer uren-string naar [min, max]. Bijv. "32-40" → [32, 40], "40 uur" → [40, 40] */
+function parseHours(raw: string | null | undefined): [number, number] | null {
+  if (!raw) return null;
+  const nums = raw.match(/\d+/g)?.map(Number) ?? [];
+  if (nums.length === 0) return null;
+  return [Math.min(...nums), Math.max(...nums)];
+}
+
+/** Bepaal of een vacature past bij de geselecteerde dienstverbanden.
+ *  Als employment_type niet is ingesteld, wordt het geinfereerd via hours_per_week:
+ *  - fulltime  → max uren >= 36
+ *  - parttime  → min uren in [16, 35]
+ *  Een "32-40 uur" vacature matcht dus zowel fulltime als parttime. */
+function matchesEmploymentType(v: { employment_type: string | null; hours_per_week: string | null }, types: string[]): boolean {
+  if (types.length === 0) return true;
+  const vType = v.employment_type?.toLowerCase();
+  if (vType) return types.includes(vType);
+  // Geen expliciet type: infereer van uren
+  const hours = parseHours(v.hours_per_week);
+  if (!hours) return false;
+  const [minH, maxH] = hours;
+  for (const t of types) {
+    if (t === "fulltime" && maxH >= 36) return true;
+    if (t === "parttime" && minH >= 16 && minH < 36) return true;
+  }
+  return false;
+}
+
 function VacaturesContent() {
   const searchParams = useSearchParams();
 
@@ -80,8 +108,6 @@ function VacaturesContent() {
   const load = useCallback(async (params: {
     q?: string;
     location?: string;
-    employment_type?: string;
-    work_location?: string;
     date_posted?: string;
   }) => {
     setLoading(true);
@@ -106,11 +132,10 @@ function VacaturesContent() {
   // Herlaad wanneer server-side filters wijzigen
   useEffect(() => {
     load({
-      q:               query || undefined,
-      location:        location || undefined,
-      employment_type: employmentTypes.length === 1 ? employmentTypes[0] : undefined,
-      work_location:   workLocations.length === 1 ? workLocations[0] : undefined,
-      date_posted:     datePosted || undefined,
+      q:           query || undefined,
+      location:    location || undefined,
+      date_posted: datePosted || undefined,
+      // employment_type en work_location altijd client-side (support voor ranges + inferentie)
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employmentTypes, workLocations, datePosted]);
@@ -118,11 +143,9 @@ function VacaturesContent() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     load({
-      q:               query || undefined,
-      location:        location || undefined,
-      employment_type: employmentTypes.length === 1 ? employmentTypes[0] : undefined,
-      work_location:   workLocations.length === 1 ? workLocations[0] : undefined,
-      date_posted:     datePosted || undefined,
+      q:           query || undefined,
+      location:    location || undefined,
+      date_posted: datePosted || undefined,
     });
   };
 
@@ -146,21 +169,20 @@ function VacaturesContent() {
 
   // Client-side filtering
   const filtered = vacancies.filter(v => {
-    // Meerdere employment types: lokaal filteren als meer dan 1 geselecteerd
-    if (employmentTypes.length > 1) {
-      const vType = v.employment_type?.toLowerCase();
-      if (!vType || !employmentTypes.includes(vType)) return false;
-    }
-    // Meerdere werklocaties: lokaal filteren
-    if (workLocations.length > 1) {
+    // Dienstverband (altijd client-side; inferentie via uren als type niet ingesteld)
+    if (!matchesEmploymentType(v, employmentTypes)) return false;
+    // Werklocatie
+    if (workLocations.length > 0) {
       const vWl = v.work_location?.toLowerCase();
       if (!vWl || !workLocations.includes(vWl)) return false;
     }
-    // Uren per week
+    // Uren per week (overlap-check zodat "32-40" matcht in meerdere buckets)
     if (hoursRange !== null) {
       const range = HOURS_RANGES[hoursRange];
-      const h = parseInt(v.hours_per_week ?? "0");
-      if (isNaN(h) || h < range.min || h > range.max) return false;
+      const hours = parseHours(v.hours_per_week);
+      if (!hours) return false;
+      const [minH, maxH] = hours;
+      if (maxH < range.min || minH > range.max) return false;
     }
     // Salaris
     const parsed = parseSalary(v.salary_range);
