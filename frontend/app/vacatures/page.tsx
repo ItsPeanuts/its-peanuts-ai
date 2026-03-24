@@ -147,12 +147,14 @@ function VacaturesContent() {
   // Client-side filtering
   const filtered = vacancies.filter(v => {
     // Meerdere employment types: lokaal filteren als meer dan 1 geselecteerd
-    if (employmentTypes.length > 1 && v.employment_type) {
-      if (!employmentTypes.includes(v.employment_type.toLowerCase())) return false;
+    if (employmentTypes.length > 1) {
+      const vType = v.employment_type?.toLowerCase();
+      if (!vType || !employmentTypes.includes(vType)) return false;
     }
     // Meerdere werklocaties: lokaal filteren
-    if (workLocations.length > 1 && v.work_location) {
-      if (!workLocations.includes(v.work_location.toLowerCase())) return false;
+    if (workLocations.length > 1) {
+      const vWl = v.work_location?.toLowerCase();
+      if (!vWl || !workLocations.includes(vWl)) return false;
     }
     // Uren per week
     if (hoursRange !== null) {
