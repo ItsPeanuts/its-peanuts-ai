@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { me } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -87,8 +87,13 @@ async function apiFetch(token: string, path: string, opts?: RequestInit) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const token = useMemo(() => getToken(), []);
-  const role = useMemo(() => getRole(), []);
+  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(getToken());
+    setRole(getRole());
+  }, []);
 
   const [view, setView] = useState<"stats" | "users" | "vacancies" | "sales" | "marketing">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -146,7 +151,7 @@ export default function AdminPage() {
     if (view === "sales" && token) loadLeads();
     if (view === "marketing" && token) loadMarketing();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, [view, token]);
 
   // ── Utilities ──────────────────────────────────────────────────────────────
 

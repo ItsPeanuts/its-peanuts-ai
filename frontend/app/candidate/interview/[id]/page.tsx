@@ -396,21 +396,26 @@ export default function VideoInterviewPage() {
         setIsTTSMode(true);
 
         setTimeout(async () => {
-          const introText =
-            `Hoi! Ik ben Lisa van VorzaIQ. ` +
-            `Fijn dat je er bent — laten we direct beginnen.`;
-          await speakText(introText);
+          try {
+            const introText =
+              `Hoi! Ik ben Lisa van VorzaIQ. ` +
+              `Fijn dat je er bent — laten we direct beginnen.`;
+            await speakText(introText);
 
-          const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-            transcript: "[Interview gestart - kandidaat is aanwezig]",
-          });
-          setQuestionNumber(firstAnswer.question_number);
-          await speakText(firstAnswer.next_text);
-          if (!firstAnswer.ended) {
-            setStage("listening");
-            startListening();
-          } else {
-            await finishInterview();
+            const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+              transcript: "[Interview gestart - kandidaat is aanwezig]",
+            });
+            setQuestionNumber(firstAnswer.question_number);
+            await speakText(firstAnswer.next_text);
+            if (!firstAnswer.ended) {
+              setStage("listening");
+              startListening();
+            } else {
+              await finishInterview();
+            }
+          } catch (e: unknown) {
+            setStage("error");
+            setErrorMsg((e as Error).message || "Fout bij starten interview");
           }
         }, 500);
         return;
@@ -468,20 +473,25 @@ export default function VideoInterviewPage() {
       });
 
       setTimeout(async () => {
-        const introText =
-          `Hoi! Ik ben Lisa van VorzaIQ. ` +
-          `Leuk dat je er bent — we starten direct.`;
-        await speakText(introText);
-        const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-          transcript: "[Interview gestart - kandidaat is aanwezig]",
-        });
-        setQuestionNumber(firstAnswer.question_number);
-        await speakText(firstAnswer.next_text);
-        if (!firstAnswer.ended) {
-          setStage("listening");
-          startListening();
-        } else {
-          await finishInterview();
+        try {
+          const introText =
+            `Hoi! Ik ben Lisa van VorzaIQ. ` +
+            `Leuk dat je er bent — we starten direct.`;
+          await speakText(introText);
+          const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
+            transcript: "[Interview gestart - kandidaat is aanwezig]",
+          });
+          setQuestionNumber(firstAnswer.question_number);
+          await speakText(firstAnswer.next_text);
+          if (!firstAnswer.ended) {
+            setStage("listening");
+            startListening();
+          } else {
+            await finishInterview();
+          }
+        } catch (e: unknown) {
+          setStage("error");
+          setErrorMsg((e as Error).message || "Fout bij starten interview");
         }
       }, 1200);
     } catch (e: unknown) {
