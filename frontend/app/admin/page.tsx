@@ -87,13 +87,8 @@ async function apiFetch(token: string, path: string, opts?: RequestInit) {
 
 export default function AdminPage() {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    setToken(getToken());
-    setRole(getRole());
-  }, []);
+  const [token] = useState<string | null>(() => getToken());
+  const [role] = useState<string | null>(() => getRole());
 
   const [view, setView] = useState<"stats" | "users" | "vacancies" | "sales" | "marketing">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
