@@ -1,5 +1,5 @@
 """
-Vacature Promoties — Social Media Advertising via Stripe Checkout
+Vacature Promoties — Social Media Advertising via LemonSqueezy
 
 Prijzen (alle platforms: Facebook, Instagram, Google, TikTok, LinkedIn):
   7 dagen  → €299
@@ -7,20 +7,23 @@ Prijzen (alle platforms: Facebook, Instagram, Google, TikTok, LinkedIn):
   30 dagen → €899
 
 Flow:
-1. POST /promotions/vacancies/{id}/checkout  → Stripe Checkout Session aanmaken
-2. Stripe redirect naar success_url na betaling
+1. POST /promotions/vacancies/{id}/checkout  → LemonSqueezy Checkout aanmaken
+2. LemonSqueezy redirect naar success_url na betaling
 3. POST /promotions/webhook                  → status="paid", email admin
 4. Admin zet campagnes op, markeert als "active" via admin panel
 
-Env vars (deelt met billing.py):
-  STRIPE_SECRET_KEY      sk_live_... of sk_test_...
-  STRIPE_WEBHOOK_SECRET  whsec_... (registreer /promotions/webhook in Stripe dashboard)
-  FRONTEND_URL           https://its-peanuts-frontend.onrender.com
+Env vars:
+  LEMONSQUEEZY_API_KEY           lemon_...
+  LEMONSQUEEZY_WEBHOOK_SECRET    whsec_... (registreer /promotions/webhook in LS dashboard)
+  LEMONSQUEEZY_STORE_ID          123456
+  LEMONSQUEEZY_VARIANT_PROMO_7D  555555
+  LEMONSQUEEZY_VARIANT_PROMO_14D 666666
+  LEMONSQUEEZY_VARIANT_PROMO_30D 777777
+  FRONTEND_URL                   https://its-peanuts-frontend.onrender.com
 """
 
 import os
 import json
-import stripe
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -31,24 +34,26 @@ from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend import models
 from backend.routers.auth import get_current_user, require_role
+from backend.routers.billing import verify_ls_signature, create_ls_checkout
 from backend.services.email import send_promotion_notification
 
 router = APIRouter(prefix="/promotions", tags=["promotions"])
 
-# ── Stripe configuratie ────────────────────────────────────────────────────────
+# ── LemonSqueezy configuratie ─────────────────────────────────────────────────
 
-STRIPE_SECRET_KEY     = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+LS_API_KEY   = os.getenv("LEMONSQUEEZY_API_KEY", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
 
-if STRIPE_SECRET_KEY:
-    stripe.api_key = STRIPE_SECRET_KEY
+PROMO_VARIANT_IDS: dict[int, str] = {
+    7:  os.getenv("LEMONSQUEEZY_VARIANT_PROMO_7D", ""),
+    14: os.getenv("LEMONSQUEEZY_VARIANT_PROMO_14D", ""),
+    30: os.getenv("LEMONSQUEEZY_VARIANT_PROMO_30D", ""),
+}
 
-# Prijzen in centen (inclusief BTW, excl. Stripe fee)
-PRICES: dict[int, int] = {
-    7:  29900,   # €299
-    14: 49900,   # €499
-    30: 89900,   # €899
+PRICES: dict[int, float] = {
+    7:  299.0,
+    14: 499.0,
+    30: 899.0,
 }
 
 PLATFORMS = ["facebook", "instagram", "google", "tiktok", "linkedin"]
@@ -104,7 +109,7 @@ def create_checkout(
     current_user: models.User = Depends(get_current_user),
 ):
     """
-    Maak een Stripe Checkout Session aan voor een vacature-promotie.
+    Maak een LemonSqueezy Checkout aan voor een vacature-promotie.
     Geeft { checkout_url } terug — frontend redirect hier naartoe.
     """
     require_role(current_user, "employer")
@@ -112,32 +117,32 @@ def create_checkout(
     if payload.duration_days not in PRICES:
         raise HTTPException(status_code=400, detail="Ongeldige duur (kies 7, 14 of 30 dagen)")
 
-    # Controleer dat de vacature van deze werkgever is
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
     if not vacancy:
         raise HTTPException(status_code=404, detail="Vacature niet gevonden")
     if vacancy.employer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
 
-    if not STRIPE_SECRET_KEY:
+    if not LS_API_KEY:
         raise HTTPException(
             status_code=503,
-            detail=(
-                "Stripe is niet geconfigureerd. "
-                "Stel STRIPE_SECRET_KEY in als omgevingsvariabele."
-            ),
+            detail="LemonSqueezy is niet geconfigureerd. Stel LEMONSQUEEZY_API_KEY in.",
         )
 
-    price_cents = PRICES[payload.duration_days]
-    price_euros = price_cents / 100
+    variant_id = PROMO_VARIANT_IDS.get(payload.duration_days)
+    if not variant_id:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Variant ID niet ingesteld voor {payload.duration_days} dagen promotie",
+        )
 
-    # Maak PromotionRequest aan
+    # Maak PromotionRequest aan vóór checkout (zodat we het ID kunnen meesturen)
     promo = models.PromotionRequest(
         vacancy_id=vacancy_id,
         employer_id=current_user.id,
         platforms=PLATFORMS_JSON,
         duration_days=payload.duration_days,
-        total_price=price_euros,
+        total_price=PRICES[payload.duration_days],
         status="pending_payment",
     )
     db.add(promo)
@@ -145,44 +150,25 @@ def create_checkout(
     db.refresh(promo)
 
     try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card", "ideal"],
-            line_items=[{
-                "price_data": {
-                    "currency": "eur",
-                    "unit_amount": price_cents,
-                    "product_data": {
-                        "name": f"Vacature promoten: {vacancy.title}",
-                        "description": (
-                            f"{payload.duration_days} dagen op Facebook, Instagram, "
-                            f"Google, TikTok en LinkedIn"
-                        ),
-                    },
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url=f"{FRONTEND_URL}/employer/promotie/succes?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{FRONTEND_URL}/employer/promotie/geannuleerd",
-            customer_email=current_user.email,
-            metadata={
-                "promotion_id": str(promo.id),
-                "vacancy_id": str(vacancy_id),
-                "employer_id": str(current_user.id),
-                "duration_days": str(payload.duration_days),
+        checkout_url = create_ls_checkout(
+            variant_id=variant_id,
+            email=current_user.email,
+            custom_data={
+                "user_id": current_user.id,
+                "vacancy_id": vacancy_id,
+                "promotion_id": promo.id,
             },
+            redirect_url=f"{FRONTEND_URL}/employer?promo_success=1",
         )
-    except stripe.StripeError as e:
-        # Verwijder de aanvraag als Stripe mislukt
+    except HTTPException:
         db.delete(promo)
         db.commit()
-        raise HTTPException(status_code=502, detail=f"Stripe fout: {str(e)}")
+        raise
 
-    # Sla Stripe session ID op
-    promo.stripe_session_id = session.id
+    promo.ls_checkout_id = checkout_url.split("/")[-1]  # LS checkout ID zit in de URL
     db.commit()
 
-    return {"checkout_url": session.url}
+    return {"checkout_url": checkout_url}
 
 
 @router.get("/vacancies/{vacancy_id}", response_model=List[PromotionOut])
@@ -224,60 +210,63 @@ def list_my_promotions(
 
 
 @router.post("/webhook")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+async def ls_webhook(request: Request, db: Session = Depends(get_db)):
     """
-    Stripe webhook voor promotie-betalingen.
-    Registreer in Stripe Dashboard: https://.../promotions/webhook
-    Events: checkout.session.completed
+    LemonSqueezy webhook voor promotie-betalingen (eenmalig).
+    Registreer in LemonSqueezy Dashboard: https://.../promotions/webhook
+    Events: order_created
     """
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature", "")
+    raw_body = await request.body()
+    signature = request.headers.get("x-signature", "")
 
-    if not STRIPE_WEBHOOK_SECRET:
-        import json as _json
-        event = stripe.Event.construct_from(_json.loads(payload), stripe.api_key)
-    else:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        except stripe.error.SignatureVerificationError:
-            raise HTTPException(status_code=400, detail="Ongeldige Stripe handtekening")
+    if not verify_ls_signature(raw_body, signature):
+        raise HTTPException(status_code=400, detail="Ongeldige LemonSqueezy handtekening")
 
-    if event["type"] == "checkout.session.completed":
-        session_obj = event["data"]["object"]
-        metadata = session_obj.get("metadata", {})
-        promotion_id = int(metadata.get("promotion_id", 0))
+    event = json.loads(raw_body)
+    event_name = event.get("meta", {}).get("event_name", "")
+    custom_data = event.get("meta", {}).get("custom_data", {})
 
-        if promotion_id:
-            promo = db.query(models.PromotionRequest).filter(
-                models.PromotionRequest.id == promotion_id
-            ).first()
+    if event_name != "order_created":
+        return {"status": "ok"}
 
-            if promo and promo.status == "pending_payment":
-                promo.status = "paid"
-                promo.paid_at = datetime.now(timezone.utc)
-                promo.stripe_payment_intent_id = session_obj.get("payment_intent")
-                db.commit()
+    try:
+        promotion_id = int(custom_data.get("promotion_id", 0))
+    except (ValueError, TypeError):
+        return {"status": "ok"}
 
-                # Email naar admin
-                vacancy = db.query(models.Vacancy).filter(
-                    models.Vacancy.id == promo.vacancy_id
-                ).first()
-                employer = db.query(models.User).filter(
-                    models.User.id == promo.employer_id
-                ).first()
+    if not promotion_id:
+        return {"status": "ok"}
 
-                if vacancy and employer:
-                    try:
-                        send_promotion_notification(
-                            vacancy_title=vacancy.title,
-                            employer_name=employer.full_name or employer.email,
-                            employer_email=employer.email,
-                            duration_days=promo.duration_days,
-                            total_price=promo.total_price,
-                            promotion_id=promo.id,
-                        )
-                    except Exception:
-                        pass  # Email fout is niet fataal
+    promo = db.query(models.PromotionRequest).filter(
+        models.PromotionRequest.id == promotion_id
+    ).first()
+
+    if promo and promo.status == "pending_payment":
+        promo.status = "paid"
+        promo.paid_at = datetime.now(timezone.utc)
+        promo.ls_order_id = str(event.get("data", {}).get("id", ""))
+        db.commit()
+
+        # Email naar admin
+        vacancy = db.query(models.Vacancy).filter(
+            models.Vacancy.id == promo.vacancy_id
+        ).first()
+        employer = db.query(models.User).filter(
+            models.User.id == promo.employer_id
+        ).first()
+
+        if vacancy and employer:
+            try:
+                send_promotion_notification(
+                    vacancy_title=vacancy.title,
+                    employer_name=employer.full_name or employer.email,
+                    employer_email=employer.email,
+                    duration_days=promo.duration_days,
+                    total_price=promo.total_price,
+                    promotion_id=promo.id,
+                )
+            except Exception:
+                pass  # Email fout is niet fataal
 
     return {"status": "ok"}
 

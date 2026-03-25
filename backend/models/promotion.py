@@ -45,6 +45,10 @@ class PromotionRequest(Base):
     stripe_session_id = Column(String(255), nullable=True)
     stripe_payment_intent_id = Column(String(255), nullable=True)
 
+    # LemonSqueezy velden (vervangt Stripe)
+    ls_checkout_id = Column(String(255), nullable=True)
+    ls_order_id    = Column(String(255), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     paid_at = Column(DateTime(timezone=True), nullable=True)
     starts_at = Column(DateTime(timezone=True), nullable=True)
