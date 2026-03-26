@@ -32,7 +32,7 @@ const PLANS = [
       { text: "Geavanceerde analytics", ok: false },
       { text: "Dedicated support", ok: false },
     ],
-    cta: "14 dagen gratis proberen",
+    cta: "1 vacature gratis proberen",
     ctaHref: "/employer/login",
   },
   {
@@ -58,7 +58,7 @@ const PLANS = [
       { text: "Geavanceerde analytics", ok: false },
       { text: "Dedicated support", ok: false },
     ],
-    cta: "14 dagen gratis proberen",
+    cta: "Nu starten →",
     ctaHref: "/employer/login",
   },
   {
@@ -84,7 +84,7 @@ const PLANS = [
       { text: "Geavanceerde analytics", ok: true },
       { text: "Dedicated support", ok: true },
     ],
-    cta: "14 dagen gratis proberen",
+    cta: "Nu starten →",
     ctaHref: "/employer/login",
   },
 ];
@@ -117,7 +117,7 @@ const COMPARE_ROWS = [
 const FAQS = [
   {
     q: "Kan ik op elk moment opzeggen?",
-    a: "Ja, je kunt maandelijks opzeggen. Bij jaarlijkse betaling geldt een bindingsperiode van 12 maanden.",
+    a: "Ja, je kunt maandelijks opzeggen. Je start met 1 vacature gratis voor 30 dagen — daarna kies je een betaald plan.",
   },
   {
     q: "Wat is AI-matching precies?",
@@ -186,8 +186,8 @@ function AbonnementenContent() {
         {/* Trial banner */}
         <div style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", borderRadius: 16, padding: "20px 28px", marginBottom: 52, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ color: "#fff" }}>
-            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 4 }}>14 dagen gratis proberen — geen creditcard nodig</div>
-            <div style={{ fontSize: 14, opacity: 0.85 }}>Start vandaag en ontdek hoe AI jouw werving versnelt.</div>
+            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 4 }}>Probeer gratis — 1 vacature, 30 dagen</div>
+            <div style={{ fontSize: 14, opacity: 0.85 }}>Start vandaag en ontdek hoe AI jouw werving versnelt. Geen creditcard nodig.</div>
           </div>
           <Link
             href="/employer/login"
