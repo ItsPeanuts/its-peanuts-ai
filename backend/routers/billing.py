@@ -47,6 +47,8 @@ LS_STORE_ID       = os.getenv("LEMONSQUEEZY_STORE_ID", "")
 FRONTEND_URL      = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
 
 VARIANT_IDS: dict[tuple[str, str], str] = {
+    ("starter", "month"): os.getenv("LEMONSQUEEZY_VARIANT_STARTER_MAAND", ""),
+    ("starter", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_STARTER_JAAR", ""),
     ("normaal", "month"): os.getenv("LEMONSQUEEZY_VARIANT_NORMAAL_MAAND", ""),
     ("normaal", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_NORMAAL_JAAR", ""),
     ("premium", "month"): os.getenv("LEMONSQUEEZY_VARIANT_PREMIUM_MAAND", ""),
@@ -167,8 +169,8 @@ def create_checkout_session(
             detail="LemonSqueezy is niet geconfigureerd. Stel LEMONSQUEEZY_API_KEY in.",
         )
 
-    if payload.plan not in ("normaal", "premium"):
-        raise HTTPException(status_code=400, detail="Ongeldig plan (kies normaal of premium)")
+    if payload.plan not in ("starter", "normaal", "premium"):
+        raise HTTPException(status_code=400, detail="Ongeldig plan (kies starter, normaal of premium)")
     if payload.interval not in ("month", "year"):
         raise HTTPException(status_code=400, detail="Ongeldig interval (kies month of year)")
 
@@ -220,7 +222,7 @@ async def ls_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "ok"}
 
     if event_name in ("subscription_created", "subscription_resumed"):
-        if plan in ("normaal", "premium"):
+        if plan in ("starter", "normaal", "premium"):
             user.plan = plan
             db.commit()
 

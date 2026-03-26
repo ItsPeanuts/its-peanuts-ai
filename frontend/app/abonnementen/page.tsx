@@ -11,7 +11,7 @@ import PublicFooter from "@/components/PublicFooter";
 const PLANS = [
   {
     id: "starter",
-    planKey: null as string | null,  // Geen LS variant — gratis proefperiode
+    planKey: "starter" as string | null,
     name: "Starter",
     priceMonth: 49,
     priceYear: 490,
@@ -32,7 +32,7 @@ const PLANS = [
       { text: "Geavanceerde analytics", ok: false },
       { text: "Dedicated support", ok: false },
     ],
-    cta: "1 vacature gratis proberen",
+    cta: "Nu starten →",
     ctaHref: "/employer/login",
   },
   {
