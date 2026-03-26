@@ -11,6 +11,7 @@ import PublicFooter from "@/components/PublicFooter";
 const PLANS = [
   {
     id: "starter",
+    planKey: null as string | null,  // Geen LS variant — gratis proefperiode
     name: "Starter",
     priceMonth: 49,
     priceYear: 490,
@@ -36,6 +37,7 @@ const PLANS = [
   },
   {
     id: "growth",
+    planKey: "normaal",
     name: "Growth",
     priceMonth: 149,
     priceYear: 1490,
@@ -61,6 +63,7 @@ const PLANS = [
   },
   {
     id: "scale",
+    planKey: "premium",
     name: "Scale",
     priceMonth: 349,
     priceYear: 3490,
@@ -81,8 +84,8 @@ const PLANS = [
       { text: "Geavanceerde analytics", ok: true },
       { text: "Dedicated support", ok: true },
     ],
-    cta: "Contact opnemen",
-    ctaHref: "mailto:sales@vorzaiq.nl",
+    cta: "14 dagen gratis proberen",
+    ctaHref: "/employer/login",
   },
 ];
 
@@ -122,7 +125,7 @@ const FAQS = [
   },
   {
     q: "Welke betaalmethoden accepteren jullie?",
-    a: "We accepteren iDEAL, creditcard en SEPA incasso via Stripe. Alle betalingen zijn beveiligd.",
+    a: "We accepteren iDEAL, creditcard en SEPA incasso via LemonSqueezy. Alle betalingen zijn beveiligd.",
   },
   {
     q: "Wat als ik meer vacatures nodig heb dan mijn plan?",
@@ -143,8 +146,9 @@ function AbonnementenContent() {
   const success = searchParams?.get("success") === "1";
 
   async function handleSubscribe(plan: typeof PLANS[0]) {
-    if (plan.ctaHref.startsWith("mailto:")) {
-      window.location.href = plan.ctaHref;
+    // Starter: geen LS variant, stuur naar registratie/login
+    if (!plan.planKey) {
+      router.push(token ? "/employer" : plan.ctaHref);
       return;
     }
     if (!token) {
@@ -154,7 +158,7 @@ function AbonnementenContent() {
     setLoadingPlan(plan.id);
     setError("");
     try {
-      const { checkout_url } = await createCheckoutSession(token, plan.id, billing);
+      const { checkout_url } = await createCheckoutSession(token, plan.planKey, billing);
       window.location.href = checkout_url;
     } catch (e: unknown) {
       setError((e as Error)?.message || "Kon betaling niet starten");
@@ -350,7 +354,7 @@ function AbonnementenContent() {
             ))}
           </div>
           <Link
-            href="/employer/login"
+            href={token ? "/employer" : "/employer/login"}
             style={{ background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 24px", borderRadius: 10, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
           >
             Vacature plaatsen →
