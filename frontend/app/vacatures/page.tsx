@@ -99,6 +99,7 @@ function VacaturesContent() {
   const [hoursRange,  setHoursRange]  = useState<number | null>(null); // index in HOURS_RANGES
   const [salaryMin,   setSalaryMin]   = useState<string>("");
   const [salaryMax,   setSalaryMax]   = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const activeFilterCount =
     employmentTypes.length + workLocations.length +
@@ -226,8 +227,8 @@ function VacaturesContent() {
       {/* ── Zoekbalk ── */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "20px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-          <form onSubmit={handleSearch} style={{ display: "flex", gap: 8 }}>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", paddingLeft: 12, gap: 8 }}>
+          <form onSubmit={handleSearch} className="vac-search-form" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", paddingLeft: 12, gap: 8, minWidth: 0 }}>
               <svg width="16" height="16" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -237,7 +238,7 @@ function VacaturesContent() {
                 style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "10px 12px 10px 0", background: "transparent" }}
               />
             </div>
-            <div style={{ width: 220, display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", paddingLeft: 12, gap: 8 }}>
+            <div className="vac-location-input" style={{ width: 200, display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: 10, background: "#fff", paddingLeft: 12, gap: 8 }}>
               <svg width="16" height="16" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               </svg>
@@ -247,21 +248,34 @@ function VacaturesContent() {
                 style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "10px 0", background: "transparent" }}
               />
             </div>
-            <button
-              type="submit"
-              style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 10, padding: "0 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              Zoeken
-            </button>
+            <div className="vac-search-buttons" style={{ display: "flex", gap: 8 }}>
+              <button
+                type="submit"
+                style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 10, padding: "0 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                Zoeken
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFilters(f => !f)}
+                className="vac-filter-btn"
+                style={{ display: "none", alignItems: "center", gap: 6, background: showFilters ? "#7C3AED" : "#f9fafb", color: showFilters ? "#fff" : "#374151", border: "1px solid #e5e7eb", borderRadius: 10, padding: "0 16px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 12h10M11 20h2" />
+                </svg>
+                Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 24px", display: "flex", gap: 24, alignItems: "flex-start" }}>
+      <div className="vac-layout" style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 24px", display: "flex", gap: 24, alignItems: "flex-start" }}>
 
         {/* ── Sidebar filters ── */}
-        <aside style={{ width: 220, flexShrink: 0, position: "sticky", top: 88 }}>
+        <aside className={`vac-sidebar${showFilters ? " open" : ""}`} style={{ width: 220, flexShrink: 0, position: "sticky", top: 88 }}>
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px", display: "flex", flexDirection: "column", gap: 20 }}>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

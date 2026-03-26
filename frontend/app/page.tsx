@@ -54,24 +54,27 @@ export default function HomePage() {
           </p>
 
           {/* Zoekbalk */}
-          <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 6, maxWidth: 560, margin: "0 auto", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          <form onSubmit={handleSearch} className="hero-search-form" style={{ display: "flex", gap: 8, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 6, maxWidth: 560, margin: "0 auto", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
             <input
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Functietitel of trefwoord..."
-              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent" }}
+              className="hero-search-input"
+              style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent", minWidth: 0 }}
             />
-            <div style={{ width: 1, background: "#e5e7eb", margin: "4px 0" }} />
+            <div className="hero-search-divider" style={{ width: 1, background: "#e5e7eb", margin: "4px 0" }} />
             <input
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="Stad of regio"
+              className="hero-location-input"
               style={{ width: 140, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent" }}
             />
             <button
               type="submit"
+              className="hero-search-button"
               style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
             >
               Zoeken
@@ -79,7 +82,7 @@ export default function HomePage() {
           </form>
 
           {/* Stats */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 24 }}>
+          <div className="hero-stats" style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 24 }}>
             {[
               { n: vacancies.length > 0 ? `${vacancies.length}+` : "14.780+", label: "vacatures" },
               { n: "200+", label: "bedrijven" },

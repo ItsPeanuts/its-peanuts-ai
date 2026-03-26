@@ -41,3 +41,70 @@ body {
 a.no-underline {
   text-decoration: none;
 }
+
+/* ── Mobiele responsiviteit ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* Landing page: zoekbalk stapelt verticaal */
+  .hero-search-form {
+    flex-direction: column !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+  .hero-search-input {
+    padding: 10px 12px !important;
+    font-size: 16px !important; /* iOS: voorkomt auto-zoom */
+  }
+  .hero-search-divider {
+    display: none !important;
+  }
+  .hero-location-input {
+    width: 100% !important;
+    border-top: 1px solid #f3f4f6 !important;
+    padding: 10px 12px !important;
+    font-size: 16px !important;
+  }
+  .hero-search-button {
+    width: 100% !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+  }
+  .hero-stats {
+    gap: 16px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Vacatures: layout stapelt, sidebar verborgen */
+  .vac-layout {
+    flex-direction: column !important;
+    padding: 16px !important;
+  }
+  .vac-sidebar {
+    display: none !important;
+    width: 100% !important;
+    position: static !important;
+  }
+  .vac-sidebar.open {
+    display: block !important;
+  }
+  .vac-location-input {
+    display: none !important;
+  }
+  .vac-filter-btn {
+    display: flex !important;
+  }
+  .vac-search-buttons {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+  .vac-search-form {
+    gap: 8px !important;
+  }
+
+  /* Vacaturekaart: verberg salaris chip op mobiel */
+  .vacancy-salary-chip {
+    display: none !important;
+  }
+}
