@@ -628,6 +628,16 @@ export async function createCheckoutSession(
   return data as { checkout_url: string };
 }
 
+export async function createVacancyCheckout(token: string): Promise<{ checkout_url: string }> {
+  const res = await fetch(`${BASE}/billing/vacancy-checkout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Checkout aanmaken mislukt");
+  return data as { checkout_url: string };
+}
+
 export interface VacancyUpdatePayload {
   title: string;
   location?: string;

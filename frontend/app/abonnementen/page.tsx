@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getToken, getRole } from "@/lib/session";
-import { createCheckoutSession } from "@/lib/api";
+import { createCheckoutSession, createVacancyCheckout } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
 
@@ -141,9 +141,23 @@ function AbonnementenContent() {
 
   const [billing, setBilling] = useState<"month" | "year">("month");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loadingVacancy, setLoadingVacancy] = useState(false);
   const [error, setError] = useState("");
 
   const success = searchParams?.get("success") === "1";
+
+  async function handleVacancyCheckout() {
+    if (!token) { router.push("/employer/login"); return; }
+    setLoadingVacancy(true);
+    setError("");
+    try {
+      const { checkout_url } = await createVacancyCheckout(token);
+      window.location.href = checkout_url;
+    } catch (e: unknown) {
+      setError((e as Error)?.message || "Kon betaling niet starten");
+      setLoadingVacancy(false);
+    }
+  }
 
   async function handleSubscribe(plan: typeof PLANS[0]) {
     // Starter: geen LS variant, stuur naar registratie/login
@@ -353,12 +367,13 @@ function AbonnementenContent() {
               </span>
             ))}
           </div>
-          <Link
-            href={token ? "/employer" : "/employer/login"}
-            style={{ background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 24px", borderRadius: 10, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+          <button
+            onClick={handleVacancyCheckout}
+            disabled={loadingVacancy}
+            style={{ background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 14, padding: "11px 24px", borderRadius: 10, border: "none", cursor: loadingVacancy ? "not-allowed" : "pointer", whiteSpace: "nowrap", flexShrink: 0, opacity: loadingVacancy ? 0.7 : 1 }}
           >
-            Vacature plaatsen →
-          </Link>
+            {loadingVacancy ? "Bezig..." : "Vacature plaatsen →"}
+          </button>
         </div>
 
         {/* Vergelijking */}

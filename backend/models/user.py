@@ -21,6 +21,9 @@ class User(Base):
     # employer plan: "gratis" | "normaal" | "premium"
     plan = Column(String(50), nullable=True, default=None)
 
+    # pay-per-vacature credits (eenmalige aankopen)
+    vacancy_credits = Column(Integer, nullable=False, default=0, server_default="0")
+
     # organisatie (multi-user werkgever); None = individueel
     org_id = Column(Integer, ForeignKey("organisations.id"), nullable=True, index=True)
 

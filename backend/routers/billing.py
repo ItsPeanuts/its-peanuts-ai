@@ -53,6 +53,8 @@ VARIANT_IDS: dict[tuple[str, str], str] = {
     ("premium", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_PREMIUM_JAAR", ""),
 }
 
+LS_VARIANT_PER_VACATURE = os.getenv("LEMONSQUEEZY_VARIANT_PER_VACATURE", "")
+
 _LS_HEADERS = {
     "Content-Type": "application/vnd.api+json",
     "Accept": "application/vnd.api+json",
@@ -120,6 +122,32 @@ def create_ls_checkout(
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.post("/vacancy-checkout")
+def create_vacancy_checkout(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Maak een LemonSqueezy Checkout aan voor pay-per-vacature (€89).
+    Na betaling ontvangt de gebruiker 1 vacancy_credit via de webhook.
+    """
+    require_role(current_user, "employer")
+
+    if not LS_API_KEY:
+        raise HTTPException(status_code=503, detail="LemonSqueezy is niet geconfigureerd.")
+
+    if not LS_VARIANT_PER_VACATURE:
+        raise HTTPException(status_code=503, detail="LEMONSQUEEZY_VARIANT_PER_VACATURE niet ingesteld.")
+
+    checkout_url = create_ls_checkout(
+        variant_id=LS_VARIANT_PER_VACATURE,
+        email=current_user.email,
+        custom_data={"user_id": current_user.id, "type": "per_vacature"},
+        redirect_url=f"{FRONTEND_URL}/employer?vacature_betaald=1",
+    )
+    return {"checkout_url": checkout_url}
+
 
 @router.post("/checkout")
 def create_checkout_session(
@@ -199,5 +227,10 @@ async def ls_webhook(request: Request, db: Session = Depends(get_db)):
     elif event_name in ("subscription_cancelled", "subscription_expired"):
         user.plan = "gratis"
         db.commit()
+
+    elif event_name == "order_created":
+        if custom_data.get("type") == "per_vacature":
+            user.vacancy_credits = (user.vacancy_credits or 0) + 1
+            db.commit()
 
     return {"status": "ok"}

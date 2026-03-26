@@ -59,16 +59,23 @@ def create_vacancy(
             .count()
         )
         if current_count >= limit:
-            plan_label = "Gratis" if plan == "gratis" else "Normaal"
-            upgrade_to = "Normaal" if plan == "gratis" else "Premium"
-            raise HTTPException(
-                status_code=403,
-                detail=(
-                    f"Je {plan_label}-abonnement staat maximaal {limit} "
-                    f"vacature{'s' if limit != 1 else ''} toe. "
-                    f"Upgrade naar {upgrade_to} voor meer vacatures."
-                ),
-            )
+            credits = current_user.vacancy_credits or 0
+            if credits > 0:
+                # Gebruik één vacancy credit
+                current_user.vacancy_credits = credits - 1
+                db.commit()
+            else:
+                plan_label = "Gratis" if plan == "gratis" else "Normaal"
+                upgrade_to = "Normaal" if plan == "gratis" else "Premium"
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        f"Je {plan_label}-abonnement staat maximaal {limit} "
+                        f"vacature{'s' if limit != 1 else ''} toe. "
+                        f"Upgrade naar {upgrade_to} voor meer vacatures, "
+                        f"of koop een extra vacature voor €89."
+                    ),
+                )
 
     vacancy = models.Vacancy(
         employer_id=current_user.id,
