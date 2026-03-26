@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -52,6 +53,7 @@ def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(g
         hashed_password=hash_password(payload.password),
         role="employer",
         plan="gratis",
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=30),
     )
     db.add(user)
     db.commit()

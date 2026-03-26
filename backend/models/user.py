@@ -24,6 +24,9 @@ class User(Base):
     # pay-per-vacature credits (eenmalige aankopen)
     vacancy_credits = Column(Integer, nullable=False, default=0, server_default="0")
 
+    # gratis trial: toegang tot gratis plan tot deze datum
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True, default=None)
+
     # organisatie (multi-user werkgever); None = individueel
     org_id = Column(Integer, ForeignKey("organisations.id"), nullable=True, index=True)
 

@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -49,8 +50,17 @@ def create_vacancy(
 ):
     require_role(current_user, "employer")
 
-    # Controleer plan-limiet op aantal vacatures
+    # Controleer of gratis trial verlopen is
     plan = current_user.plan or "gratis"
+    if plan == "gratis" and current_user.role != "admin":
+        trial_ends = current_user.trial_ends_at
+        if trial_ends and datetime.now(timezone.utc) > trial_ends:
+            raise HTTPException(
+                status_code=403,
+                detail="Je gratis proefperiode van 30 dagen is verlopen. Kies een abonnement op /abonnementen.",
+            )
+
+    # Controleer plan-limiet op aantal vacatures
     limit = PLAN_VACANCY_LIMITS.get(plan)  # None = onbeperkt
     if limit is not None and current_user.role != "admin":
         current_count = (

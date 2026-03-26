@@ -224,6 +224,7 @@ async def ls_webhook(request: Request, db: Session = Depends(get_db)):
     if event_name in ("subscription_created", "subscription_resumed"):
         if plan in ("starter", "normaal", "premium"):
             user.plan = plan
+            user.trial_ends_at = None  # betaald plan actief, trial niet meer relevant
             db.commit()
 
     elif event_name in ("subscription_cancelled", "subscription_expired"):
