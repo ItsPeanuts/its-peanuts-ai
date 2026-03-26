@@ -92,23 +92,31 @@ services:
       - key: SERPAPI_KEY
         sync: false   # Registreer op serpapi.com → API Key
 
-      # Stripe betalingen (abonnementen)
-      - key: STRIPE_SECRET_KEY
-        sync: false   # sk_live_... of sk_test_... van stripe.com/apikeys
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false   # whsec_... van stripe.com/webhooks
-      - key: STRIPE_PRICE_NORMAAL_MAAND
-        sync: false   # Stripe Price ID voor Normaal maandelijks
-      - key: STRIPE_PRICE_NORMAAL_JAAR
-        sync: false   # Stripe Price ID voor Normaal jaarlijks
-      - key: STRIPE_PRICE_PREMIUM_MAAND
-        sync: false   # Stripe Price ID voor Premium maandelijks
-      - key: STRIPE_PRICE_PREMIUM_JAAR
-        sync: false   # Stripe Price ID voor Premium jaarlijks
+      # LemonSqueezy betalingen (Merchant of Record — geen KvK nodig)
+      - key: LEMONSQUEEZY_API_KEY
+        sync: false   # lemon_... van lemonsqueezy.com → Settings → API
+      - key: LEMONSQUEEZY_WEBHOOK_SECRET
+        sync: false   # Signing secret van lemonsqueezy.com → Settings → Webhooks
+      - key: LEMONSQUEEZY_STORE_ID
+        sync: false   # Numeriek store ID van lemonsqueezy.com → Settings → Stores
 
-      # Stripe promoties (vacature advertenties op social media)
-      - key: STRIPE_WEBHOOK_PROMOTIONS
-        sync: false   # Aparte webhook secret voor /promotions/webhook (mag ook zelfde zijn als STRIPE_WEBHOOK_SECRET)
+      # LemonSqueezy abonnement variant IDs (recurring)
+      - key: LEMONSQUEEZY_VARIANT_NORMAAL_MAAND
+        sync: false
+      - key: LEMONSQUEEZY_VARIANT_NORMAAL_JAAR
+        sync: false
+      - key: LEMONSQUEEZY_VARIANT_PREMIUM_MAAND
+        sync: false
+      - key: LEMONSQUEEZY_VARIANT_PREMIUM_JAAR
+        sync: false
+
+      # LemonSqueezy promotie variant IDs (one-time)
+      - key: LEMONSQUEEZY_VARIANT_PROMO_7D
+        sync: false
+      - key: LEMONSQUEEZY_VARIANT_PROMO_14D
+        sync: false
+      - key: LEMONSQUEEZY_VARIANT_PROMO_30D
+        sync: false
 
   # Frontend (Next.js)
   - type: web
@@ -125,8 +133,6 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_BASE
         value: https://its-peanuts-backend.onrender.com
-      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-        sync: false   # pk_live_... of pk_test_... van stripe.com/apikeys
 
 databases:
   # PostgreSQL database (free tier: 1GB, 90 dagen op free plan)
