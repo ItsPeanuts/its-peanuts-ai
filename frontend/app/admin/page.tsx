@@ -306,7 +306,7 @@ export default function AdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden w-full">
+    <div className="min-h-screen bg-gray-50 md:flex overflow-x-hidden w-full">
 
       {/* Mobiel overlay */}
       {sidebarOpen && (
@@ -359,7 +359,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-4 md:p-8 overflow-x-hidden overflow-y-auto min-w-0">
+      <main className="w-full md:flex-1 p-4 md:p-8 overflow-x-hidden overflow-y-auto min-w-0">
         {/* Mobiele topbar met hamburger */}
         <div className="flex items-center gap-3 mb-5 md:hidden">
           <button
@@ -403,12 +403,12 @@ export default function AdminPage() {
                 {users.slice(0, 8).map((u) => {
                   const rc = ROLE_COLORS[u.role] ?? { color: "#374151", bg: "#f3f4f6" };
                   return (
-                    <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">{u.full_name || u.email}</div>
-                        <div className="text-xs text-gray-400">{u.email}</div>
+                    <div key={u.id} className="flex items-center justify-between gap-2 py-2 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-800 truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-gray-400 truncate">{u.email}</div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: rc.color, background: rc.bg }}>{u.role}</span>
+                      <span className="flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: rc.color, background: rc.bg }}>{u.role}</span>
                     </div>
                   );
                 })}

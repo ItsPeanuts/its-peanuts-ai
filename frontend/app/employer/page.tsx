@@ -532,7 +532,7 @@ export default function EmployerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden w-full">
+    <div className="min-h-screen bg-gray-50 md:flex overflow-x-hidden w-full">
 
       {/* Mobiel overlay */}
       {sidebarOpen && (
@@ -639,7 +639,7 @@ export default function EmployerPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-x-hidden min-w-0">
+      <main className="w-full md:flex-1 p-4 md:p-8 overflow-x-hidden min-w-0">
 
         {/* Mobiele topbar met hamburger */}
         <div className="flex items-center gap-3 mb-5 md:hidden">
