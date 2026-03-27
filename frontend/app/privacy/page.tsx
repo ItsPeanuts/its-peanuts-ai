@@ -19,7 +19,7 @@ export default function PrivacyPage() {
           Laatste update: 27 maart 2026
         </p>
 
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "32px", display: "flex", flexDirection: "column", gap: 32 }}>
+        <div className="privacy-card" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "32px", display: "flex", flexDirection: "column", gap: 32 }}>
 
           <Section title="1. Wie zijn wij?">
             VorzaIQ is een AI-gedreven recruitment platform van It&apos;s Peanuts AI, gevestigd in Nederland.

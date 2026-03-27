@@ -147,4 +147,9 @@ a.no-underline {
   .vacancy-salary-chip {
     display: none !important;
   }
+
+  /* Privacy pagina: kleinere inner padding op mobiel */
+  .privacy-card {
+    padding: 20px !important;
+  }
 }
