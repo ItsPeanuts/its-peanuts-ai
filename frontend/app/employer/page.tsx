@@ -639,7 +639,7 @@ export default function EmployerPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
+      <main className="flex-1 p-4 md:p-8 overflow-x-hidden min-w-0">
 
         {/* Mobiele topbar met hamburger */}
         <div className="flex items-center gap-3 mb-5 md:hidden">
@@ -681,7 +681,7 @@ export default function EmployerPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+            <div className="grid grid-cols-3 gap-3 mb-6">
               {[
                 { label: "Actieve vacatures", value: vacancies.length, color: "#7C3AED" },
                 { label: "Totaal sollicitanten", value: totalApps, color: "#3b82f6" },
@@ -691,9 +691,9 @@ export default function EmployerPage() {
                   return Math.round(scored.reduce((s, a) => s + (a.match_score ?? 0), 0) / scored.length) + "%";
                 })(), color: "#8b5cf6" },
               ].map((s) => (
-                <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{s.label}</div>
-                  <div className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 md:p-5">
+                  <div className="text-[9px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
+                  <div className="text-2xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
             </div>
@@ -715,8 +715,8 @@ export default function EmployerPage() {
                   const vacApps = applications.filter((a) => a.vacancy_id === v.id);
                   const topScore = vacApps.reduce((max, a) => Math.max(max, a.match_score ?? 0), 0);
                   return (
-                    <div key={v.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:border-purple-200 hover:shadow-sm transition-all">
-                      <div className="flex items-center gap-4">
+                    <div key={v.id} className="bg-white rounded-xl border border-gray-100 p-4 md:p-5 hover:border-purple-200 hover:shadow-sm transition-all">
+                      <div className="employer-vac-card flex items-center gap-3 md:gap-4">
                         <div className={`${color} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
                           {getInitials(v.title)}
                         </div>
@@ -741,18 +741,18 @@ export default function EmployerPage() {
                             {v.location && `${v.location} · `}{v.hours_per_week && `${v.hours_per_week}u/week · `}{v.salary_range || ""}
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="employer-vac-right flex items-center gap-3 flex-shrink-0">
                           <div className="text-center">
                             <div className="text-xl font-bold text-gray-900">{appCount}</div>
                             <div className="text-xs text-gray-400">sollicitant{appCount !== 1 ? "en" : ""}</div>
                           </div>
                           {topScore > 0 && (
-                            <div className="text-center">
+                            <div className="employer-vac-score text-center">
                               <div className="text-xl font-bold" style={{ color: topScore >= 70 ? "#059669" : "#d97706" }}>{topScore}%</div>
                               <div className="text-xs text-gray-400">top score</div>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 ml-auto md:ml-0">
                             {/* Primaire CTA */}
                             <button
                               onClick={() => handleVacancyClick(v)}
@@ -1273,7 +1273,7 @@ export default function EmployerPage() {
                     placeholder="bijv. Senior Developer"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Locatie</label>
                     <input value={location} onChange={(e) => setLocation(e.target.value)}
@@ -1293,7 +1293,7 @@ export default function EmployerPage() {
                     placeholder="bijv. €3.500 - €5.000"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dienstverband</label>
                     <select value={vacancyEmploymentType} onChange={e => setVacancyEmploymentType(e.target.value)}
@@ -1328,7 +1328,7 @@ export default function EmployerPage() {
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Sollicitatiegesprek met Lisa
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {([
                       { value: "chat",    label: "🗨️ Chatbot",       desc: "Alle plannen" },
                       { value: "virtual", label: "🎥 Virtueel",       desc: "Alleen Premium" },
@@ -1505,16 +1505,16 @@ export default function EmployerPage() {
               </div>
 
               {/* KPI stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
                 {[
                   { label: "Vacatures",        value: vacancies.length,       color: "#7C3AED" },
                   { label: "Sollicitaties",     value: applications.length,    color: "#3b82f6" },
                   { label: "In interview",      value: statusCounts.interview, color: "#d97706" },
                   { label: "Gem. matchscore",   value: avgScore !== null ? `${avgScore}%` : "—", color: scoreColor },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
-                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{s.label}</div>
-                    <div className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                  <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 md:p-5">
+                    <div className="text-[9px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
+                    <div className="text-2xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
                   </div>
                 ))}
               </div>
@@ -1684,7 +1684,7 @@ export default function EmployerPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h2 className="font-semibold text-gray-800 mb-4">Collega toevoegen</h2>
               <form onSubmit={handleAddTeamMember} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Naam</label>
                     <input

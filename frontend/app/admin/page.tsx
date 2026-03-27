@@ -522,7 +522,7 @@ export default function AdminPage() {
             {/* Genereer formulier */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6 mt-4">
               <h2 className="text-sm font-bold text-gray-700 mb-4">Nieuwe outreach genereren</h2>
-              <form onSubmit={handleGenerateSales} className="grid grid-cols-3 gap-4">
+              <form onSubmit={handleGenerateSales} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Bedrijfsnaam *</label>
                   <input required value={salesForm.company_name}
@@ -580,7 +580,7 @@ export default function AdminPage() {
                     <option value="en">Engels</option>
                   </select>
                 </div>
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Extra context (optioneel)</label>
                   <input value={salesForm.custom_notes}
                     onChange={(e) => setSalesForm((f) => ({ ...f, custom_notes: e.target.value }))}
@@ -739,7 +739,7 @@ export default function AdminPage() {
             {/* Genereer formulier */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6 mt-4">
               <h2 className="text-sm font-bold text-gray-700 mb-4">Nieuwe content genereren</h2>
-              <form onSubmit={handleGenerateMarketing} className="grid grid-cols-3 gap-4">
+              <form onSubmit={handleGenerateMarketing} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Platform</label>
                   <select value={marketingForm.platform}
@@ -771,14 +771,14 @@ export default function AdminPage() {
                     <option value="inspiring">Inspirerend</option>
                   </select>
                 </div>
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Onderwerp / thema *</label>
                   <input required value={marketingForm.topic}
                     onChange={(e) => setMarketingForm((f) => ({ ...f, topic: e.target.value }))}
                     placeholder="bijv. AI pre-screening, sneller solliciteren, video interviews, Lisa AI"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">Aantal posts (1-5)</label>
                     <input type="number" min={1} max={5} value={marketingForm.count}
@@ -795,7 +795,7 @@ export default function AdminPage() {
                     </select>
                   </div>
                 </div>
-                <div className="col-span-3 flex justify-end">
+                <div className="md:col-span-3 flex justify-end">
                   <button type="submit" disabled={generatingMarketing}
                     className="px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-50"
                     style={{ background: "#7c3aed" }}>
