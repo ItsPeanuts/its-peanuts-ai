@@ -220,4 +220,31 @@ a.no-underline {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
+
+  /* Abonnementen: plan kaarten 1 kolom */
+  .abo-plans-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Vergelijkingstabel: horizontaal scrollbaar zodat page niet overflowt */
+  .abo-compare-wrapper {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* FAQ: 1 kolom */
+  .abo-faq-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Kandidaat profiel: hoofd grid 1 kolom */
+  .profiel-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Sollicitatie detail: AI analyse grid 1 kolom */
+  .app-detail-ai-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

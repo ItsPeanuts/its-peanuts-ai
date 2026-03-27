@@ -253,7 +253,7 @@ function AbonnementenContent() {
         )}
 
         {/* Plan kaarten */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 60 }}>
+        <div className="abo-plans-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 60 }}>
           {PLANS.map(plan => {
             const price = billing === "month" ? plan.priceMonth : plan.priceYear;
             const isLoading = loadingPlan === plan.id;
@@ -387,7 +387,7 @@ function AbonnementenContent() {
             </p>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden" }}>
+          <div className="abo-compare-wrapper" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden" }}>
             {/* Header */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 200px 100px", padding: "12px 24px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.07em" }}>Platform</div>
@@ -423,7 +423,7 @@ function AbonnementenContent() {
           <h2 style={{ fontSize: 26, fontWeight: 800, color: "#111827", textAlign: "center", marginBottom: 32 }}>
             Veelgestelde vragen
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 860, margin: "0 auto" }}>
+          <div className="abo-faq-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 860, margin: "0 auto" }}>
             {FAQS.map((item, i) => (
               <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", border: "1px solid #e5e7eb" }}>
                 <div style={{ fontWeight: 700, color: "#111827", marginBottom: 8, fontSize: 14 }}>{item.q}</div>

@@ -334,7 +334,7 @@ export default function SollicitatieDetailPage() {
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="app-detail-ai-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                   {aiResult.strengths && (
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "#059669", marginBottom: 6 }}>Sterke punten</div>

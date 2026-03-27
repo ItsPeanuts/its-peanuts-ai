@@ -94,10 +94,10 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-3 gap-7 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-7 items-start">
 
           {/* Hoofdcontent */}
-          <div className="col-span-2 space-y-5">
+          <div className="col-span-1 md:col-span-2 space-y-5">
             {/* Job header card */}
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <div className="flex gap-5 items-start">
