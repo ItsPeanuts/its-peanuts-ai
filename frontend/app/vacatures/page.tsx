@@ -221,7 +221,7 @@ function VacaturesContent() {
   );
 
   return (
-    <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
+    <div style={{ background: "#f9fafb", minHeight: "100vh", overflowX: "hidden" }}>
       <PublicNav />
 
       {/* ── Zoekbalk ── */}

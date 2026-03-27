@@ -80,7 +80,7 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
   const initials = getInitials(vacancy.title);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <PublicNav />
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">

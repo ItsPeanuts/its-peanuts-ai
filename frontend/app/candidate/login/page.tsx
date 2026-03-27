@@ -59,7 +59,7 @@ function CandidateLoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 overflow-x-hidden">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">

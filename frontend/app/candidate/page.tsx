@@ -107,7 +107,7 @@ export default function CandidateDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+    <div style={{ minHeight: "100vh", background: "#f9fafb", overflowX: "hidden" }}>
 
       {/* Sub-nav */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
