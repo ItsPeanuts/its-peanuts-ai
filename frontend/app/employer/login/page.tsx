@@ -77,8 +77,8 @@ export default function EmployerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 overflow-x-hidden">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 overflow-x-hidden">
+      <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 no-underline">

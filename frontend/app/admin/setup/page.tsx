@@ -36,8 +36,8 @@ export default function AdminSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 overflow-x-hidden">
-      <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-md shadow-sm mx-auto mt-12">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 overflow-x-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-md shadow-sm">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style={{ background: "#7c3aed" }}>A</div>
           <div>

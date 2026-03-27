@@ -82,8 +82,8 @@ export default function ClaimPage() {
   // Fout
   if (loadError) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-12 overflow-x-hidden">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center mx-auto">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 overflow-x-hidden">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
           <div className="text-4xl mb-4">❌</div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">Ongeldige link</h1>
           <p className="text-gray-500">{loadError}</p>
@@ -93,8 +93,8 @@ export default function ClaimPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12 overflow-x-hidden">
-      <div className="max-w-md w-full mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 overflow-x-hidden">
+      <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl mb-4">
