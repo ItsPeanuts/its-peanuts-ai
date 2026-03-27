@@ -211,7 +211,7 @@ function CandidateLoginContent() {
 
 export default function CandidateLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-sm text-gray-400">Laden...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 overflow-x-hidden"><div className="text-sm text-gray-400 text-center pt-32">Laden...</div></div>}>
       <CandidateLoginContent />
     </Suspense>
   );
