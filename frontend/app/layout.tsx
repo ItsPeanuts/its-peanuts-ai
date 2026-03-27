@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import OverflowDebug from "@/components/OverflowDebug";
+import NoHorizontalScroll from "@/components/NoHorizontalScroll";
 
 export const metadata: Metadata = {
   title: "VorzaIQ — The Smart Way to Hire",
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="nl">
       <body>
         <div id="app-root">{children}</div>
+        <NoHorizontalScroll />
         <OverflowDebug />
       </body>
     </html>
