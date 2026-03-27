@@ -4,8 +4,8 @@ import Link from "next/link";
 
 export default function PromotieSucesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-10 text-center">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white p-6 overflow-x-hidden">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-10 text-center mx-auto mt-16">
         <div className="text-5xl mb-5">🎉</div>
         <h1 className="text-2xl font-bold text-gray-900 mb-3">Betaling geslaagd!</h1>
         <p className="text-gray-600 mb-6 leading-relaxed">
