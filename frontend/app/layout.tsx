@@ -13,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="nl">
-      <body>{children}</body>
+      <body>
+        <div id="app-root">{children}</div>
+      </body>
     </html>
   );
 }
