@@ -306,7 +306,7 @@ export default function AdminPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden w-full">
 
       {/* Mobiel overlay */}
       {sidebarOpen && (
@@ -359,7 +359,7 @@ export default function AdminPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
+      <main className="flex-1 p-4 md:p-8 overflow-x-hidden overflow-y-auto min-w-0">
         {/* Mobiele topbar met hamburger */}
         <div className="flex items-center gap-3 mb-5 md:hidden">
           <button
@@ -391,9 +391,9 @@ export default function AdminPage() {
                 { label: "Interviews",      value: stats.total_interviews,   color: "#0891b2" },
                 { label: "Gem. matchscore", value: stats.avg_match_score !== null ? `${stats.avg_match_score}%` : "—", color: "#dc2626" },
               ].map((s) => (
-                <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-5">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{s.label}</div>
-                  <div className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 md:p-5">
+                  <div className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
+                  <div className="text-xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
             </div>

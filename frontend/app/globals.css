@@ -15,6 +15,12 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #f5f6fa;
@@ -165,5 +171,45 @@ a.no-underline {
   }
   .employer-vac-score {
     display: none !important;
+  }
+
+  /* Sollicitantenkaart: acties onder info op mobiel */
+  .app-card-flex {
+    flex-wrap: wrap !important;
+  }
+  .app-card-actions {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #f3f4f6 !important;
+    margin-top: 4px !important;
+  }
+
+  /* Kandidaat dashboard: sub-nav scrollbaar */
+  .candidate-subnav {
+    overflow-x: auto !important;
+    flex-shrink: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-right: 0 !important;
+  }
+  .candidate-subnav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Kandidaat dashboard: stats 2 kolommen */
+  .candidate-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Kandidaat dashboard: hoofd grid stapelt verticaal */
+  .candidate-main-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
   }
 }

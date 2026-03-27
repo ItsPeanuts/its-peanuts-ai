@@ -111,7 +111,7 @@ export default function CandidateDashboard() {
 
       {/* Sub-nav */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px", height: 48, display: "flex", alignItems: "center", gap: 4 }}>
+        <div className="candidate-subnav" style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px", height: 48, display: "flex", alignItems: "center", gap: 4 }}>
           {[
             { label: "Dashboard",      href: "/candidate" },
             { label: "Sollicitaties",  href: "/candidate/sollicitaties" },
@@ -154,7 +154,7 @@ export default function CandidateDashboard() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
+        <div className="candidate-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
           {[
             { label: "Totaal",        value: stats.total,      color: "#7C3AED" },
             { label: "In behandeling",value: stats.inProgress, color: "#d97706" },
@@ -215,7 +215,7 @@ export default function CandidateDashboard() {
         )}
 
         {/* Hoofd grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20, alignItems: "start" }}>
+        <div className="candidate-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20, alignItems: "start" }}>
 
           {/* Recente sollicitaties */}
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px 24px" }}>

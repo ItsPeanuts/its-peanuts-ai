@@ -532,7 +532,7 @@ export default function EmployerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden w-full">
 
       {/* Mobiel overlay */}
       {sidebarOpen && (
@@ -666,14 +666,14 @@ export default function EmployerPage() {
         {/* === VACATURES OVERZICHT === */}
         {view === "vacancies" && (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Mijn vacatures</h1>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">Mijn vacatures</h1>
                 <p className="text-sm text-gray-500 mt-1">{vacancies.length} actieve vacature{vacancies.length !== 1 ? "s" : ""}</p>
               </div>
               <button
                 onClick={handleNewVacancy}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90"
+                className="px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-xs md:text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
                 style={{ background: "#f97316" }}
               >
                 + Vacature plaatsen
@@ -681,7 +681,7 @@ export default function EmployerPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
               {[
                 { label: "Actieve vacatures", value: vacancies.length, color: "#7C3AED" },
                 { label: "Totaal sollicitanten", value: totalApps, color: "#3b82f6" },
@@ -692,8 +692,8 @@ export default function EmployerPage() {
                 })(), color: "#8b5cf6" },
               ].map((s) => (
                 <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 md:p-5">
-                  <div className="text-[9px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
-                  <div className="text-2xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                  <div className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
+                  <div className="text-xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
                 </div>
               ))}
             </div>
@@ -893,21 +893,21 @@ export default function EmployerPage() {
                   const initials = getInitials(app.candidate_name);
                   const color = avatarColor(app.candidate_id);
                   return (
-                    <div key={app.id} className="bg-white rounded-xl border border-gray-100 p-5">
-                      <div className="flex items-start gap-4">
+                    <div key={app.id} className="bg-white rounded-xl border border-gray-100 p-4 md:p-5">
+                      <div className="app-card-flex flex items-start gap-3 md:gap-4">
                         {/* Avatar */}
-                        <div className={`${color} w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+                        <div className={`${color} w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
                           {initials}
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <div className="font-semibold text-gray-900">{app.candidate_name}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">{app.candidate_email}</div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-semibold text-gray-900 truncate">{app.candidate_name}</div>
+                              <div className="text-xs text-gray-500 mt-0.5 truncate">{app.candidate_email}</div>
                               {!selectedVacancy && (
-                                <div className="text-xs text-purple-600 mt-0.5 font-medium">
+                                <div className="text-xs text-purple-600 mt-0.5 font-medium truncate">
                                   {vacancies.find((v) => v.id === app.vacancy_id)?.title ?? "Vacature"}
                                 </div>
                               )}
@@ -918,7 +918,7 @@ export default function EmployerPage() {
                           </div>
 
                           {/* AI Score */}
-                          <div className="mt-3 w-48">
+                          <div className="mt-3 w-full max-w-[192px]">
                             <div className="text-xs text-gray-400 mb-1">AI Matchscore</div>
                             <ScoreBar score={app.match_score} />
                           </div>
@@ -1120,7 +1120,7 @@ export default function EmployerPage() {
                         </div>
 
                         {/* Status + acties */}
-                        <div className="flex-shrink-0 flex flex-col items-end gap-3">
+                        <div className="app-card-actions flex-shrink-0 flex flex-col items-end gap-2 md:gap-3">
                           <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ color: sc.color, background: sc.bg }}>
                             {sc.label}
                           </span>
@@ -1513,8 +1513,8 @@ export default function EmployerPage() {
                   { label: "Gem. matchscore",   value: avgScore !== null ? `${avgScore}%` : "—", color: scoreColor },
                 ].map((s) => (
                   <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3 md:p-5">
-                    <div className="text-[9px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
-                    <div className="text-2xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
+                    <div className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-tight md:tracking-wide mb-1 md:mb-2 truncate">{s.label}</div>
+                    <div className="text-xl md:text-3xl font-bold" style={{ color: s.color }}>{s.value}</div>
                   </div>
                 ))}
               </div>
