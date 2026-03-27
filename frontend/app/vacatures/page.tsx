@@ -473,12 +473,12 @@ function VacaturesContent() {
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {filtered.map(v => (
                 <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div className="vacancy-card-inner" style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
                       {getInitials(v.title)}
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="vacancy-card-content" style={{ flex: 1, minWidth: 0 }}>
                       <Link
                         href={`/vacatures/${v.id}`}
                         style={{ fontSize: 14, fontWeight: 600, color: "#111827", textDecoration: "none", display: "block" }}
@@ -507,9 +507,9 @@ function VacaturesContent() {
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <div className="vacancy-card-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {v.salary_range && (
-                        <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", color: "#374151", background: "#f9fafb" }}>
+                        <span className="vacancy-salary-chip" style={{ fontSize: 12, padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", color: "#374151", background: "#f9fafb" }}>
                           {v.salary_range}
                         </span>
                       )}

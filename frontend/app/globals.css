@@ -45,6 +45,12 @@ a.no-underline {
 /* ── Mobiele responsiviteit ─────────────────────────────────────────────── */
 @media (max-width: 767px) {
 
+  /* Landing page: hero padding verkleinen */
+  .hero-section {
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
+  }
+
   /* Landing page: zoekbalk stapelt verticaal */
   .hero-search-form {
     flex-direction: column !important;
@@ -55,6 +61,7 @@ a.no-underline {
   .hero-search-input {
     padding: 10px 12px !important;
     font-size: 16px !important; /* iOS: voorkomt auto-zoom */
+    min-width: 0 !important;
   }
   .hero-search-divider {
     display: none !important;
@@ -72,8 +79,25 @@ a.no-underline {
     text-align: center !important;
   }
   .hero-stats {
-    gap: 16px !important;
+    gap: 12px !important;
     flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+
+  /* CTA knoppen: stapelen op mobiel */
+  .cta-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .cta-buttons a {
+    text-align: center !important;
+  }
+
+  /* Footer: stapelt op mobiel */
+  .footer-inner {
+    flex-direction: column !important;
+    gap: 12px !important;
+    text-align: center !important;
   }
 
   /* Vacatures: layout stapelt, sidebar verborgen */
@@ -103,7 +127,23 @@ a.no-underline {
     gap: 8px !important;
   }
 
-  /* Vacaturekaart: verberg salaris chip op mobiel */
+  /* Vacaturekaart: wrap layout zodat knop niet te krap wordt */
+  .vacancy-card-inner {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+  .vacancy-card-content {
+    /* neemt alle resterende breedte na avatar */
+    min-width: calc(100% - 54px) !important;
+  }
+  .vacancy-card-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #f3f4f6 !important;
+  }
+
+  /* Verberg salaris chip op mobiel (te weinig ruimte) */
   .vacancy-salary-chip {
     display: none !important;
   }

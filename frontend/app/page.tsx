@@ -39,7 +39,7 @@ export default function HomePage() {
       <PublicNav />
 
       {/* ── HERO ── */}
-      <section className="bg-white py-20 border-b border-gray-100">
+      <section className="hero-section bg-white py-20 border-b border-gray-100">
         <div className="max-w-2xl mx-auto px-6" style={{ textAlign: "center" }}>
 
           <p className="text-sm font-medium text-purple-700 mb-4">
@@ -175,7 +175,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {v.salary_range && (
-                        <span style={{ fontSize: 12, color: "#374151", padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                        <span className="vacancy-salary-chip" style={{ fontSize: 12, color: "#374151", padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", background: "#f9fafb" }}>
                           {v.salary_range}
                         </span>
                       )}
@@ -201,7 +201,7 @@ export default function HomePage() {
           <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 24 }}>
             Maak een gratis account, upload je CV en ontvang AI-matches op maat.
           </p>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <div className="cta-buttons" style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <Link href="/candidate/login" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
               Maak account aan
             </Link>
