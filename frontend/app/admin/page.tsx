@@ -95,6 +95,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [vacancies, setVacancies] = useState<AdminVacancy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
@@ -306,8 +307,17 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+
+      {/* Mobiel overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-56 bg-white border-r border-gray-200 flex flex-col min-h-screen flex-shrink-0">
+      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 flex flex-col min-h-screen flex-shrink-0 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7c3aed" }}>A</div>
@@ -326,7 +336,7 @@ export default function AdminPage() {
           ] as const).map((item) => (
             <button
               key={item.id}
-              onClick={() => { setErr(""); setMsg(""); setView(item.id); }}
+              onClick={() => { setErr(""); setMsg(""); setView(item.id); setSidebarOpen(false); }}
               className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 view === item.id ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
               }`}
@@ -349,7 +359,21 @@ export default function AdminPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
+        {/* Mobiele topbar met hamburger */}
+        <div className="flex items-center gap-3 mb-5 md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600"
+            aria-label="Menu openen"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="font-bold text-gray-900 text-sm">Admin Panel</span>
+        </div>
+
         {msg && <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm mb-5">{msg}</div>}
         {err && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm mb-5 cursor-pointer" onClick={() => setErr("")}>{err} ✕</div>}
 
@@ -357,7 +381,7 @@ export default function AdminPage() {
         {view === "stats" && stats && (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Platform overzicht</h1>
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
                 { label: "Gebruikers",      value: stats.total_users,        color: "#7c3aed" },
                 { label: "Kandidaten",      value: stats.total_candidates,   color: "#1d4ed8" },
@@ -399,8 +423,8 @@ export default function AdminPage() {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Gebruikers <span className="text-gray-400 text-lg font-normal">({users.length})</span></h1>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+              <table className="w-full text-sm min-w-[560px]">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Naam</th>
@@ -457,8 +481,8 @@ export default function AdminPage() {
         {view === "vacancies" && (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Alle vacatures <span className="text-gray-400 text-lg font-normal">({vacancies.length})</span></h1>
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+              <table className="w-full text-sm min-w-[480px]">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Vacature</th>

@@ -78,6 +78,7 @@ export default function EmployerPage() {
   const [newMemberResult, setNewMemberResult] = useState<AddTeamMemberResponse | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -532,8 +533,17 @@ export default function EmployerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+
+      {/* Mobiel overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 min-h-screen">
+      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 min-h-screen transition-transform duration-200 overflow-y-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7C3AED" }}>V</div>
@@ -546,7 +556,7 @@ export default function EmployerPage() {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2">Navigatie</p>
 
           <button
-            onClick={() => { setView("vacancies"); setSelectedVacancy(null); loadApplications(); }}
+            onClick={() => { setView("vacancies"); setSelectedVacancy(null); loadApplications(); setSidebarOpen(false); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "vacancies" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -556,7 +566,7 @@ export default function EmployerPage() {
           </button>
 
           <button
-            onClick={() => { setView("applications"); setSelectedVacancy(null); loadApplications(); }}
+            onClick={() => { setView("applications"); setSelectedVacancy(null); loadApplications(); setSidebarOpen(false); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "applications" && !selectedVacancy ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -566,7 +576,7 @@ export default function EmployerPage() {
           </button>
 
           <button
-            onClick={handleNewVacancy}
+            onClick={() => { handleNewVacancy(); setSidebarOpen(false); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "new-vacancy" ? "text-orange-700 bg-orange-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -575,7 +585,7 @@ export default function EmployerPage() {
           </button>
 
           <button
-            onClick={() => setView("analytics")}
+            onClick={() => { setView("analytics"); setSidebarOpen(false); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "analytics" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -584,7 +594,7 @@ export default function EmployerPage() {
           </button>
 
           <button
-            onClick={() => { setView("team"); loadTeam(); }}
+            onClick={() => { setView("team"); loadTeam(); setSidebarOpen(false); }}
             className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               view === "team" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
@@ -629,7 +639,21 @@ export default function EmployerPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto min-w-0">
+
+        {/* Mobiele topbar met hamburger */}
+        <div className="flex items-center gap-3 mb-5 md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg border border-gray-200 bg-white text-gray-600"
+            aria-label="Menu openen"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="font-bold text-gray-900 text-sm">Werkgever portaal</span>
+        </div>
 
         {/* Notificaties */}
         {msg && (
@@ -657,7 +681,7 @@ export default function EmployerPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-5 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
               {[
                 { label: "Actieve vacatures", value: vacancies.length, color: "#7C3AED" },
                 { label: "Totaal sollicitanten", value: totalApps, color: "#3b82f6" },
@@ -1481,7 +1505,7 @@ export default function EmployerPage() {
               </div>
 
               {/* KPI stats */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 {[
                   { label: "Vacatures",        value: vacancies.length,       color: "#7C3AED" },
                   { label: "Sollicitaties",     value: applications.length,    color: "#3b82f6" },
@@ -1495,7 +1519,7 @@ export default function EmployerPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-5 mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                 {/* Sollicitaties per vacature */}
                 <div className="bg-white rounded-xl border border-gray-100 p-5">
                   <h2 className="text-sm font-bold text-gray-700 mb-4">Sollicitaties per vacature</h2>
@@ -1614,14 +1638,14 @@ export default function EmployerPage() {
             )}
 
             {/* Huidige teamleden */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto mb-6">
               <div className="px-5 py-4 border-b border-gray-100">
                 <h2 className="font-semibold text-gray-800">Teamleden ({teamMembers.length})</h2>
               </div>
               {teamLoading ? (
                 <div className="p-5 text-sm text-gray-400">Laden...</div>
               ) : (
-                <table className="w-full text-sm">
+                <table className="w-full text-sm min-w-[360px]">
                   <thead>
                     <tr className="text-left text-gray-500 border-b border-gray-100">
                       <th className="px-5 py-3 font-medium">Naam</th>
