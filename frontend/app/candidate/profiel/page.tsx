@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   me, getCandidateCVs, uploadCV, getMyApplications,
-  getCVFullText, updateCVText, deleteAccount,
+  getCVFullText, updateCVText, deleteAccount, changePassword,
   CandidateCVOut, ApplicationWithDetails,
 } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -49,6 +49,14 @@ export default function ProfielPage() {
   const [editText, setEditText]     = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [saving, setSaving]         = useState(false);
+
+  // Wachtwoord wijzigen
+  const [showPwForm, setShowPwForm]         = useState(false);
+  const [pwOld, setPwOld]                   = useState("");
+  const [pwNew, setPwNew]                   = useState("");
+  const [pwConfirm, setPwConfirm]           = useState("");
+  const [pwLoading, setPwLoading]           = useState(false);
+  const [pwMsg, setPwMsg]                   = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   // Account verwijderen
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -121,6 +129,27 @@ export default function ProfielPage() {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ type: "err", text: "Nieuw wachtwoord en bevestiging komen niet overeen" });
+      return;
+    }
+    setPwLoading(true);
+    setPwMsg(null);
+    try {
+      await changePassword(token, pwOld, pwNew);
+      setPwMsg({ type: "ok", text: "Wachtwoord succesvol gewijzigd." });
+      setPwOld(""); setPwNew(""); setPwConfirm("");
+      setShowPwForm(false);
+    } catch (err: unknown) {
+      setPwMsg({ type: "err", text: (err as Error)?.message || "Wijzigen mislukt" });
+    } finally {
+      setPwLoading(false);
     }
   }
 
@@ -403,6 +432,50 @@ export default function ProfielPage() {
             </Link>
           </div>
 
+        </div>
+
+        {/* Wachtwoord wijzigen */}
+        <div style={{ marginTop: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "20px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 2 }}>Wachtwoord wijzigen</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>Verander je inlogwachtwoord.</div>
+            </div>
+            <button
+              onClick={() => { setShowPwForm(p => !p); setPwMsg(null); }}
+              style={{ flexShrink: 0, padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#7C3AED", background: "#f5f3ff", border: "1px solid #ddd6fe", cursor: "pointer" }}
+            >
+              {showPwForm ? "Annuleren" : "Wijzigen"}
+            </button>
+          </div>
+          {showPwForm && (
+            <form onSubmit={handleChangePassword} style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              {pwMsg && (
+                <div style={{ fontSize: 12, borderRadius: 8, padding: "8px 12px", color: pwMsg.type === "ok" ? "#059669" : "#dc2626", background: pwMsg.type === "ok" ? "#d1fae5" : "#fee2e2" }}>
+                  {pwMsg.text}
+                </div>
+              )}
+              {[
+                { label: "Huidig wachtwoord", value: pwOld, setter: setPwOld },
+                { label: "Nieuw wachtwoord",  value: pwNew, setter: setPwNew },
+                { label: "Bevestig nieuw wachtwoord", value: pwConfirm, setter: setPwConfirm },
+              ].map(({ label, value, setter }) => (
+                <div key={label}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>{label}</label>
+                  <input
+                    type="password" value={value} onChange={e => setter(e.target.value)} required minLength={label === "Huidig wachtwoord" ? 1 : 8}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }}
+                  />
+                </div>
+              ))}
+              <button
+                type="submit" disabled={pwLoading}
+                style={{ alignSelf: "flex-start", padding: "9px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: pwLoading ? "#e5e7eb" : "#7C3AED", color: pwLoading ? "#9ca3af" : "#fff", border: "none", cursor: pwLoading ? "not-allowed" : "pointer" }}
+              >
+                {pwLoading ? "Opslaan..." : "Wachtwoord opslaan"}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Danger zone */}

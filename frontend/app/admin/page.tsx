@@ -197,6 +197,18 @@ export default function AdminPage() {
     } catch (e) { showErr(e); }
   }
 
+  async function handleResetPassword(userId: number, email: string) {
+    const newPw = prompt(`Nieuw wachtwoord instellen voor ${email}:`);
+    if (!newPw || !token) return;
+    if (newPw.length < 8) { showErr("Wachtwoord moet minimaal 8 tekens zijn"); return; }
+    try {
+      await apiFetch(token, `/admin/users/${userId}/password`, {
+        method: "PATCH", body: JSON.stringify({ new_password: newPw }),
+      });
+      setMsg(`Wachtwoord van ${email} gewijzigd`); setTimeout(() => setMsg(""), 4000);
+    } catch (e) { showErr(e); }
+  }
+
   // ── Sales Agent handlers ───────────────────────────────────────────────────
 
   async function loadLeads() {
@@ -463,10 +475,16 @@ export default function AdminPage() {
                           </select>
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <button onClick={() => handleDeleteUser(u.id, u.email)}
-                            className="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                            Verwijder
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleResetPassword(u.id, u.email)}
+                              className="text-xs text-blue-400 hover:text-blue-600 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors">
+                              Wachtwoord
+                            </button>
+                            <button onClick={() => handleDeleteUser(u.id, u.email)}
+                              className="text-xs text-red-400 hover:text-red-600 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                              Verwijder
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

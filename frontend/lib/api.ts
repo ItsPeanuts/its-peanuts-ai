@@ -872,3 +872,35 @@ export async function removeTeamMember(token: string, userId: number): Promise<v
   }
 }
 
+// ----------------------------
+// Wachtwoord wijzigen
+// ----------------------------
+
+export async function changePassword(
+  token: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${BASE}/auth/password`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Wachtwoord wijzigen mislukt");
+}
+
+export async function adminResetPassword(
+  token: string,
+  userId: number,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${BASE}/admin/users/${userId}/password`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ new_password: newPassword }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Wachtwoord resetten mislukt");
+}
+

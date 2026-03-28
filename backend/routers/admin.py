@@ -9,7 +9,7 @@ import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -64,6 +64,10 @@ class PatchUserOrgRequest(BaseModel):
 class PatchUserRequest(BaseModel):
     role: Optional[str] = None
     plan: Optional[str] = None
+
+
+class AdminPasswordReset(BaseModel):
+    new_password: str = Field(min_length=8)
 
 
 class AdminStats(BaseModel):
@@ -180,8 +184,62 @@ def delete_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+
+    # Ontkoppel van organisatie
+    user.org_id = None
+    db.flush()
+
+    # Haal alle vacancy-IDs op van deze gebruiker (werkgever)
+    vacancy_ids = [
+        row[0] for row in
+        db.query(models.Vacancy.id).filter(models.Vacancy.employer_id == user_id).all()
+    ]
+
+    # Haal alle application-IDs op (als kandidaat + via vacatures)
+    app_ids: set[int] = set()
+    for row in db.query(models.Application.id).filter(models.Application.candidate_id == user_id).all():
+        app_ids.add(row[0])
+    if vacancy_ids:
+        for row in db.query(models.Application.id).filter(models.Application.vacancy_id.in_(vacancy_ids)).all():
+            app_ids.add(row[0])
+
+    # Verwijder application-gerelateerde records
+    if app_ids:
+        id_list = list(app_ids)
+        db.query(models.AIResult).filter(models.AIResult.application_id.in_(id_list)).delete(synchronize_session=False)
+        db.query(models.IntakeAnswer).filter(models.IntakeAnswer.application_id.in_(id_list)).delete(synchronize_session=False)
+        db.query(models.RecruiterChatMessage).filter(models.RecruiterChatMessage.application_id.in_(id_list)).delete(synchronize_session=False)
+        db.query(models.VirtualInterviewSession).filter(models.VirtualInterviewSession.application_id.in_(id_list)).delete(synchronize_session=False)
+        db.query(models.InterviewSession).filter(models.InterviewSession.application_id.in_(id_list)).delete(synchronize_session=False)
+        db.query(models.Application).filter(models.Application.id.in_(id_list)).delete(synchronize_session=False)
+
+    # Verwijder vacancy-gerelateerde records
+    if vacancy_ids:
+        db.query(models.PromotionRequest).filter(models.PromotionRequest.vacancy_id.in_(vacancy_ids)).delete(synchronize_session=False)
+        db.query(models.Vacancy).filter(models.Vacancy.employer_id == user_id).delete(synchronize_session=False)
+
+    # Verwijder kandidaat-CV's
+    db.query(models.CandidateCV).filter(models.CandidateCV.candidate_id == user_id).delete(synchronize_session=False)
+
     db.delete(user)
     db.commit()
+
+
+@router.patch("/users/{user_id}/password", status_code=200)
+def reset_user_password(
+    user_id: int,
+    payload: AdminPasswordReset,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Admin: stel een nieuw wachtwoord in voor een gebruiker."""
+    require_role(current_user, "admin")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/vacancies")

@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
@@ -116,6 +117,27 @@ def delete_account(
 def require_role(user: models.User, role: str):
     if user.role != role and user.role != "admin":
         raise HTTPException(status_code=403, detail=f"{role.capitalize()} role required")
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=8)
+
+
+@router.patch("/password", status_code=200)
+def change_password(
+    payload: PasswordChangeRequest,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Wijzig je eigen wachtwoord (vereist huidig wachtwoord)."""
+    if not verify_password(payload.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Huidig wachtwoord onjuist")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Nieuw wachtwoord moet minimaal 8 tekens zijn")
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"ok": True}
 
 
 
