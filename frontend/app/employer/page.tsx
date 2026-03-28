@@ -543,7 +543,7 @@ export default function EmployerPage() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 min-h-screen transition-transform duration-200 overflow-y-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+      <aside className={`inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 flex-col flex-shrink-0 min-h-screen overflow-y-auto ${sidebarOpen ? "fixed flex" : "hidden md:flex md:static"}`}>
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7C3AED" }}>V</div>

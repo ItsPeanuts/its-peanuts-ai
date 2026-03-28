@@ -317,7 +317,7 @@ export default function AdminPage() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:static inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 flex flex-col min-h-screen flex-shrink-0 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+      <aside className={`inset-y-0 left-0 z-40 w-56 bg-white border-r border-gray-200 flex-col min-h-screen flex-shrink-0 ${sidebarOpen ? "fixed flex" : "hidden md:flex md:static"}`}>
         <div className="p-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs" style={{ background: "#7c3aed" }}>A</div>
