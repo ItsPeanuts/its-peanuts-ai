@@ -111,6 +111,11 @@ export default function AdminPage() {
     language: "nl", custom_notes: "",
   });
 
+  // Maintenance state
+  const [maintenance, setMaintenance] = useState(false);
+  const [maintenanceMsg, setMaintenanceMsg] = useState("We zijn de website en AI aan het verbeteren. We zijn zo weer volledig online!");
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+
   // Promotions state
   type AdminPromotion = {
     id: number; vacancy_id: number; vacancy_title: string | null;
@@ -218,6 +223,23 @@ export default function AdminPage() {
       });
       setMsg(`Wachtwoord van ${email} gewijzigd`); setTimeout(() => setMsg(""), 4000);
     } catch (e) { showErr(e); }
+  }
+
+  // ── Maintenance handlers ───────────────────────────────────────────────────
+
+  async function handleToggleMaintenance(enabled: boolean) {
+    if (!token) return;
+    setMaintenanceSaving(true);
+    try {
+      const result = await apiFetch(token, "/admin/maintenance", {
+        method: "POST",
+        body: JSON.stringify({ enabled, message: maintenanceMsg }),
+      });
+      setMaintenance(result.enabled);
+      setMsg(enabled ? "Onderhoudsmelding ingeschakeld" : "Onderhoudsmelding uitgeschakeld");
+      setTimeout(() => setMsg(""), 3000);
+    } catch (e) { showErr(e); }
+    finally { setMaintenanceSaving(false); }
   }
 
   // ── Promotions handlers ────────────────────────────────────────────────────
@@ -452,6 +474,34 @@ export default function AdminPage() {
               ))}
             </div>
             <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h2 className="text-sm font-bold text-gray-700 mb-3 mt-6">Onderhoudsmelding</h2>
+              <div className={`rounded-xl border p-4 mb-4 ${maintenance ? "border-purple-200 bg-purple-50" : "border-gray-100 bg-white"}`}>
+                <div className="flex items-center justify-between gap-4 mb-3">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {maintenance ? "🔧 Melding actief" : "✅ Website online"}
+                  </span>
+                  <button
+                    onClick={() => handleToggleMaintenance(!maintenance)}
+                    disabled={maintenanceSaving}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition disabled:opacity-60 ${
+                      maintenance
+                        ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        : "text-white"
+                    }`}
+                    style={!maintenance ? { background: "#7C3AED" } : {}}
+                  >
+                    {maintenanceSaving ? "..." : maintenance ? "Uitschakelen" : "Inschakelen"}
+                  </button>
+                </div>
+                <textarea
+                  value={maintenanceMsg}
+                  onChange={(e) => setMaintenanceMsg(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-purple-400 resize-none"
+                  placeholder="Tekst voor de melding..."
+                />
+              </div>
+
               <h2 className="text-sm font-bold text-gray-700 mb-3">Recente gebruikers</h2>
               <div className="space-y-2">
                 {users.slice(0, 8).map((u) => {

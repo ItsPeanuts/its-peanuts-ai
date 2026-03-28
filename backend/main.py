@@ -65,6 +65,14 @@ app.include_router(promotions_router.router)
 app.include_router(agents_router.router)
 app.include_router(public_router)
 
+
+@app.get("/status", tags=["status"])
+def site_status():
+    """Publiek endpoint — geeft maintenance-status terug."""
+    from backend import state
+    return {"maintenance": state.maintenance["enabled"], "message": state.maintenance["message"]}
+
+
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 if os.path.exists(frontend_path):

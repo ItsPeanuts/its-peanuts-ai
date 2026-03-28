@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import NoHorizontalScroll from "@/components/NoHorizontalScroll";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <body>
+        <MaintenanceBanner />
         <div id="app-root">
           <LanguageProvider>
             {children}

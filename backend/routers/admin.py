@@ -310,6 +310,21 @@ def delete_organisation(
     db.commit()
 
 
+@router.post("/maintenance")
+def set_maintenance(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Zet maintenance-modus aan of uit."""
+    require_role(current_user, "admin")
+    from backend import state
+    state.maintenance["enabled"] = bool(payload.get("enabled", False))
+    if "message" in payload and payload["message"]:
+        state.maintenance["message"] = payload["message"]
+    return state.maintenance
+
+
 @router.get("/promotions")
 def list_all_promotions(
     db: Session = Depends(get_db),
