@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -11,6 +12,9 @@ from jose import jwt, JWTError
 from backend.db import get_db
 from backend import models, schemas
 from backend.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from backend.services.email import send_verification_email
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -46,6 +50,7 @@ def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(g
     if exists:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    verify_token = secrets.token_urlsafe(32)
     user = models.User(
         email=email,
         full_name=payload.full_name,
@@ -53,11 +58,42 @@ def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(g
         role="employer",
         plan="gratis",
         trial_ends_at=datetime.now(timezone.utc) + timedelta(days=30),
+        email_verified=False,
+        email_verify_token=verify_token,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    verify_url = f"{FRONTEND_URL}/verify-email?token={verify_token}"
+    send_verification_email(user.email, user.full_name, verify_url)
+
     return user
+
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email_verify_token == token).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Ongeldige of verlopen verificatielink")
+    user.email_verified = True
+    user.email_verify_token = None
+    db.commit()
+    return {"ok": True, "email": user.email}
+
+
+@router.post("/resend-verification")
+def resend_verification(email_body: schemas.ResendVerification, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == email_body.email.lower()).first()
+    if not user or user.role != "employer" or user.email_verified:
+        # Geen info weggeven of account bestaat
+        return {"ok": True}
+    new_token = secrets.token_urlsafe(32)
+    user.email_verify_token = new_token
+    db.commit()
+    verify_url = f"{FRONTEND_URL}/verify-email?token={new_token}"
+    send_verification_email(user.email, user.full_name, verify_url)
+    return {"ok": True}
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -70,6 +106,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if user.role == "employer" and not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="EMAIL_NOT_VERIFIED",
         )
 
     access_token = create_access_token(subject=str(user.id))

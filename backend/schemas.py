@@ -21,6 +21,10 @@ class EmployerRegister(BaseModel):
     full_name: str = Field(min_length=1)
 
 
+class ResendVerification(BaseModel):
+    email: EmailStr
+
+
 class OrganisationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

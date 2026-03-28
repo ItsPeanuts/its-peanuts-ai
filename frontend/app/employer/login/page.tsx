@@ -25,6 +25,7 @@ export default function EmployerLoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [checkEmail, setCheckEmail] = useState("");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +43,12 @@ export default function EmployerLoginPage() {
       if (role === "admin") router.push("/admin");
       else router.push("/employer");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Inloggen mislukt");
+      const msg = err instanceof Error ? err.message : "Inloggen mislukt";
+      if (msg.includes("EMAIL_NOT_VERIFIED")) {
+        setError("Bevestig eerst je e-mailadres via de link die we hebben gestuurd.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,14 +70,65 @@ export default function EmployerLoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.detail || "Registratie mislukt");
-      const user = await me(data.access_token);
-      setSession({ token: data.access_token, role: "employer", email: user.email });
-      router.push("/employer");
+      // Toon "check je e-mail" scherm — werkgever moet eerst e-mail bevestigen
+      setCheckEmail(regEmail);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registratie mislukt");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    if (!checkEmail) return;
+    await fetch(`${BASE}/auth/resend-verification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: checkEmail }),
+    });
+  }
+
+  if (checkEmail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-3 no-underline">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base" style={{ background: "#7C3AED" }}>
+                V
+              </div>
+              <div className="text-left">
+                <div className="font-bold text-gray-900 text-lg leading-tight">VorzaIQ</div>
+                <div className="text-xs text-gray-400">Werkgeversportaal</div>
+              </div>
+            </Link>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl" style={{ background: "#F3E8FF" }}>
+              ✉
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Check je e-mail</h1>
+            <p className="text-sm text-gray-500 mb-1">We hebben een verificatielink gestuurd naar:</p>
+            <p className="text-sm font-semibold text-gray-800 mb-6">{checkEmail}</p>
+            <p className="text-sm text-gray-400 mb-6">Klik op de link in de e-mail om je account te activeren. Daarna kun je inloggen.</p>
+            <button
+              onClick={handleResend}
+              className="text-sm text-purple-600 font-semibold hover:text-purple-700 underline"
+            >
+              E-mail opnieuw versturen
+            </button>
+            <div className="mt-4">
+              <button
+                onClick={() => { setCheckEmail(""); setTab("login"); }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Terug naar inloggen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

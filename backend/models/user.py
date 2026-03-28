@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base
@@ -26,6 +26,10 @@ class User(Base):
 
     # gratis trial: toegang tot gratis plan tot deze datum
     trial_ends_at = Column(DateTime(timezone=True), nullable=True, default=None)
+
+    # e-mail verificatie (werkgevers moeten e-mail bevestigen na registratie)
+    email_verified = Column(Boolean, nullable=False, default=True, server_default="1")
+    email_verify_token = Column(String(255), nullable=True, default=None)
 
     # organisatie (multi-user werkgever); None = individueel
     org_id = Column(Integer, ForeignKey("organisations.id"), nullable=True, index=True)

@@ -34,6 +34,7 @@ def seed_test_data() -> None:
                 full_name="Admin",
                 hashed_password=hash_password(ADMIN_PASSWORD),
                 role="admin",
+                email_verified=True,
             )
             db.add(admin)
             db.commit()
@@ -55,6 +56,7 @@ def seed_test_data() -> None:
                 hashed_password=hash_password("SysP3anutsX!2025#"),
                 role="employer",
                 plan="normaal",
+                email_verified=True,
             )
             db.add(system_user)
             db.commit()
@@ -72,6 +74,7 @@ def seed_test_data() -> None:
                 hashed_password=hash_password(TEST_PASSWORD),
                 role="employer",
                 plan="normaal",
+                email_verified=True,
             )
             db.add(test_employer)
             db.commit()
@@ -80,6 +83,7 @@ def seed_test_data() -> None:
         else:
             # Zorg dat plan altijd normaal is (zodat vacature-limiet geen probleem is)
             test_employer.plan = "normaal"
+            test_employer.email_verified = True
             db.commit()
             print("[seed] test werkgever bestaat al: werkgever@test.nl")
 

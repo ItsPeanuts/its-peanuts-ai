@@ -389,6 +389,57 @@ def send_team_invite_email(
     )
 
 
+# ── Werkgever: e-mail verificatie ────────────────────────────────────────────
+
+def send_verification_email(employer_email: str, full_name: str, verify_url: str) -> None:
+    """Stuur werkgever een verificatiemail na registratie."""
+    html = f"""
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">Bevestig je e-mailadres</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        Welkom bij VorzaIQ, {full_name}!
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        Je werkgeversaccount is aangemaakt. Klik op de knop hieronder om je
+        e-mailadres te bevestigen en je account te activeren.
+      </p>
+
+      <a href="{verify_url}"
+         style="display:inline-block;padding:14px 32px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">
+        E-mailadres bevestigen →
+      </a>
+
+      <p style="font-size:13px;color:#6b7280;margin:28px 0 0;line-height:1.6;">
+        Of kopieer deze link in je browser:<br>
+        <span style="font-size:12px;color:#9ca3af;word-break:break-all;">{verify_url}</span>
+      </p>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        Als je je niet hebt geregistreerd bij VorzaIQ, kun je deze mail negeren.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=employer_email,
+        subject="Bevestig je e-mailadres — VorzaIQ",
+        html=html,
+    )
+
+
 # ── Admin: nieuwe promotie-betaling ontvangen ─────────────────────────────────
 
 def send_promotion_notification(
