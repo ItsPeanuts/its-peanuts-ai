@@ -164,9 +164,10 @@ def seed_test_data() -> None:
                 ))
                 print(f"[seed] test vacature aangemaakt: {vd['title']}")
             else:
-                # Zorg dat employment_type en work_location altijd correct zijn
+                # Zorg dat alle velden altijd correct zijn
                 existing.employment_type = vd["employment_type"]
                 existing.work_location = vd["work_location"]
+                existing.interview_type = "both"
                 existing.status = "actief"
                 print(f"[seed] test vacature bijgewerkt: {vd['title']}")
         db.commit()

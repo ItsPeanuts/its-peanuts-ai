@@ -342,8 +342,9 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                 {(() => {
                   const iType = vacancy?.interview_type ?? "both";
                   const ePlan = vacancy?.employer_plan ?? "gratis";
-                  const showChat    = iType === "chat" || iType === "both";
                   const showVirtual = (iType === "virtual" || iType === "both") && ePlan === "premium";
+                  // Chat is beschikbaar tenzij werkgever expliciet voor "virtual" koos én dat ook getoond wordt
+                  const showChat = iType !== "virtual" || !showVirtual;
                   return (
                     <div style={{ marginBottom: 24 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12, textAlign: "left" }}>
