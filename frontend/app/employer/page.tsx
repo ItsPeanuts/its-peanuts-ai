@@ -61,7 +61,9 @@ export default function EmployerPage() {
   const role = useMemo(() => getRole(), []);
 
   const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [userPlan, setUserPlan] = useState<string>("gratis");
+  const [userTrialEndsAt, setUserTrialEndsAt] = useState<string | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [applications, setApplications] = useState<ApplicationWithCandidate[]>([]);
   const [selectedVacancy, setSelectedVacancy] = useState<number | null>(null);
@@ -172,7 +174,9 @@ export default function EmployerPage() {
       try {
         const [u, vacs] = await Promise.all([me(token), employerVacancies(token)]);
         setUserEmail(u.email || "");
-        setUserPlan((u as { plan?: string }).plan || "gratis");
+        setUserName(u.full_name || "");
+        setUserPlan(u.plan || "gratis");
+        setUserTrialEndsAt((u as { trial_ends_at?: string | null }).trial_ends_at ?? null);
         setVacancies(vacs || []);
         const apps = await getEmployerApplications(token);
         setApplications(apps);
@@ -609,6 +613,13 @@ export default function EmployerPage() {
             Integraties
           </Link>
 
+          <Link
+            href="/employer/instellingen"
+            className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors no-underline block"
+          >
+            Instellingen
+          </Link>
+
           {vacancies.length > 0 && (
             <>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2 mt-4">Vacatures</p>
@@ -654,6 +665,22 @@ export default function EmployerPage() {
           </button>
           <span className="font-bold text-gray-900 text-sm">Werkgever portaal</span>
         </div>
+
+        {/* Trial-expiry banner */}
+        {userPlan === "gratis" && userTrialEndsAt && (() => {
+          const daysLeft = Math.ceil((new Date(userTrialEndsAt).getTime() - Date.now()) / 86400000);
+          if (daysLeft > 7) return null;
+          return (
+            <div className={`rounded-xl px-4 py-3 text-sm mb-5 flex items-center justify-between gap-4 ${daysLeft <= 0 ? "bg-red-50 border border-red-200 text-red-700" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
+              <span>
+                {daysLeft <= 0
+                  ? "Je gratis proefperiode is verlopen. Kies een abonnement om te blijven werven."
+                  : `Je gratis proefperiode verloopt over ${daysLeft} dag${daysLeft !== 1 ? "en" : ""}. Kies een abonnement om te blijven werven.`}
+              </span>
+              <a href="/employer/abonnementen" className="shrink-0 font-semibold underline">Upgrade</a>
+            </div>
+          );
+        })()}
 
         {/* Notificaties */}
         {msg && (

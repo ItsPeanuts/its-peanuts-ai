@@ -90,7 +90,7 @@ export default function AdminPage() {
   const [token] = useState<string | null>(() => getToken());
   const [role] = useState<string | null>(() => getRole());
 
-  const [view, setView] = useState<"stats" | "users" | "vacancies" | "sales" | "marketing">("stats");
+  const [view, setView] = useState<"stats" | "users" | "vacancies" | "sales" | "marketing" | "promotions">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [vacancies, setVacancies] = useState<AdminVacancy[]>([]);
@@ -110,6 +110,16 @@ export default function AdminPage() {
     contact_name: "", contact_role: "", channel: "email",
     language: "nl", custom_notes: "",
   });
+
+  // Promotions state
+  type AdminPromotion = {
+    id: number; vacancy_id: number; vacancy_title: string | null;
+    employer_email: string | null; duration_days: number; total_price: number;
+    status: string; created_at: string | null; paid_at: string | null;
+    starts_at: string | null; ends_at: string | null;
+  };
+  const [promotions, setPromotions] = useState<AdminPromotion[]>([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(false);
 
   // Marketing state
   const [marketingList, setMarketingList] = useState<MarketingContent[]>([]);
@@ -146,6 +156,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (view === "sales" && token) loadLeads();
     if (view === "marketing" && token) loadMarketing();
+    if (view === "promotions" && token) loadPromotions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, token]);
 
@@ -206,6 +217,36 @@ export default function AdminPage() {
         method: "PATCH", body: JSON.stringify({ new_password: newPw }),
       });
       setMsg(`Wachtwoord van ${email} gewijzigd`); setTimeout(() => setMsg(""), 4000);
+    } catch (e) { showErr(e); }
+  }
+
+  // ── Promotions handlers ────────────────────────────────────────────────────
+
+  async function loadPromotions() {
+    if (!token) return;
+    setPromotionsLoading(true);
+    try {
+      const data = await apiFetch(token, "/admin/promotions");
+      setPromotions(data);
+    } catch (e) { showErr(e); }
+    finally { setPromotionsLoading(false); }
+  }
+
+  async function handleActivatePromotion(id: number) {
+    if (!token) return;
+    try {
+      const updated = await apiFetch(token, `/promotions/${id}/activate`, { method: "POST" });
+      setPromotions((prev) => prev.map((p) => p.id === id ? { ...p, ...updated } : p));
+      setMsg("Promotie geactiveerd!"); setTimeout(() => setMsg(""), 3000);
+    } catch (e) { showErr(e); }
+  }
+
+  async function handleCompletePromotion(id: number) {
+    if (!token) return;
+    try {
+      await apiFetch(token, `/promotions/${id}/complete`, { method: "POST" });
+      setPromotions((prev) => prev.map((p) => p.id === id ? { ...p, status: "completed" } : p));
+      setMsg("Promotie afgerond!"); setTimeout(() => setMsg(""), 3000);
     } catch (e) { showErr(e); }
   }
 
@@ -343,8 +384,9 @@ export default function AdminPage() {
             { id: "stats",     label: "Dashboard",        icon: "📊" },
             { id: "users",     label: "Gebruikers",        icon: "👥" },
             { id: "vacancies", label: "Vacatures",          icon: "📋" },
-            { id: "sales",     label: "Sales Agent",        icon: "🎯" },
-            { id: "marketing", label: "Marketing Agent",    icon: "📣" },
+            { id: "sales",      label: "Sales Agent",        icon: "🎯" },
+            { id: "marketing",  label: "Marketing Agent",    icon: "📣" },
+            { id: "promotions", label: "Promoties",          icon: "📢" },
           ] as const).map((item) => (
             <button
               key={item.id}
@@ -939,6 +981,91 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+          </>
+        )}
+        {/* ─── PROMOTIES ─── */}
+        {view === "promotions" && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">📢 Vacature Promoties</h1>
+                <p className="text-sm text-gray-500 mt-1">Overzicht van alle betaalde vacature-promoties. Activeer of rond af.</p>
+              </div>
+              <button onClick={loadPromotions} className="text-sm text-purple-600 hover:text-purple-800 font-semibold px-3 py-1.5 rounded-lg hover:bg-purple-50 transition">
+                Vernieuwen
+              </button>
+            </div>
+
+            {promotionsLoading ? (
+              <div className="text-gray-400 text-sm py-8 text-center">Laden...</div>
+            ) : promotions.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm">
+                Nog geen promoties.
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Vacature</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Werkgever</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Duur</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Bedrag</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500">Betaald op</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {promotions.map((p) => {
+                      const statusStyle: Record<string, { color: string; bg: string; label: string }> = {
+                        pending_payment: { color: "#92400e", bg: "#fef3c7", label: "Wacht op betaling" },
+                        paid:            { color: "#1e40af", bg: "#dbeafe", label: "Betaald" },
+                        active:          { color: "#065f46", bg: "#d1fae5", label: "Actief" },
+                        completed:       { color: "#6b7280", bg: "#f3f4f6", label: "Afgerond" },
+                        cancelled:       { color: "#dc2626", bg: "#fee2e2", label: "Geannuleerd" },
+                      };
+                      const s = statusStyle[p.status] ?? statusStyle.completed;
+                      return (
+                        <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
+                          <td className="px-4 py-3 font-medium text-gray-900">{p.vacancy_title ?? `#${p.vacancy_id}`}</td>
+                          <td className="px-4 py-3 text-gray-500">{p.employer_email ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-700">{p.duration_days} dagen</td>
+                          <td className="px-4 py-3 text-gray-700">€{p.total_price.toFixed(0)}</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ color: s.color, background: s.bg }}>
+                              {s.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {p.paid_at ? new Date(p.paid_at).toLocaleDateString("nl-NL") : "—"}
+                          </td>
+                          <td className="px-4 py-3 flex gap-2 justify-end">
+                            {p.status === "paid" && (
+                              <button
+                                onClick={() => handleActivatePromotion(p.id)}
+                                className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition"
+                                style={{ background: "#059669" }}
+                              >
+                                Activeren
+                              </button>
+                            )}
+                            {p.status === "active" && (
+                              <button
+                                onClick={() => handleCompletePromotion(p.id)}
+                                className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                              >
+                                Afronden
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
       </main>

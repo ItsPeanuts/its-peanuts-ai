@@ -39,7 +39,19 @@ export async function me(token: string) {
     full_name: string;
     role: "candidate" | "employer" | "admin";
     plan?: string | null;
+    trial_ends_at?: string | null;
   };
+}
+
+export async function updateProfile(token: string, fullName: string) {
+  const res = await fetch(`${BASE}/auth/profile`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ full_name: fullName }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Opslaan mislukt");
+  return data;
 }
 
 export async function listCandidateVacancies(token: string) {

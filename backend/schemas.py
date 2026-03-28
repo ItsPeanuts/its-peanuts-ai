@@ -53,8 +53,13 @@ class UserOut(BaseModel):
     full_name: str
     role: str
     plan: Optional[str] = None
+    trial_ends_at: Optional[datetime] = None
     org_id: Optional[int] = None
     org_name: Optional[str] = None
+
+
+class EmployerProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
 
 
 class Token(BaseModel):

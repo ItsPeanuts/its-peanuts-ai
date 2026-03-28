@@ -194,6 +194,20 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     return {"ok": True}
 
 
+@router.patch("/profile", response_model=schemas.UserOut)
+def update_profile(
+    payload: schemas.EmployerProfileUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Bijwerk je profielnaam."""
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name.strip()
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.post("/reset-password")
 def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
     """Stel een nieuw wachtwoord in via een reset-token."""

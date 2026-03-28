@@ -310,6 +310,39 @@ def delete_organisation(
     db.commit()
 
 
+@router.get("/promotions")
+def list_all_promotions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Alle promoties platform-breed (admin only)."""
+    require_role(current_user, "admin")
+    import json
+    promos = (
+        db.query(models.PromotionRequest)
+        .order_by(models.PromotionRequest.created_at.desc())
+        .all()
+    )
+    result = []
+    for p in promos:
+        vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == p.vacancy_id).first()
+        employer = db.query(models.User).filter(models.User.id == p.employer_id).first()
+        result.append({
+            "id": p.id,
+            "vacancy_id": p.vacancy_id,
+            "vacancy_title": vacancy.title if vacancy else None,
+            "employer_email": employer.email if employer else None,
+            "duration_days": p.duration_days,
+            "total_price": p.total_price,
+            "status": p.status,
+            "created_at": str(p.created_at),
+            "paid_at": str(p.paid_at) if p.paid_at else None,
+            "starts_at": str(p.starts_at) if p.starts_at else None,
+            "ends_at": str(p.ends_at) if p.ends_at else None,
+        })
+    return result
+
+
 @router.patch("/users/{user_id}/organisation", response_model=UserAdminOut)
 def patch_user_organisation(
     user_id: int,
