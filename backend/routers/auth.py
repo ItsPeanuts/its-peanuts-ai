@@ -18,7 +18,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 BOOTSTRAP_TOKEN = os.getenv("BOOTSTRAP_TOKEN", "Peanuts-Setup-2025!").strip()
 
 
-@router.post("/register", response_model=schemas.UserOut)
+@router.post("/register", response_model=schemas.Token)
 def register_candidate(payload: schemas.CandidateRegister, db: Session = Depends(get_db)):
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
@@ -35,7 +35,8 @@ def register_candidate(payload: schemas.CandidateRegister, db: Session = Depends
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    access_token = create_access_token(subject=str(user.id))
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/register-employer", response_model=schemas.UserOut)
