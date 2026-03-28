@@ -44,6 +44,7 @@ def seed_test_data() -> None:
             # Altijd wachtwoord bijwerken zodat env var wijziging direct effect heeft
             admin.hashed_password = hash_password(ADMIN_PASSWORD)
             admin.role = "admin"
+            admin.email_verified = True
             db.commit()
             print(f"[seed] admin bijgewerkt: {ADMIN_EMAIL}")
 
@@ -63,6 +64,8 @@ def seed_test_data() -> None:
             db.refresh(system_user)
             print(f"[seed] systeem-werkgever aangemaakt: {SYSTEM_EMAIL}")
         else:
+            system_user.email_verified = True
+            db.commit()
             print(f"[seed] systeem-werkgever bestaat al: {SYSTEM_EMAIL}")
 
         # ── Test werkgever ───────────────────────────────────────────────
