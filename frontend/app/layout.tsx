@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import OverflowDebug from "@/components/OverflowDebug";
 import NoHorizontalScroll from "@/components/NoHorizontalScroll";
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -23,7 +22,6 @@ export default function RootLayout({
           </LanguageProvider>
         </div>
         <NoHorizontalScroll />
-        <OverflowDebug />
       </body>
     </html>
   );
