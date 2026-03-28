@@ -440,6 +440,59 @@ def send_verification_email(employer_email: str, full_name: str, verify_url: str
     )
 
 
+# ── Wachtwoord reset ──────────────────────────────────────────────────────────
+
+def send_password_reset_email(to_email: str, full_name: str, reset_url: str) -> None:
+    """Stuur een wachtwoord-reset link naar de gebruiker."""
+    html = f"""
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">Wachtwoord opnieuw instellen</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        Hallo {full_name},
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        We hebben een verzoek ontvangen om het wachtwoord van je account te resetten.
+        Klik op de knop hieronder om een nieuw wachtwoord in te stellen.
+      </p>
+
+      <a href="{reset_url}"
+         style="display:inline-block;padding:14px 32px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">
+        Wachtwoord resetten →
+      </a>
+
+      <p style="font-size:13px;color:#6b7280;margin:28px 0 0;line-height:1.6;">
+        Deze link is <strong>1 uur geldig</strong>. Daarna moet je opnieuw een reset aanvragen.<br><br>
+        Of kopieer deze link in je browser:<br>
+        <span style="font-size:12px;color:#9ca3af;word-break:break-all;">{reset_url}</span>
+      </p>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        Als je geen wachtwoord-reset hebt aangevraagd, kun je deze mail veilig negeren.
+        Je wachtwoord blijft ongewijzigd.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=to_email,
+        subject="Wachtwoord resetten — VorzaIQ",
+        html=html,
+    )
+
+
 # ── Admin: nieuwe promotie-betaling ontvangen ─────────────────────────────────
 
 def send_promotion_notification(

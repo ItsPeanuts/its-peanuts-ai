@@ -12,7 +12,7 @@ from jose import jwt, JWTError
 from backend.db import get_db
 from backend import models, schemas
 from backend.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
-from backend.services.email import send_verification_email
+from backend.services.email import send_verification_email, send_password_reset_email
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
 
@@ -176,6 +176,35 @@ def change_password(
     if len(payload.new_password) < 8:
         raise HTTPException(status_code=400, detail="Nieuw wachtwoord moet minimaal 8 tekens zijn")
     current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Stuur een wachtwoord-reset link. Geeft altijd ok=True terug (geen info over of e-mail bestaat)."""
+    user = db.query(models.User).filter(models.User.email == payload.email.lower()).first()
+    if user:
+        reset_token = secrets.token_urlsafe(32)
+        user.password_reset_token = reset_token
+        user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.commit()
+        reset_url = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+        send_password_reset_email(user.email, user.full_name, reset_url)
+    return {"ok": True}
+
+
+@router.post("/reset-password")
+def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Stel een nieuw wachtwoord in via een reset-token."""
+    user = db.query(models.User).filter(models.User.password_reset_token == payload.token).first()
+    if not user or not user.password_reset_expires_at:
+        raise HTTPException(status_code=400, detail="Ongeldige of verlopen reset-link")
+    if datetime.now(timezone.utc) > user.password_reset_expires_at:
+        raise HTTPException(status_code=400, detail="Reset-link is verlopen. Vraag een nieuwe aan.")
+    user.hashed_password = hash_password(payload.new_password)
+    user.password_reset_token = None
+    user.password_reset_expires_at = None
     db.commit()
     return {"ok": True}
 

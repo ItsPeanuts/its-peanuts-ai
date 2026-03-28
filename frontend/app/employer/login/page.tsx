@@ -224,7 +224,14 @@ export default function EmployerLoginPage() {
             </form>
           )}
 
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center space-y-2">
+            {tab === "login" && (
+              <p className="text-sm text-gray-500">
+                <Link href="/forgot-password" className="text-purple-600 font-semibold no-underline hover:text-purple-700">
+                  Wachtwoord vergeten?
+                </Link>
+              </p>
+            )}
             <p className="text-sm text-gray-500">
               Bent u kandidaat?{" "}
               <Link href="/candidate/login" className="text-purple-600 font-semibold no-underline hover:text-purple-700">
