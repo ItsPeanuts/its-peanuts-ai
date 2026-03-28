@@ -22,7 +22,6 @@ export default function EmployerLoginPage() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [regToken, setRegToken] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -61,7 +60,6 @@ export default function EmployerLoginPage() {
           email: regEmail,
           password: regPassword,
           full_name: regName,
-          bootstrap_token: regToken,
         }),
       });
       const data = await res.json();
@@ -160,15 +158,6 @@ export default function EmployerLoginPage() {
                 <input type="password" required minLength={8} value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="Minimaal 8 tekens"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Bootstrap Token
-                  <span className="ml-1 text-xs text-gray-400 font-normal">(ontvangen via VorzaIQ)</span>
-                </label>
-                <input type="text" required value={regToken} onChange={(e) => setRegToken(e.target.value)}
-                  placeholder="xxxxxxxx-xxxx-xxxx"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
               <button type="submit" disabled={loading}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"

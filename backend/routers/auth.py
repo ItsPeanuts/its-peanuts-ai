@@ -41,9 +41,6 @@ def register_candidate(payload: schemas.CandidateRegister, db: Session = Depends
 
 @router.post("/register-employer", response_model=schemas.UserOut)
 def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(get_db)):
-    if payload.bootstrap_token != BOOTSTRAP_TOKEN:
-        raise HTTPException(status_code=403, detail="Invalid bootstrap token")
-
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
     if exists:
