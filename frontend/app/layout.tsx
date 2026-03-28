@@ -17,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <body>
-        <LanguageProvider>
-          <div id="app-root">{children}</div>
-        </LanguageProvider>
+        <div id="app-root">
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </div>
         <NoHorizontalScroll />
         <OverflowDebug />
       </body>

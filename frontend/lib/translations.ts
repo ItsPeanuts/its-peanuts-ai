@@ -1,6 +1,67 @@
 export type Lang = "nl" | "en";
 
-const nl = {
+export type TranslationSet = {
+  nav: {
+    vacancies: string;
+    candidates: string;
+    employers: string;
+    login: string;
+  };
+  hero: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    searchJob: string;
+    searchLocation: string;
+    searchBtn: string;
+    recentJobs: string;
+    viewAll: string;
+  };
+  jobs: {
+    searchPlaceholder: string;
+    locationPlaceholder: string;
+    searchBtn: string;
+    filtersBtn: string;
+    filters: string;
+    clearAll: string;
+    datePosted: string;
+    today: string;
+    last3days: string;
+    lastWeek: string;
+    lastMonth: string;
+    employmentType: string;
+    fulltime: string;
+    parttime: string;
+    freelance: string;
+    stage: string;
+    tijdelijk: string;
+    workLocation: string;
+    remote: string;
+    hybride: string;
+    opLocatie: string;
+    hoursPerWeek: string;
+    salary: string;
+    vacancyLanguage: string;
+    langNl: string;
+    langEn: string;
+    perWeek: string;
+    loading: string;
+    found: string;
+    vacancy: string;
+    vacancies: string;
+    noResults: string;
+    noResultsHint: string;
+    removeFilters: string;
+    applyBtn: string;
+    profileCta: string;
+    profileCtaSub: string;
+    startNow: string;
+    minSalary: string;
+    maxSalary: string;
+  };
+};
+
+const nl: TranslationSet = {
   nav: {
     vacancies: "Vacatures",
     candidates: "Kandidaten",
@@ -59,9 +120,9 @@ const nl = {
     minSalary: "Min",
     maxSalary: "Max",
   },
-} as const;
+};
 
-const en = {
+const en: TranslationSet = {
   nav: {
     vacancies: "Jobs",
     candidates: "Candidates",
@@ -120,7 +181,6 @@ const en = {
     minSalary: "Min",
     maxSalary: "Max",
   },
-} as const;
+};
 
-export const translations: Record<Lang, typeof nl> = { nl, en };
-export type TranslationSet = typeof nl;
+export const translations: Record<Lang, TranslationSet> = { nl, en };
