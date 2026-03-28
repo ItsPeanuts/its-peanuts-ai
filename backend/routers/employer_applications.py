@@ -86,8 +86,8 @@ def update_status(
     db.commit()
     db.refresh(app)
 
-    # Stuur e-mail naar kandidaat bij aangenomen of afgewezen
-    if payload.status in ("hired", "rejected"):
+    # Stuur e-mail naar kandidaat bij elke relevante statuswijziging
+    if payload.status in ("shortlisted", "interview", "hired", "rejected"):
         try:
             candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
             vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()

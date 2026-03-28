@@ -252,10 +252,49 @@ def send_status_update_email(
     candidate_email: str,
     candidate_name: str,
     vacancy_title: str,
-    new_status: str,  # "hired" of "rejected"
+    new_status: str,  # "shortlisted" | "interview" | "hired" | "rejected"
 ) -> None:
-    """Stuur kandidaat een e-mail als hun status op aangenomen of afgewezen gezet wordt."""
-    if new_status == "hired":
+    """Stuur kandidaat een e-mail als hun sollicitatiestatus wijzigt."""
+    if new_status == "shortlisted":
+        header_bg = "#7C3AED"
+        header_sub = "Goed nieuws!"
+        heading = "Je staat op de shortlist!"
+        body = f"""
+        <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">
+          Hi {candidate_name}, goed nieuws — je bent geselecteerd voor de volgende ronde!
+        </p>
+        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+          <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Functie</div>
+          <div style="font-size:18px;font-weight:700;color:#111827;">{vacancy_title}</div>
+        </div>
+        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+          De werkgever heeft jouw profiel geselecteerd en wil graag verder met je.
+          Je hoort binnenkort meer over de volgende stap.
+        </p>
+        """
+        link_color = "#7C3AED"
+        subject = f"Je staat op de shortlist: {vacancy_title}"
+    elif new_status == "interview":
+        header_bg = "#d97706"
+        header_sub = "Uitnodiging gesprek"
+        heading = "Je bent uitgenodigd voor een gesprek!"
+        body = f"""
+        <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">
+          Hi {candidate_name}, gefeliciteerd — de werkgever wil graag met je kennismaken!
+        </p>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+          <div style="font-size:12px;color:#92400e;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Functie</div>
+          <div style="font-size:18px;font-weight:700;color:#111827;">{vacancy_title}</div>
+        </div>
+        <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 28px;">
+          Je bent uitgenodigd voor een sollicitatiegesprek. De werkgever neemt
+          binnenkort contact met je op om een datum en tijdstip af te spreken.
+          Bekijk je sollicitatie voor meer details.
+        </p>
+        """
+        link_color = "#d97706"
+        subject = f"Uitnodiging gesprek: {vacancy_title}"
+    elif new_status == "hired":
         header_bg = "#059669"
         header_sub = "Goed nieuws!"
         heading = "Gefeliciteerd — je bent aangenomen!"
