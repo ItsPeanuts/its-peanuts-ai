@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { useLanguage } from "@/lib/i18n";
 
 const CATEGORIES = [
   "IT & Software", "Finance", "Design", "Marketing", "Engineering", "HR",
@@ -18,6 +19,7 @@ const getInitials = (t: string)  =>
   t.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
 
 export default function HomePage() {
+  const { lang, T } = useLanguage();
   const [vacancies, setVacancies] = useState<PublicVacancy[]>([]);
   const [query,     setQuery]     = useState("");
   const [location,  setLocation]  = useState("");
@@ -34,6 +36,18 @@ export default function HomePage() {
     window.location.href = `/vacatures?${p.toString()}`;
   };
 
+  const stats = lang === "en"
+    ? [
+        { n: vacancies.length > 0 ? `${vacancies.length}+` : "14,780+", label: "jobs" },
+        { n: "200+", label: "companies" },
+        { n: "5,000+", label: "candidates" },
+      ]
+    : [
+        { n: vacancies.length > 0 ? `${vacancies.length}+` : "14.780+", label: "vacatures" },
+        { n: "200+", label: "bedrijven" },
+        { n: "5.000+", label: "kandidaten" },
+      ];
+
   return (
     <div style={{ overflowX: "hidden" }}>
       <PublicNav />
@@ -43,14 +57,14 @@ export default function HomePage() {
         <div className="max-w-2xl mx-auto px-6" style={{ textAlign: "center" }}>
 
           <p className="text-sm font-medium text-purple-700 mb-4">
-            AI-powered recruitment platform
+            {T.hero.badge}
           </p>
 
           <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
-            Vind jouw perfecte baan
+            {T.hero.title}
           </h1>
           <p className="text-gray-500 text-base mb-8 leading-relaxed">
-            Upload je CV en ontvang direct een AI-matchscore voor elke vacature.
+            {T.hero.subtitle}
           </p>
 
           {/* Zoekbalk */}
@@ -59,7 +73,7 @@ export default function HomePage() {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Functietitel of trefwoord..."
+              placeholder={T.hero.searchJob}
               className="hero-search-input"
               style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent", minWidth: 0 }}
             />
@@ -68,7 +82,7 @@ export default function HomePage() {
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              placeholder="Stad of regio"
+              placeholder={T.hero.searchLocation}
               className="hero-location-input"
               style={{ width: 140, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "8px 12px", background: "transparent" }}
             />
@@ -77,17 +91,13 @@ export default function HomePage() {
               className="hero-search-button"
               style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
             >
-              Zoeken
+              {T.hero.searchBtn}
             </button>
           </form>
 
           {/* Stats */}
           <div className="hero-stats" style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 24 }}>
-            {[
-              { n: vacancies.length > 0 ? `${vacancies.length}+` : "14.780+", label: "vacatures" },
-              { n: "200+", label: "bedrijven" },
-              { n: "5.000+", label: "kandidaten" },
-            ].map(s => (
+            {stats.map(s => (
               <span key={s.label} style={{ fontSize: 13, color: "#6b7280" }}>
                 <strong style={{ color: "#111827", fontWeight: 700 }}>{s.n}</strong> {s.label}
               </span>
@@ -100,7 +110,7 @@ export default function HomePage() {
       <section style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6", padding: "40px 0" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
-            Categorieën
+            {lang === "en" ? "Categories" : "Categorieën"}
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => (
@@ -129,7 +139,7 @@ export default function HomePage() {
               href="/vacatures"
               style={{ display: "inline-block", padding: "7px 16px", borderRadius: 100, border: "1px solid transparent", background: "transparent", fontSize: 13, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}
             >
-              Alle categorieën →
+              {lang === "en" ? "All categories →" : "Alle categorieën →"}
             </Link>
           </div>
         </div>
@@ -140,10 +150,10 @@ export default function HomePage() {
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Nieuwste vacatures
+              {T.hero.recentJobs}
             </p>
             <Link href="/vacatures" style={{ fontSize: 13, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}>
-              Alle vacatures →
+              {T.hero.viewAll} →
             </Link>
           </div>
 
@@ -171,7 +181,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.title}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || "Locatie onbekend"}</div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || (lang === "en" ? "Location unknown" : "Locatie onbekend")}</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {v.salary_range && (
@@ -181,7 +191,7 @@ export default function HomePage() {
                       )}
                       {v.hours_per_week && (
                         <span style={{ fontSize: 12, color: "#7C3AED", padding: "3px 10px", borderRadius: 100, background: "#f0fdfa", fontWeight: 500 }}>
-                          {v.hours_per_week}u
+                          {v.hours_per_week}{T.jobs.perWeek}
                         </span>
                       )}
                     </div>
@@ -196,17 +206,19 @@ export default function HomePage() {
       <section style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", padding: "60px 24px" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
-            Klaar om te starten?
+            {lang === "en" ? "Ready to get started?" : "Klaar om te starten?"}
           </h2>
           <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 24 }}>
-            Maak een gratis account, upload je CV en ontvang AI-matches op maat.
+            {lang === "en"
+              ? "Create a free account, upload your CV and receive tailored AI matches."
+              : "Maak een gratis account, upload je CV en ontvang AI-matches op maat."}
           </p>
           <div className="cta-buttons" style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <Link href="/candidate/login" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
-              Maak account aan
+              {lang === "en" ? "Create account" : "Maak account aan"}
             </Link>
             <Link href="/vacatures" style={{ background: "#f9fafb", color: "#374151", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none", border: "1px solid #e5e7eb" }}>
-              Bekijk vacatures
+              {T.hero.viewAll}
             </Link>
           </div>
         </div>

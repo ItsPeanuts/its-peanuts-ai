@@ -6,6 +6,7 @@ import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { useLanguage } from "@/lib/i18n";
 
 const CARD_COLORS = [
   "#7C3AED", "#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669", "#0284c7", "#d97706",
@@ -14,33 +15,12 @@ const getColor    = (id: number) => CARD_COLORS[id % CARD_COLORS.length];
 const getInitials = (t: string)  =>
   t.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
 
-const EMPLOYMENT_TYPES = [
-  { label: "Fulltime",    value: "fulltime" },
-  { label: "Parttime",    value: "parttime" },
-  { label: "Freelance",   value: "freelance" },
-  { label: "Stage",       value: "stage" },
-  { label: "Tijdelijk",   value: "tijdelijk" },
-];
-
-const WORK_LOCATIONS = [
-  { label: "Remote",      value: "remote" },
-  { label: "Hybride",     value: "hybride" },
-  { label: "Op locatie",  value: "op-locatie" },
-];
-
-const DATE_OPTIONS = [
-  { label: "Vandaag",     value: "today" },
-  { label: "Afgelopen 3 dagen", value: "3days" },
-  { label: "Afgelopen week",    value: "week" },
-  { label: "Afgelopen maand",   value: "month" },
-];
-
 const HOURS_RANGES = [
-  { label: "< 16 uur",    min: 0,  max: 15 },
-  { label: "16 – 24 uur", min: 16, max: 24 },
-  { label: "24 – 32 uur", min: 25, max: 32 },
-  { label: "32 – 40 uur", min: 33, max: 40 },
-  { label: "40+ uur",     min: 40, max: 999 },
+  { label_nl: "< 16 uur",    label_en: "< 16 h",     min: 0,  max: 15 },
+  { label_nl: "16 – 24 uur", label_en: "16 – 24 h",  min: 16, max: 24 },
+  { label_nl: "24 – 32 uur", label_en: "24 – 32 h",  min: 25, max: 32 },
+  { label_nl: "32 – 40 uur", label_en: "32 – 40 h",  min: 33, max: 40 },
+  { label_nl: "40+ uur",     label_en: "40+ h",       min: 40, max: 999 },
 ];
 
 /** Parseer een salaris-string zoals "€4.500 – €6.000" naar [4500, 6000] */
@@ -60,16 +40,10 @@ function parseHours(raw: string | null | undefined): [number, number] | null {
   return [Math.min(...nums), Math.max(...nums)];
 }
 
-/** Bepaal of een vacature past bij de geselecteerde dienstverbanden.
- *  Als employment_type niet is ingesteld, wordt het geinfereerd via hours_per_week:
- *  - fulltime  → max uren >= 36
- *  - parttime  → min uren in [16, 35]
- *  Een "32-40 uur" vacature matcht dus zowel fulltime als parttime. */
 function matchesEmploymentType(v: { employment_type: string | null; hours_per_week: string | null }, types: string[]): boolean {
   if (types.length === 0) return true;
   const vType = v.employment_type?.toLowerCase();
   if (vType) return types.includes(vType);
-  // Geen expliciet type: infereer van uren
   const hours = parseHours(v.hours_per_week);
   if (!hours) return false;
   const [minH, maxH] = hours;
@@ -82,27 +56,52 @@ function matchesEmploymentType(v: { employment_type: string | null; hours_per_we
 
 function VacaturesContent() {
   const searchParams = useSearchParams();
+  const { lang, T } = useLanguage();
 
   const [vacancies, setVacancies] = useState<PublicVacancy[]>([]);
   const [loading,   setLoading]   = useState(true);
 
-  // Zoekbalk
   const [query,    setQuery]    = useState(searchParams.get("q") ?? "");
   const [location, setLocation] = useState(searchParams.get("location") ?? "");
 
-  // Server-side filters (doorgegeven aan API)
   const [employmentTypes, setEmploymentTypes] = useState<string[]>([]);
   const [workLocations,   setWorkLocations]   = useState<string[]>([]);
   const [datePosted,      setDatePosted]      = useState<string>("");
+  const [vacancyLang,     setVacancyLang]     = useState<string[]>([]);
 
-  // Client-side filters (lokaal gefilterd)
-  const [hoursRange,  setHoursRange]  = useState<number | null>(null); // index in HOURS_RANGES
+  const [hoursRange,  setHoursRange]  = useState<number | null>(null);
   const [salaryMin,   setSalaryMin]   = useState<string>("");
   const [salaryMax,   setSalaryMax]   = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
+  const EMPLOYMENT_TYPES = [
+    { label: T.jobs.fulltime,  value: "fulltime" },
+    { label: T.jobs.parttime,  value: "parttime" },
+    { label: T.jobs.freelance, value: "freelance" },
+    { label: T.jobs.stage,     value: "stage" },
+    { label: T.jobs.tijdelijk, value: "tijdelijk" },
+  ];
+
+  const WORK_LOCATIONS = [
+    { label: T.jobs.remote,    value: "remote" },
+    { label: T.jobs.hybride,   value: "hybride" },
+    { label: T.jobs.opLocatie, value: "op-locatie" },
+  ];
+
+  const DATE_OPTIONS = [
+    { label: T.jobs.today,     value: "today" },
+    { label: T.jobs.last3days, value: "3days" },
+    { label: T.jobs.lastWeek,  value: "week" },
+    { label: T.jobs.lastMonth, value: "month" },
+  ];
+
+  const VACANCY_LANGUAGES = [
+    { label: T.jobs.langNl, value: "nl" },
+    { label: T.jobs.langEn, value: "en" },
+  ];
+
   const activeFilterCount =
-    employmentTypes.length + workLocations.length +
+    employmentTypes.length + workLocations.length + vacancyLang.length +
     (datePosted ? 1 : 0) + (hoursRange !== null ? 1 : 0) +
     (salaryMin ? 1 : 0) + (salaryMax ? 1 : 0);
 
@@ -122,7 +121,6 @@ function VacaturesContent() {
     }
   }, []);
 
-  // Initieel laden met URL-params
   useEffect(() => {
     load({
       q:        searchParams.get("q") ?? undefined,
@@ -130,16 +128,14 @@ function VacaturesContent() {
     });
   }, [load, searchParams]);
 
-  // Herlaad wanneer server-side filters wijzigen
   useEffect(() => {
     load({
       q:           query || undefined,
       location:    location || undefined,
       date_posted: datePosted || undefined,
-      // employment_type en work_location altijd client-side (support voor ranges + inferentie)
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employmentTypes, workLocations, datePosted]);
+  }, [employmentTypes, workLocations, datePosted, vacancyLang]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +152,9 @@ function VacaturesContent() {
   const toggleWorkLocation = (val: string) =>
     setWorkLocations(p => p.includes(val) ? p.filter(v => v !== val) : [...p, val]);
 
+  const toggleVacancyLang = (val: string) =>
+    setVacancyLang(p => p.includes(val) ? p.filter(v => v !== val) : [...p, val]);
+
   const clearFilters = () => {
     setEmploymentTypes([]);
     setWorkLocations([]);
@@ -163,21 +162,22 @@ function VacaturesContent() {
     setHoursRange(null);
     setSalaryMin("");
     setSalaryMax("");
+    setVacancyLang([]);
     setQuery("");
     setLocation("");
     load({});
   };
 
-  // Client-side filtering
   const filtered = vacancies.filter(v => {
-    // Dienstverband (altijd client-side; inferentie via uren als type niet ingesteld)
     if (!matchesEmploymentType(v, employmentTypes)) return false;
-    // Werklocatie
     if (workLocations.length > 0) {
       const vWl = v.work_location?.toLowerCase();
       if (!vWl || !workLocations.includes(vWl)) return false;
     }
-    // Uren per week (overlap-check zodat "32-40" matcht in meerdere buckets)
+    if (vacancyLang.length > 0) {
+      const vl = (v as PublicVacancy & { language?: string | null }).language ?? null;
+      if (!vl || !vacancyLang.includes(vl)) return false;
+    }
     if (hoursRange !== null) {
       const range = HOURS_RANGES[hoursRange];
       const hours = parseHours(v.hours_per_week);
@@ -185,7 +185,6 @@ function VacaturesContent() {
       const [minH, maxH] = hours;
       if (maxH < range.min || minH > range.max) return false;
     }
-    // Salaris
     const parsed = parseSalary(v.salary_range);
     if (salaryMin) {
       const min = parseInt(salaryMin);
@@ -220,6 +219,10 @@ function VacaturesContent() {
     </label>
   );
 
+  const foundText = loading
+    ? T.jobs.loading
+    : `${filtered.length} ${filtered.length !== 1 ? T.jobs.vacancies : T.jobs.vacancy} ${T.jobs.found}`;
+
   return (
     <div style={{ background: "#f9fafb", minHeight: "100vh", overflowX: "hidden" }}>
       <PublicNav />
@@ -234,7 +237,7 @@ function VacaturesContent() {
               </svg>
               <input
                 type="text" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Functie, trefwoord of bedrijf..."
+                placeholder={T.jobs.searchPlaceholder}
                 style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "10px 12px 10px 0", background: "transparent" }}
               />
             </div>
@@ -244,7 +247,7 @@ function VacaturesContent() {
               </svg>
               <input
                 type="text" value={location} onChange={e => setLocation(e.target.value)}
-                placeholder="Stad of regio..."
+                placeholder={T.jobs.locationPlaceholder}
                 style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: "#111827", padding: "10px 0", background: "transparent" }}
               />
             </div>
@@ -253,7 +256,7 @@ function VacaturesContent() {
                 type="submit"
                 style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 10, padding: "0 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                Zoeken
+                {T.jobs.searchBtn}
               </button>
               <button
                 type="button"
@@ -264,7 +267,7 @@ function VacaturesContent() {
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 12h10M11 20h2" />
                 </svg>
-                Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
+                {T.jobs.filtersBtn} {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
               </button>
             </div>
           </form>
@@ -279,20 +282,20 @@ function VacaturesContent() {
           <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px", display: "flex", flexDirection: "column", gap: 20 }}>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>Filters</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{T.jobs.filters}</p>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
                   style={{ fontSize: 12, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", padding: 0, cursor: "pointer" }}
                 >
-                  Wis alles ({activeFilterCount})
+                  {T.jobs.clearAll} ({activeFilterCount})
                 </button>
               )}
             </div>
 
             {/* Datum geplaatst */}
             <div>
-              <SectionTitle>Datum geplaatst</SectionTitle>
+              <SectionTitle>{T.jobs.datePosted}</SectionTitle>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {DATE_OPTIONS.map(opt => (
                   <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "3px 0" }}>
@@ -312,7 +315,7 @@ function VacaturesContent() {
 
             {/* Dienstverband */}
             <div>
-              <SectionTitle>Dienstverband</SectionTitle>
+              <SectionTitle>{T.jobs.employmentType}</SectionTitle>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {EMPLOYMENT_TYPES.map(t => (
                   <FilterCheckbox
@@ -327,7 +330,7 @@ function VacaturesContent() {
 
             {/* Werklocatie */}
             <div>
-              <SectionTitle>Werklocatie</SectionTitle>
+              <SectionTitle>{T.jobs.workLocation}</SectionTitle>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {WORK_LOCATIONS.map(t => (
                   <FilterCheckbox
@@ -340,9 +343,24 @@ function VacaturesContent() {
               </div>
             </div>
 
+            {/* Taal vacature */}
+            <div>
+              <SectionTitle>{T.jobs.vacancyLanguage}</SectionTitle>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {VACANCY_LANGUAGES.map(l => (
+                  <FilterCheckbox
+                    key={l.value}
+                    label={l.label}
+                    checked={vacancyLang.includes(l.value)}
+                    onChange={() => toggleVacancyLang(l.value)}
+                  />
+                ))}
+              </div>
+            </div>
+
             {/* Uren per week */}
             <div>
-              <SectionTitle>Uren per week</SectionTitle>
+              <SectionTitle>{T.jobs.hoursPerWeek}</SectionTitle>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {HOURS_RANGES.map((r, i) => (
                   <label key={i} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "3px 0" }}>
@@ -354,7 +372,7 @@ function VacaturesContent() {
                       onClick={() => { if (hoursRange === i) setHoursRange(null); }}
                       style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#7C3AED", flexShrink: 0 }}
                     />
-                    <span style={{ fontSize: 13, color: "#374151" }}>{r.label}</span>
+                    <span style={{ fontSize: 13, color: "#374151" }}>{lang === "en" ? r.label_en : r.label_nl}</span>
                   </label>
                 ))}
               </div>
@@ -362,13 +380,13 @@ function VacaturesContent() {
 
             {/* Salaris */}
             <div>
-              <SectionTitle>Salaris (per maand)</SectionTitle>
+              <SectionTitle>{T.jobs.salary}</SectionTitle>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <input
                   type="number"
                   value={salaryMin}
                   onChange={e => setSalaryMin(e.target.value)}
-                  placeholder="Min"
+                  placeholder={T.jobs.minSalary}
                   style={{ width: "50%", border: "1px solid #e5e7eb", borderRadius: 8, padding: "6px 10px", fontSize: 13, outline: "none", color: "#374151" }}
                 />
                 <span style={{ fontSize: 12, color: "#9ca3af" }}>–</span>
@@ -376,7 +394,7 @@ function VacaturesContent() {
                   type="number"
                   value={salaryMax}
                   onChange={e => setSalaryMax(e.target.value)}
-                  placeholder="Max"
+                  placeholder={T.jobs.maxSalary}
                   style={{ width: "50%", border: "1px solid #e5e7eb", borderRadius: 8, padding: "6px 10px", fontSize: 13, outline: "none", color: "#374151" }}
                 />
               </div>
@@ -409,6 +427,15 @@ function VacaturesContent() {
                   </span>
                 );
               })}
+              {vacancyLang.map(vl => {
+                const label = VACANCY_LANGUAGES.find(l => l.value === vl)?.label ?? vl;
+                return (
+                  <span key={vl} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 100, background: "#fef9c3", border: "1px solid #fef08a", fontSize: 12, color: "#374151" }}>
+                    {label}
+                    <button onClick={() => toggleVacancyLang(vl)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>×</button>
+                  </span>
+                );
+              })}
               {datePosted && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 100, background: "#fff7ed", border: "1px solid #fed7aa", fontSize: 12, color: "#374151" }}>
                   {DATE_OPTIONS.find(d => d.value === datePosted)?.label}
@@ -417,7 +444,7 @@ function VacaturesContent() {
               )}
               {hoursRange !== null && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 100, background: "#fefce8", border: "1px solid #fef08a", fontSize: 12, color: "#374151" }}>
-                  {HOURS_RANGES[hoursRange].label}
+                  {lang === "en" ? HOURS_RANGES[hoursRange].label_en : HOURS_RANGES[hoursRange].label_nl}
                   <button onClick={() => setHoursRange(null)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>×</button>
                 </span>
               )}
@@ -438,8 +465,8 @@ function VacaturesContent() {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <p style={{ fontSize: 13, color: "#6b7280" }}>
-              {loading ? "Laden..." : (
-                <><strong style={{ color: "#111827" }}>{filtered.length}</strong> vacature{filtered.length !== 1 ? "s" : ""} gevonden</>
+              {loading ? T.jobs.loading : (
+                <><strong style={{ color: "#111827" }}>{filtered.length}</strong> {filtered.length !== 1 ? T.jobs.vacancies : T.jobs.vacancy} {T.jobs.found}</>
               )}
             </p>
           </div>
@@ -458,93 +485,101 @@ function VacaturesContent() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "48px", textAlign: "center" }}>
-              <p style={{ fontWeight: 600, color: "#374151", marginBottom: 4 }}>Geen vacatures gevonden</p>
-              <p style={{ fontSize: 13, color: "#9ca3af" }}>Pas je zoekopdracht of filters aan</p>
+              <p style={{ fontWeight: 600, color: "#374151", marginBottom: 4 }}>{T.jobs.noResults}</p>
+              <p style={{ fontSize: 13, color: "#9ca3af" }}>{T.jobs.noResultsHint}</p>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
                   style={{ marginTop: 12, fontSize: 13, color: "#7C3AED", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
                 >
-                  Verwijder alle filters
+                  {T.jobs.removeFilters}
                 </button>
               )}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {filtered.map(v => (
-                <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 20px" }}>
-                  <div className="vacancy-card-inner" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                      {getInitials(v.title)}
-                    </div>
+              {filtered.map(v => {
+                const vWithLang = v as PublicVacancy & { language?: string | null };
+                return (
+                  <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 20px" }}>
+                    <div className="vacancy-card-inner" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                        {getInitials(v.title)}
+                      </div>
 
-                    <div className="vacancy-card-content" style={{ flex: 1, minWidth: 0 }}>
-                      <Link
-                        href={`/vacatures/${v.id}`}
-                        style={{ fontSize: 14, fontWeight: 600, color: "#111827", textDecoration: "none", display: "block" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#7C3AED"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#111827"}
-                      >
-                        {v.title}
-                      </Link>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                        {v.location && <span>{v.location}</span>}
-                        {v.hours_per_week && <span>· {v.hours_per_week}u/week</span>}
-                        {v.employment_type && (
-                          <span style={{ background: "#f3f4f6", borderRadius: 100, padding: "1px 8px", fontSize: 11 }}>
-                            {EMPLOYMENT_TYPES.find(t => t.value === v.employment_type)?.label ?? v.employment_type}
+                      <div className="vacancy-card-content" style={{ flex: 1, minWidth: 0 }}>
+                        <Link
+                          href={`/vacatures/${v.id}`}
+                          style={{ fontSize: 14, fontWeight: 600, color: "#111827", textDecoration: "none", display: "block" }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#7C3AED"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#111827"}
+                        >
+                          {v.title}
+                        </Link>
+                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                          {v.location && <span>{v.location}</span>}
+                          {v.hours_per_week && <span>· {v.hours_per_week}{T.jobs.perWeek}</span>}
+                          {v.employment_type && (
+                            <span style={{ background: "#f3f4f6", borderRadius: 100, padding: "1px 8px", fontSize: 11 }}>
+                              {EMPLOYMENT_TYPES.find(t => t.value === v.employment_type)?.label ?? v.employment_type}
+                            </span>
+                          )}
+                          {v.work_location && (
+                            <span style={{
+                              background: v.work_location === "remote" ? "#f0fdf4" : v.work_location === "hybride" ? "#f5f3ff" : "#fff7ed",
+                              borderRadius: 100, padding: "1px 8px", fontSize: 11,
+                              color: v.work_location === "remote" ? "#15803d" : v.work_location === "hybride" ? "#6D28D9" : "#c2410c",
+                            }}>
+                              {WORK_LOCATIONS.find(t => t.value === v.work_location)?.label ?? v.work_location}
+                            </span>
+                          )}
+                          {vWithLang.language && (
+                            <span style={{ background: "#f0f9ff", borderRadius: 100, padding: "1px 8px", fontSize: 11, color: "#0369a1" }}>
+                              {vWithLang.language.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="vacancy-card-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        {v.salary_range && (
+                          <span className="vacancy-salary-chip" style={{ fontSize: 12, padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", color: "#374151", background: "#f9fafb" }}>
+                            {v.salary_range}
                           </span>
                         )}
-                        {v.work_location && (
-                          <span style={{
-                            background: v.work_location === "remote" ? "#f0fdf4" : v.work_location === "hybride" ? "#f5f3ff" : "#fff7ed",
-                            borderRadius: 100, padding: "1px 8px", fontSize: 11,
-                            color: v.work_location === "remote" ? "#15803d" : v.work_location === "hybride" ? "#6D28D9" : "#c2410c",
-                          }}>
-                            {WORK_LOCATIONS.find(t => t.value === v.work_location)?.label ?? v.work_location}
-                          </span>
-                        )}
+                        <Link
+                          href={`/vacatures/${v.id}/solliciteer`}
+                          style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", padding: "7px 16px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#6D28D9"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "#7C3AED"}
+                        >
+                          {T.jobs.applyBtn}
+                        </Link>
                       </div>
                     </div>
 
-                    <div className="vacancy-card-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      {v.salary_range && (
-                        <span className="vacancy-salary-chip" style={{ fontSize: 12, padding: "3px 10px", borderRadius: 100, border: "1px solid #e5e7eb", color: "#374151", background: "#f9fafb" }}>
-                          {v.salary_range}
-                        </span>
-                      )}
-                      <Link
-                        href={`/vacatures/${v.id}/solliciteer`}
-                        style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", padding: "7px 16px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#6D28D9"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "#7C3AED"}
-                      >
-                        Solliciteer
-                      </Link>
-                    </div>
+                    {v.description && (
+                      <p style={{ fontSize: 12, color: "#6b7280", marginTop: 10, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {v.description}
+                      </p>
+                    )}
                   </div>
-
-                  {v.description && (
-                    <p style={{ fontSize: 12, color: "#6b7280", marginTop: 10, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {v.description}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
           {!loading && filtered.length > 0 && (
             <div style={{ marginTop: 24, background: "#f5f3ff", border: "1px solid #ede9fe", borderRadius: 12, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
               <div>
-                <p style={{ fontWeight: 600, color: "#4c1d95", fontSize: 14, marginBottom: 2 }}>Maak je profiel compleet</p>
-                <p style={{ fontSize: 12, color: "#7C3AED" }}>Upload je CV en ontvang automatisch AI-matches.</p>
+                <p style={{ fontWeight: 600, color: "#4c1d95", fontSize: 14, marginBottom: 2 }}>{T.jobs.profileCta}</p>
+                <p style={{ fontSize: 12, color: "#7C3AED" }}>{T.jobs.profileCtaSub}</p>
               </div>
               <Link
                 href="/candidate/login"
                 style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: "#7C3AED", padding: "8px 18px", borderRadius: 8, textDecoration: "none", whiteSpace: "nowrap" }}
               >
-                Start nu
+                {T.jobs.startNow}
               </Link>
             </div>
           )}

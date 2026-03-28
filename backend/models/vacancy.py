@@ -38,6 +38,10 @@ class Vacancy(Base):
     status = Column(String(20), nullable=False, server_default="concept")
     # "concept" | "actief" | "offline"
 
+    # Taal van de vacaturetekst
+    language = Column(String(5), nullable=True)
+    # "nl" | "en"
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     employer = relationship("User", back_populates="vacancies", lazy="joined")

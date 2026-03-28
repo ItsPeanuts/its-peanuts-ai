@@ -97,6 +97,7 @@ def create_vacancy(
         interview_type=payload.interview_type or "both",
         employment_type=payload.employment_type or None,
         work_location=payload.work_location or None,
+        language=payload.language or None,
     )
     db.add(vacancy)
     db.commit()
@@ -113,6 +114,7 @@ class VacancyUpdate(BaseModel):
     employment_type: str = ""
     work_location: str = ""
     interview_type: str = "both"
+    language: str = ""
 
 
 @router.put("/{vacancy_id}", response_model=schemas.VacancyOut)
@@ -139,6 +141,7 @@ def update_vacancy(
     vacancy.employment_type = payload.employment_type or None
     vacancy.work_location = payload.work_location or None
     vacancy.interview_type = payload.interview_type or "both"
+    vacancy.language = payload.language or None
     db.commit()
     db.refresh(vacancy)
     return vacancy

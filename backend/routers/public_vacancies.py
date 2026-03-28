@@ -62,6 +62,7 @@ def list_vacancies(
     employment_type: Optional[str] = None,   # fulltime|parttime|freelance|stage|tijdelijk
     work_location: Optional[str] = None,      # remote|hybride|op-locatie
     date_posted: Optional[str] = None,        # today|3days|week|month
+    language: Optional[str] = None,           # nl|en
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -92,6 +93,8 @@ def list_vacancies(
         if days:
             cutoff = now - timedelta(days=days)
             query = query.filter(models.Vacancy.created_at >= cutoff)
+    if language:
+        query = query.filter(models.Vacancy.language == language)
 
     return query.offset(skip).limit(limit).all()
 

@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
+import { Lang } from "@/lib/translations";
 
 export default function PublicNav() {
   const [open, setOpen] = useState(false);
+  const { lang, setLang, T } = useLanguage();
+
+  const otherLang: Lang = lang === "nl" ? "en" : "nl";
+  const otherLabel = lang === "nl" ? "EN" : "NL";
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -16,16 +22,23 @@ export default function PublicNav() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
           <Link href="/vacatures" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline">
-            Vacatures
+            {T.nav.vacancies}
           </Link>
           <Link href="/candidate" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline">
-            Kandidaten
+            {T.nav.candidates}
           </Link>
           <Link href="/employer/login" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline">
-            Werkgevers
+            {T.nav.employers}
           </Link>
-          <Link href="/candidate/login" className="ml-3 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-600 transition-colors no-underline">
-            Inloggen
+          <button
+            onClick={() => setLang(otherLang)}
+            className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors border border-gray-200"
+            title={lang === "nl" ? "Switch to English" : "Schakel naar Nederlands"}
+          >
+            {otherLabel}
+          </button>
+          <Link href="/candidate/login" className="ml-1 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-600 transition-colors no-underline">
+            {T.nav.login}
           </Link>
         </nav>
 
@@ -49,28 +62,34 @@ export default function PublicNav() {
             onClick={() => setOpen(false)}
             className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 no-underline block"
           >
-            Vacatures
+            {T.nav.vacancies}
           </Link>
           <Link
             href="/candidate"
             onClick={() => setOpen(false)}
             className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 no-underline block"
           >
-            Kandidaten
+            {T.nav.candidates}
           </Link>
           <Link
             href="/employer/login"
             onClick={() => setOpen(false)}
             className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 no-underline block"
           >
-            Werkgevers
+            {T.nav.employers}
           </Link>
+          <button
+            onClick={() => { setLang(otherLang); setOpen(false); }}
+            className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 text-left"
+          >
+            {lang === "nl" ? "Switch to English" : "Schakel naar Nederlands"}
+          </button>
           <Link
             href="/candidate/login"
             onClick={() => setOpen(false)}
             className="mt-2 px-4 py-3 rounded-lg text-sm font-semibold text-white bg-primary text-center no-underline block"
           >
-            Inloggen
+            {T.nav.login}
           </Link>
         </div>
       )}

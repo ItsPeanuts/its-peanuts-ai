@@ -136,6 +136,7 @@ export type PublicVacancy = {
   description: string | null;
   employment_type: string | null;
   work_location: string | null;
+  language: string | null;
   created_at: string;
 };
 
@@ -162,6 +163,7 @@ export async function listVacancies(params?: {
   employment_type?: string;
   work_location?: string;
   date_posted?: string;
+  language?: string;
   skip?: number;
   limit?: number;
 }): Promise<PublicVacancy[]> {
@@ -170,6 +172,7 @@ export async function listVacancies(params?: {
   if (params?.location) sp.set("location", params.location);
   if (params?.employment_type) sp.set("employment_type", params.employment_type);
   if (params?.work_location) sp.set("work_location", params.work_location);
+  if (params?.language) sp.set("language", params.language);
   if (params?.date_posted) sp.set("date_posted", params.date_posted);
   if (params?.skip != null) sp.set("skip", String(params.skip));
   if (params?.limit != null) sp.set("limit", String(params.limit));

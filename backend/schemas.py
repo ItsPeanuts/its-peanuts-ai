@@ -62,6 +62,7 @@ class VacancyBase(BaseModel):
     description: Optional[str] = None
     employment_type: Optional[str] = None   # fulltime|parttime|freelance|stage|tijdelijk
     work_location: Optional[str] = None     # remote|hybride|op-locatie
+    language: Optional[str] = None          # nl|en
 
 
 class VacancyCreate(VacancyBase):
@@ -193,6 +194,7 @@ class PublicVacancyOut(BaseModel):
     description: Optional[str] = None
     employment_type: Optional[str] = None
     work_location: Optional[str] = None
+    language: Optional[str] = None
     created_at: datetime
 
 
