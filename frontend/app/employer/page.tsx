@@ -61,7 +61,6 @@ export default function EmployerPage() {
   const role = useMemo(() => getRole(), []);
 
   const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
   const [userPlan, setUserPlan] = useState<string>("gratis");
   const [userTrialEndsAt, setUserTrialEndsAt] = useState<string | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
@@ -174,7 +173,6 @@ export default function EmployerPage() {
       try {
         const [u, vacs] = await Promise.all([me(token), employerVacancies(token)]);
         setUserEmail(u.email || "");
-        setUserName(u.full_name || "");
         setUserPlan(u.plan || "gratis");
         setUserTrialEndsAt((u as { trial_ends_at?: string | null }).trial_ends_at ?? null);
         setVacancies(vacs || []);
