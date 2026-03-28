@@ -49,7 +49,7 @@ export default function HomePage() {
       ];
 
   return (
-    <div style={{ overflowX: "hidden" }}>
+    <div>
       <PublicNav />
 
       {/* ── HERO ── */}

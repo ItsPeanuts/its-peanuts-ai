@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div style={{ background: "#f9fafb", minHeight: "100vh", overflowX: "hidden" }}>
+    <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
       <PublicNav />
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 80px" }}>

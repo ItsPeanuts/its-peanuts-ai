@@ -212,7 +212,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div style={{ background: "#f9fafb", minHeight: "100vh", padding: "32px 16px", overflowX: "hidden" }}>
+    <div style={{ background: "#f9fafb", minHeight: "100vh", padding: "32px 16px" }}>
       <div style={{ maxWidth: 640, margin: "0 auto" }}>
 
         {/* Terug */}

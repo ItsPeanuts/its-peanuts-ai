@@ -224,7 +224,7 @@ function VacaturesContent() {
     : `${filtered.length} ${filtered.length !== 1 ? T.jobs.vacancies : T.jobs.vacancy} ${T.jobs.found}`;
 
   return (
-    <div style={{ background: "#f9fafb", minHeight: "100vh", overflowX: "hidden" }}>
+    <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
       <PublicNav />
 
       {/* ── Zoekbalk ── */}

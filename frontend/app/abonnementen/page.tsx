@@ -181,7 +181,7 @@ function AbonnementenContent() {
   }
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh", overflowX: "hidden" }}>
+    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
       <PublicNav />
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 80px" }}>
