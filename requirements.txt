@@ -16,6 +16,7 @@ boto3==1.35.0
 requests==2.32.3
 beautifulsoup4==4.12.3
 resend==2.10.0
+stripe==12.1.0
 alembic==1.14.1
 websockets==13.1
 

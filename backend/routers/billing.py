@@ -1,34 +1,44 @@
 """
-Billing — LemonSqueezy Checkout & Webhook
+Billing — Stripe Checkout & Webhook
 
 Endpoints:
-  POST /billing/checkout   Maak LemonSqueezy Checkout aan voor een abonnement
-  POST /billing/webhook    LemonSqueezy webhook: verwerk betaling en activeer plan
+  POST /billing/checkout          Maak Stripe Checkout aan voor abonnement
+  POST /billing/vacancy-checkout  Maak Stripe Checkout aan voor pay-per-vacature
+  POST /billing/webhook           Stripe webhook: activeer / deactiveer plan
 
-LemonSqueezy dashboard setup:
-  1. Maak 4 varianten aan (recurring): normaal/premium × maand/jaar
-  2. Kopieer de Variant IDs (niet Product IDs) naar env vars
-  3. Maak een Webhook endpoint aan op:
-       https://its-peanuts-backend.onrender.com/billing/webhook
-     Events: subscription_created, subscription_cancelled,
-             subscription_expired, subscription_resumed
+Stripe Dashboard setup (doe dit EENMALIG in testmodus — werkt zonder KvK):
+  1. Dashboard → Products → Maak 4 recurring producten aan:
+       Normaal Maandelijks  — €149/maand   (recurring, interval=month)
+       Normaal Jaarlijks    — €1.490/jaar  (recurring, interval=year)
+       Premium Maandelijks  — €349/maand   (recurring, interval=month)
+       Premium Jaarlijks    — €3.490/jaar  (recurring, interval=year)
+     → Kopieer de Price IDs (price_...) naar env vars
+  2. Dashboard → Products → Maak 1 one-time product aan:
+       Per Vacature Posting  — €89 (one-time)
+  3. Dashboard → Developers → Webhooks → Add endpoint:
+       URL:    https://its-peanuts-backend.onrender.com/billing/webhook
+       Events: checkout.session.completed
+               customer.subscription.deleted
+               customer.subscription.updated
+     → Kopieer de Signing Secret (whsec_...) naar STRIPE_WEBHOOK_SECRET
 
-Env vars:
-  LEMONSQUEEZY_API_KEY              lemon_...
-  LEMONSQUEEZY_WEBHOOK_SECRET       whsec_... (LS dashboard → Webhooks → Signing Secret)
-  LEMONSQUEEZY_STORE_ID             123456 (numeriek store ID)
-  LEMONSQUEEZY_VARIANT_NORMAAL_MAAND  111111
-  LEMONSQUEEZY_VARIANT_NORMAAL_JAAR   222222
-  LEMONSQUEEZY_VARIANT_PREMIUM_MAAND  333333
-  LEMONSQUEEZY_VARIANT_PREMIUM_JAAR   444444
-  FRONTEND_URL                        https://its-peanuts-frontend.onrender.com
+Env vars (Render → Environment):
+  STRIPE_SECRET_KEY             sk_test_...  (of sk_live_... na KvK)
+  STRIPE_WEBHOOK_SECRET         whsec_...
+  STRIPE_PRICE_NORMAAL_MAAND    price_...
+  STRIPE_PRICE_NORMAAL_JAAR     price_...
+  STRIPE_PRICE_PREMIUM_MAAND    price_...
+  STRIPE_PRICE_PREMIUM_JAAR     price_...
+  STRIPE_PRICE_PER_VACATURE     price_...
+  FRONTEND_URL                  https://vorzaiq.com
+
+Live gaan (na KvK):
+  Verander STRIPE_SECRET_KEY van sk_test_... naar sk_live_...
+  Maak nieuwe webhook aan in live modus → update STRIPE_WEBHOOK_SECRET
 """
 
 import os
-import hmac
-import hashlib
-import json
-import requests as http
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -39,117 +49,32 @@ from backend.routers.auth import get_current_user, require_role
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
-# ── LemonSqueezy configuratie ─────────────────────────────────────────────────
+# ── Stripe configuratie ────────────────────────────────────────────────────────
 
-LS_API_KEY        = os.getenv("LEMONSQUEEZY_API_KEY", "")
-LS_WEBHOOK_SECRET = os.getenv("LEMONSQUEEZY_WEBHOOK_SECRET", "")
-LS_STORE_ID       = os.getenv("LEMONSQUEEZY_STORE_ID", "")
-FRONTEND_URL      = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+STRIPE_SECRET_KEY     = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
 
-VARIANT_IDS: dict[tuple[str, str], str] = {
-    ("starter", "month"): os.getenv("LEMONSQUEEZY_VARIANT_STARTER_MAAND", ""),
-    ("starter", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_STARTER_JAAR", ""),
-    ("normaal", "month"): os.getenv("LEMONSQUEEZY_VARIANT_NORMAAL_MAAND", ""),
-    ("normaal", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_NORMAAL_JAAR", ""),
-    ("premium", "month"): os.getenv("LEMONSQUEEZY_VARIANT_PREMIUM_MAAND", ""),
-    ("premium", "year"):  os.getenv("LEMONSQUEEZY_VARIANT_PREMIUM_JAAR", ""),
+stripe.api_key = STRIPE_SECRET_KEY
+
+PRICE_IDS: dict[tuple[str, str], str] = {
+    ("normaal", "month"): os.getenv("STRIPE_PRICE_NORMAAL_MAAND", ""),
+    ("normaal", "year"):  os.getenv("STRIPE_PRICE_NORMAAL_JAAR", ""),
+    ("premium", "month"): os.getenv("STRIPE_PRICE_PREMIUM_MAAND", ""),
+    ("premium", "year"):  os.getenv("STRIPE_PRICE_PREMIUM_JAAR", ""),
 }
 
-LS_VARIANT_PER_VACATURE = os.getenv("LEMONSQUEEZY_VARIANT_PER_VACATURE", "")
-
-_LS_HEADERS = {
-    "Content-Type": "application/vnd.api+json",
-    "Accept": "application/vnd.api+json",
-}
+STRIPE_PRICE_PER_VACATURE = os.getenv("STRIPE_PRICE_PER_VACATURE", "")
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# ── Schemas ────────────────────────────────────────────────────────────────────
 
 class CheckoutIn(BaseModel):
-    plan: str       # "normaal" | "premium"
-    interval: str   # "month" | "year"
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def verify_ls_signature(raw_body: bytes, signature: str) -> bool:
-    """Verifieer LemonSqueezy webhook handtekening (HMAC-SHA256)."""
-    if not LS_WEBHOOK_SECRET:
-        return True  # Dev: geen verificatie als secret niet ingesteld
-    digest = hmac.new(LS_WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(digest, signature)
-
-
-def create_ls_checkout(
-    variant_id: str,
-    email: str,
-    custom_data: dict,
-    redirect_url: str,
-) -> str:
-    """Maak een LemonSqueezy Checkout aan en geef de checkout URL terug."""
-    body = {
-        "data": {
-            "type": "checkouts",
-            "attributes": {
-                "checkout_data": {
-                    "email": email,
-                    "custom": {k: str(v) for k, v in custom_data.items()},
-                },
-                "product_options": {
-                    "redirect_url": redirect_url,
-                },
-            },
-            "relationships": {
-                "store": {
-                    "data": {"type": "stores", "id": str(LS_STORE_ID)}
-                },
-                "variant": {
-                    "data": {"type": "variants", "id": str(variant_id)}
-                },
-            },
-        }
-    }
-    resp = http.post(
-        "https://api.lemonsqueezy.com/v1/checkouts",
-        headers={**_LS_HEADERS, "Authorization": f"Bearer {LS_API_KEY}"},
-        json=body,
-        timeout=10,
-    )
-    if not resp.ok:
-        raise HTTPException(
-            status_code=502,
-            detail=f"LemonSqueezy fout: {resp.status_code} — {resp.text[:200]}",
-        )
-    return resp.json()["data"]["attributes"]["url"]
+    plan: str      # "normaal" | "premium"
+    interval: str  # "month" | "year"
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
-
-@router.post("/vacancy-checkout")
-def create_vacancy_checkout(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """
-    Maak een LemonSqueezy Checkout aan voor pay-per-vacature (€89).
-    Na betaling ontvangt de gebruiker 1 vacancy_credit via de webhook.
-    """
-    require_role(current_user, "employer")
-
-    if not LS_API_KEY:
-        raise HTTPException(status_code=503, detail="LemonSqueezy is niet geconfigureerd.")
-
-    if not LS_VARIANT_PER_VACATURE:
-        raise HTTPException(status_code=503, detail="LEMONSQUEEZY_VARIANT_PER_VACATURE niet ingesteld.")
-
-    checkout_url = create_ls_checkout(
-        variant_id=LS_VARIANT_PER_VACATURE,
-        email=current_user.email,
-        custom_data={"user_id": current_user.id, "type": "per_vacature"},
-        redirect_url=f"{FRONTEND_URL}/employer?vacature_betaald=1",
-    )
-    return {"checkout_url": checkout_url}
-
 
 @router.post("/checkout")
 def create_checkout_session(
@@ -158,82 +83,172 @@ def create_checkout_session(
     current_user: models.User = Depends(get_current_user),
 ):
     """
-    Maak een LemonSqueezy Checkout aan voor een abonnement.
+    Maak een Stripe Checkout Session aan voor een abonnement.
     Geeft { checkout_url } terug — frontend redirect hier naartoe.
     """
     require_role(current_user, "employer")
 
-    if not LS_API_KEY:
+    if not STRIPE_SECRET_KEY:
         raise HTTPException(
             status_code=503,
-            detail="LemonSqueezy is niet geconfigureerd. Stel LEMONSQUEEZY_API_KEY in.",
+            detail="Stripe is niet geconfigureerd. Stel STRIPE_SECRET_KEY in.",
         )
-
-    if payload.plan not in ("starter", "normaal", "premium"):
-        raise HTTPException(status_code=400, detail="Ongeldig plan (kies starter, normaal of premium)")
+    if payload.plan not in ("normaal", "premium"):
+        raise HTTPException(status_code=400, detail="Ongeldig plan (kies normaal of premium)")
     if payload.interval not in ("month", "year"):
         raise HTTPException(status_code=400, detail="Ongeldig interval (kies month of year)")
 
-    variant_id = VARIANT_IDS.get((payload.plan, payload.interval))
-    if not variant_id:
+    price_id = PRICE_IDS.get((payload.plan, payload.interval))
+    if not price_id:
         raise HTTPException(
             status_code=503,
-            detail=f"Variant ID niet ingesteld voor {payload.plan}/{payload.interval}",
+            detail=f"Stripe Price ID niet ingesteld voor {payload.plan}/{payload.interval}",
         )
 
-    checkout_url = create_ls_checkout(
-        variant_id=variant_id,
-        email=current_user.email,
-        custom_data={"user_id": current_user.id, "plan": payload.plan},
-        redirect_url=f"{FRONTEND_URL}/abonnementen?success=1",
-    )
-    return {"checkout_url": checkout_url}
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            customer_email=current_user.email,
+            # Metadata op de Session zelf (voor checkout.session.completed)
+            metadata={"user_id": str(current_user.id), "plan": payload.plan},
+            # Metadata op het Subscription object (voor subscription.deleted/updated)
+            subscription_data={"metadata": {"user_id": str(current_user.id), "plan": payload.plan}},
+            success_url=f"{FRONTEND_URL}/abonnementen?success=1",
+            cancel_url=f"{FRONTEND_URL}/abonnementen?cancelled=1",
+        )
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=502, detail=f"Stripe fout: {getattr(e, 'user_message', str(e))}")
+
+    return {"checkout_url": session.url}
+
+
+@router.post("/vacancy-checkout")
+def create_vacancy_checkout(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Maak een Stripe Checkout Session aan voor pay-per-vacature (€89 eenmalig).
+    Na betaling ontvangt de gebruiker 1 vacancy_credit via de webhook.
+    """
+    require_role(current_user, "employer")
+
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Stripe is niet geconfigureerd.")
+    if not STRIPE_PRICE_PER_VACATURE:
+        raise HTTPException(status_code=503, detail="STRIPE_PRICE_PER_VACATURE niet ingesteld.")
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            line_items=[{"price": STRIPE_PRICE_PER_VACATURE, "quantity": 1}],
+            customer_email=current_user.email,
+            metadata={"user_id": str(current_user.id), "type": "per_vacature"},
+            success_url=f"{FRONTEND_URL}/employer?vacature_betaald=1",
+            cancel_url=f"{FRONTEND_URL}/employer",
+        )
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=502, detail=f"Stripe fout: {getattr(e, 'user_message', str(e))}")
+
+    return {"checkout_url": session.url}
 
 
 @router.post("/webhook")
-async def ls_webhook(request: Request, db: Session = Depends(get_db)):
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """
-    LemonSqueezy webhook — verwerk abonnement-events en update user.plan.
-    Geen JWT-authenticatie: LemonSqueezy ondertekent het verzoek met LEMONSQUEEZY_WEBHOOK_SECRET.
+    Stripe webhook — verwerk betaling- en abonnement-events.
+
+    Registreer in Stripe Dashboard → Webhooks:
+      Events: checkout.session.completed
+              customer.subscription.deleted
+              customer.subscription.updated
     """
     raw_body = await request.body()
-    signature = request.headers.get("x-signature", "")
+    sig = request.headers.get("stripe-signature", "")
 
-    if not verify_ls_signature(raw_body, signature):
-        raise HTTPException(status_code=400, detail="Ongeldige LemonSqueezy handtekening")
-
-    event = json.loads(raw_body)
-    event_name = event.get("meta", {}).get("event_name", "")
-    custom_data = event.get("meta", {}).get("custom_data", {})
-
-    user_id_raw = custom_data.get("user_id", 0)
-    plan = custom_data.get("plan", "")
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503, detail="STRIPE_WEBHOOK_SECRET niet geconfigureerd")
 
     try:
-        user_id = int(user_id_raw)
-    except (ValueError, TypeError):
-        return {"status": "ok"}
+        event = stripe.Webhook.construct_event(raw_body, sig, STRIPE_WEBHOOK_SECRET)
+    except stripe.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Ongeldige Stripe handtekening")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Webhook verwerking mislukt")
 
-    if not user_id:
-        return {"status": "ok"}
+    # Normaliseer naar dict voor type-veilige toegang
+    event_dict: dict = dict(event)
+    etype: str = str(event_dict.get("type", ""))
+    data: dict = dict((event_dict.get("data") or {}).get("object") or {})
 
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        return {"status": "ok"}
+    # ── checkout.session.completed ──────────────────────────────────────────
+    if etype == "checkout.session.completed":
+        meta  = data.get("metadata") or {}
+        mode  = data.get("mode", "")
+        plan  = meta.get("plan", "")
+        ptype = meta.get("type", "")
 
-    if event_name in ("subscription_created", "subscription_resumed"):
-        if plan in ("starter", "normaal", "premium"):
+        try:
+            user_id = int(meta.get("user_id", 0) or 0)
+        except (ValueError, TypeError):
+            return {"status": "ok"}
+
+        if not user_id:
+            return {"status": "ok"}
+
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            return {"status": "ok"}
+
+        if mode == "subscription" and plan in ("normaal", "premium"):
             user.plan = plan
-            user.trial_ends_at = None  # betaald plan actief, trial niet meer relevant
+            user.trial_ends_at = None  # betaald plan actief
             db.commit()
 
-    elif event_name in ("subscription_cancelled", "subscription_expired"):
-        user.plan = "gratis"
-        db.commit()
-
-    elif event_name == "order_created":
-        if custom_data.get("type") == "per_vacature":
+        elif mode == "payment" and ptype == "per_vacature":
             user.vacancy_credits = (user.vacancy_credits or 0) + 1
             db.commit()
+
+    # ── customer.subscription.deleted ──────────────────────────────────────
+    elif etype == "customer.subscription.deleted":
+        meta = data.get("metadata") or {}
+        try:
+            user_id = int(meta.get("user_id", 0) or 0)
+        except (ValueError, TypeError):
+            user_id = 0
+
+        if user_id:
+            user = db.query(models.User).filter(models.User.id == user_id).first()
+            if user:
+                user.plan = "gratis"
+                db.commit()
+
+    # ── customer.subscription.updated ──────────────────────────────────────
+    elif etype == "customer.subscription.updated":
+        meta   = data.get("metadata") or {}
+        status = data.get("status", "")
+
+        try:
+            user_id = int(meta.get("user_id", 0) or 0)
+        except (ValueError, TypeError):
+            user_id = 0
+
+        if not user_id:
+            return {"status": "ok"}
+
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            return {"status": "ok"}
+
+        if status in ("canceled", "unpaid", "past_due"):
+            user.plan = "gratis"
+            db.commit()
+        elif status == "active":
+            plan = meta.get("plan", "")
+            if plan in ("normaal", "premium"):
+                user.plan = plan
+                user.trial_ends_at = None
+                db.commit()
 
     return {"status": "ok"}
