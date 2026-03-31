@@ -78,6 +78,7 @@ function VacaturesContent() {
     { label: T.jobs.fulltime,  value: "fulltime" },
     { label: T.jobs.parttime,  value: "parttime" },
     { label: T.jobs.freelance, value: "freelance" },
+    { label: T.jobs.zzp,       value: "zzp" },
     { label: T.jobs.stage,     value: "stage" },
     { label: T.jobs.tijdelijk, value: "tijdelijk" },
   ];

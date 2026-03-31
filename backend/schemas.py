@@ -77,7 +77,7 @@ class VacancyBase(BaseModel):
     hours_per_week: Optional[str] = None
     salary_range: Optional[str] = None
     description: Optional[str] = None
-    employment_type: Optional[str] = None   # fulltime|parttime|freelance|stage|tijdelijk
+    employment_type: Optional[str] = None   # fulltime|parttime|freelance|zzp|stage|tijdelijk
     work_location: Optional[str] = None     # remote|hybride|op-locatie
     language: Optional[str] = None          # nl|en
 

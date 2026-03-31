@@ -88,7 +88,9 @@ def parse_metadata(title: str, description: str) -> dict:
     employment_type = None
     if any(k in combined for k in ['parttime', 'part-time', 'part time', 'deeltijd']):
         employment_type = "parttime"
-    elif any(k in combined for k in ['freelance', 'zzp', 'zelfstandig']):
+    elif any(k in combined for k in ['zzp', 'zelfstandig', 'opdracht', 'als zelfstandige']):
+        employment_type = "zzp"
+    elif any(k in combined for k in ['freelance']):
         employment_type = "freelance"
     elif any(k in combined for k in ['stage', 'stagiair', 'internship', 'stageplek']):
         employment_type = "stage"

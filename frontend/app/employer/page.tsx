@@ -1327,6 +1327,7 @@ export default function EmployerPage() {
                       <option value="fulltime">Fulltime</option>
                       <option value="parttime">Parttime</option>
                       <option value="freelance">Freelance</option>
+                      <option value="zzp">ZZP / Opdracht</option>
                       <option value="stage">Stage</option>
                       <option value="tijdelijk">Tijdelijk</option>
                     </select>

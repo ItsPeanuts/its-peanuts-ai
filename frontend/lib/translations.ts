@@ -33,6 +33,7 @@ export type TranslationSet = {
     fulltime: string;
     parttime: string;
     freelance: string;
+    zzp: string;
     stage: string;
     tijdelijk: string;
     workLocation: string;
@@ -94,6 +95,7 @@ const nl: TranslationSet = {
     fulltime: "Fulltime",
     parttime: "Parttime",
     freelance: "Freelance",
+    zzp: "ZZP / Opdracht",
     stage: "Stage",
     tijdelijk: "Tijdelijk",
     workLocation: "Werklocatie",
@@ -155,6 +157,7 @@ const en: TranslationSet = {
     fulltime: "Full-time",
     parttime: "Part-time",
     freelance: "Freelance",
+    zzp: "Freelance / Contract",
     stage: "Internship",
     tijdelijk: "Temporary",
     workLocation: "Work location",
