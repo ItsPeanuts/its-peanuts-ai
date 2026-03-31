@@ -12,8 +12,6 @@ from backend.models.crm_sync import CRMSync
 from backend.models.virtual_interview import VirtualInterviewSession
 from backend.models.scraped_vacancy import ScrapedVacancy
 from backend.models.promotion import PromotionRequest
-from backend.models.sales_lead import SalesLead
-from backend.models.marketing_content import MarketingContent
 
 __all__ = [
     "Base",
@@ -31,8 +29,6 @@ __all__ = [
     "VirtualInterviewSession",
     "ScrapedVacancy",
     "PromotionRequest",
-    "SalesLead",
-    "MarketingContent",
 ]
 
 

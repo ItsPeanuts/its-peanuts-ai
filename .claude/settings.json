@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3 /Users/joshuabrouwn/its-peanuts-ai/test.db \"SELECT id, title, status, employment_type, work_location FROM vacancies;\")",
+      "Bash(sqlite3 /Users/joshuabrouwn/its-peanuts-ai/test.db \"PRAGMA table_info\\(vacancies\\);\")",
+      "Bash(curl -s \"http://localhost:8000/vacancies?limit=5\")",
+      "Bash(curl -sv \"http://localhost:8000/vacancies?limit=5\")",
+      "Bash(BACKEND=\"https://its-peanuts-backend.onrender.com\")",
+      "Bash(__NEW_LINE_5642b7a979334fb1__ echo \"=== 1. Alle actieve vacatures ===\")",
+      "Bash(curl -s \"$BACKEND/vacancies?limit=20\")",
+      "Bash(__NEW_LINE_c94c404eba7f3767__ echo \"\")",
+      "Bash(curl -s \"$BACKEND/vacancies?employment_type=fulltime\")",
+      "Bash(__NEW_LINE_c09b9158830e47d5__ echo \"\")",
+      "Bash(curl -s \"$BACKEND/vacancies?employment_type=parttime\")",
+      "Bash(__NEW_LINE_b68db29159f27b2c__ echo \"\")",
+      "Bash(curl -s \"$BACKEND/vacancies?work_location=op-locatie\")",
+      "Bash(curl -s -X POST \"$BACKEND/auth/login\" -d \"username=werkgever%40test.nl&password=TestPeanuts2025%21\" -H \"Content-Type: application/x-www-form-urlencoded\")",
+      "Bash(DATABASE_URL=sqlite:///./test_filter.db python3 -c \":*)",
+      "Bash(git -C /Users/joshuabrouwn/its-peanuts-ai status)",
+      "WebFetch(domain:vorzaiq.com)",
+      "Bash(curl -s https://its-peanuts-backend.onrender.com/health)",
+      "Bash(curl -s https://its-peanuts-backend.onrender.com/)",
+      "Bash(curl -s -X POST https://its-peanuts-backend.onrender.com/auth/login -H \"Content-Type: application/x-www-form-urlencoded\" -d \"username=admin@itspeanuts.ai&password=AdminPeanuts2025!\")",
+      "Bash(curl -s --max-time 5 http://116.203.226.16/)",
+      "Bash(curl -s --max-time 5 \"http://116.203.226.16:8000/health\")",
+      "Bash(curl -s --max-time 5 \"http://116.203.226.16:3000/\")",
+      "Bash(ls ~/.ssh/*.pub)"
+    ]
+  }
+}
