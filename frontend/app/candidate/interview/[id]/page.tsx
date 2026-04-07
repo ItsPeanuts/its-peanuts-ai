@@ -22,6 +22,9 @@ const BASE =
 const AMBER_VIDEO_URL =
   "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";
 
+// ── Zet op false zodra Lisa 2.0 live is ──────────────────────────────────────
+const LISA_MAINTENANCE = true;
+
 type InterviewStage =
   | "idle"
   | "connecting"
@@ -68,6 +71,32 @@ export default function VideoInterviewPage() {
   const router = useRouter();
   const params = useParams();
   const appId = Number(params?.id);
+
+  // ── Maintenance mode: Lisa 2.0 in ontwikkeling ──────────────────────────────
+  if (LISA_MAINTENANCE) {
+    return (
+      <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: "48px 40px", maxWidth: 480, width: "100%", textAlign: "center" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>🚀</div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: "0 0 12px" }}>
+            Lisa wordt geüpgraded
+          </h1>
+          <p style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.7, marginBottom: 28 }}>
+            We upgraden het virtuele interview naar een volledig nieuwe versie met realtime stemherkenning en een veel natuurlijker gesprek. Lisa 2.0 is snel beschikbaar.
+          </p>
+          <div style={{ background: "#f3f4f6", borderRadius: 12, padding: "14px 18px", marginBottom: 32, fontSize: 13, color: "#6b7280" }}>
+            In de tussentijd kun je de tekst-chat met Lisa gewoon gebruiken via je sollicitatie.
+          </div>
+          <button
+            onClick={() => router.back()}
+            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+          >
+            Terug
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const token = useRef<string | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
