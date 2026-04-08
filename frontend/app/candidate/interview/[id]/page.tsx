@@ -1,78 +1,114 @@
 "use client";
 
 /**
- * Virtuele AI Recruiter — Video Interview Pagina
+ * Virtuele AI Recruiter — Lisa 2.0
  *
- * Verbeteringen t.o.v. vorige versie:
- * - Double audio bug opgelost: `called` guard in browserSpeak()
- * - Kandidaat self-view (PiP): getUserMedia start bij interview begin
- * - Fluent gesprek: stille detectie is primair, knop is secundair/verborgen
- * - Snellere startup: delays gereduceerd (500ms→0ms / 1200ms→300ms)
- * - Betere UI: duidelijker wanneer het jouw beurt is
+ * Architectuur: full-duplex voice via OpenAI Realtime API
+ *   Kandidaat audio → OpenAI Realtime → audio uit  (~300ms latency)
+ *   Geen aparte STT / TTS / D-ID pipeline meer nodig.
+ *
+ * Activeren:
+ *   1. Zet LISA_MAINTENANCE = false (hieronder)
+ *   2. OPENAI_API_KEY staat al in .env op de server
+ *   3. Optioneel: LISA_V2_VOICE (shimmer|alloy|nova|echo|fable|onyx)
+ *
+ * Simli avatar (Lisa 2.1 — TODO):
+ *   Installeer: npm install @simli/sdk
+ *   Voeg NEXT_PUBLIC_SIMLI_API_KEY + NEXT_PUBLIC_SIMLI_FACE_ID toe aan .env
+ *   Vervang de <video> tag in de JSX door de Simli WebRTC component
+ *   Pipe OpenAI audio chunks naar simliClient.sendAudioData(pcm16Chunk)
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getToken } from "@/lib/session";
 
+// ── Config ────────────────────────────────────────────────────────────────────
+
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 const AMBER_VIDEO_URL =
   "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";
 
-// ── Zet op false zodra Lisa 2.0 live is ──────────────────────────────────────
+const OPENAI_REALTIME_WS =
+  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+
+// ── Zet op false zodra Lisa 2.0 live is (API keys in .env, 2 betalende klanten) ──
 const LISA_MAINTENANCE = true;
 
-type InterviewStage =
-  | "idle"
-  | "connecting"
-  | "intro"
-  | "listening"
-  | "speaking"
-  | "processing"
-  | "completed"
-  | "error";
+// Interview eindigt automatisch na dit aantal Lisa-beurten
+const MAX_LISA_TURNS = 7;
 
-interface CompleteResult {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type Stage =
+  | "idle"        // Startknop zichtbaar
+  | "connecting"  // Token ophalen + WS verbinden
+  | "active"      // Gesprek bezig
+  | "wrapping"    // Lisa sluit af (na MAX_LISA_TURNS)
+  | "completed"   // Resultaatscherm
+  | "error";      // Foutmelding
+
+type Message = {
+  role: "recruiter" | "candidate";
+  content: string;
+};
+
+type InterviewResult = {
   score: number;
   summary: string;
   followup_scheduled: boolean;
-  teams_join_url: string | null;
-  scheduled_at: string | null;
+  teams_join_url?: string;
+  scheduled_at?: string;
+};
+
+// ── PCM16 audio helpers ───────────────────────────────────────────────────────
+
+/** Float32 PCM → Int16 PCM (ArrayBuffer) */
+function floatTo16BitPCM(floatData: Float32Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(floatData.length * 2);
+  const view = new DataView(buffer);
+  for (let i = 0; i < floatData.length; i++) {
+    const clamped = Math.max(-1, Math.min(1, floatData[i]));
+    view.setInt16(i * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+  }
+  return buffer;
 }
 
-// Web Speech API type declarations
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-}
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance;
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+/** ArrayBuffer → base64 string */
+function toBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
+  return btoa(binary);
 }
-interface SpeechRecognitionInstance extends EventTarget {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start(): void;
-  stop(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
+
+/** base64 → Float32Array (voor audio playback) */
+function base64ToFloat32(base64: string): Float32Array {
+  const binary = atob(base64);
+  const int16 = new Int16Array(binary.length / 2);
+  for (let i = 0; i < int16.length; i++) {
+    int16[i] = binary.charCodeAt(i * 2) | (binary.charCodeAt(i * 2 + 1) << 8);
+  }
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) {
+    float32[i] = int16[i] / 32768;
+  }
+  return float32;
 }
+
+// ── Hoofdcomponent ────────────────────────────────────────────────────────────
 
 export default function VideoInterviewPage() {
   const router = useRouter();
   const params = useParams();
   const appId = Number(params?.id);
 
-  // ── Maintenance mode: Lisa 2.0 in ontwikkeling ──────────────────────────────
+  // ── Maintenance mode — zet LISA_MAINTENANCE = false om te activeren ──────────
   if (LISA_MAINTENANCE) {
     return (
       <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -98,488 +134,319 @@ export default function VideoInterviewPage() {
     );
   }
 
-  const token = useRef<string | null>(null);
-  const peerRef = useRef<RTCPeerConnection | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);       // D-ID WebRTC stream
-  const amberVideoRef = useRef<HTMLVideoElement>(null);  // Amber idle/speaking video
-  const selfViewRef = useRef<HTMLVideoElement>(null);    // Kandidaat self-view
-  const ttsModeRef = useRef(false);
-  const transcriptRef = useRef("");
-  const stopListeningAndAnswerRef = useRef<(() => Promise<void>) | null>(null);
-  const didSpeakDoneRef = useRef<(() => void) | null>(null);
+  // ── State ─────────────────────────────────────────────────────────────────────
 
-  const [stage, setStage] = useState<InterviewStage>("idle");
-  const [questionNumber, setQuestionNumber] = useState(0);
-  const [totalQuestions] = useState(4);
-  const [transcript, setTranscript] = useState("");
-  const [liveCaption, setLiveCaption] = useState("");
-  const [result, setResult] = useState<CompleteResult | null>(null);
+  const [stage, setStage] = useState<Stage>("idle");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [lisaLiveText, setLisaLiveText] = useState(""); // streaming tekst
+  const [candidateLiveText, setCandidateLiveText] = useState(""); // STT tekst
+  const [lisaIsSpeaking, setLisaIsSpeaking] = useState(false);
+  const [candidateIsSpeaking, setCandidateIsSpeaking] = useState(false);
+  const [lisaTurnCount, setLisaTurnCount] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
-  const [ttsMode, setTtsMode] = useState<"openai" | "browser" | "">("");
-  const [isTTSMode, setIsTTSMode] = useState(false);
-  const [hasSelfView, setHasSelfView] = useState(false);
-  const [sessionData, setSessionData] = useState<{
-    did_stream_id: string;
-    did_session_id: string;
-  } | null>(null);
+  const [result, setResult] = useState<InterviewResult | null>(null);
 
-  useEffect(() => {
-    token.current = getToken();
-    if (!token.current) {
-      router.replace("/candidate/login");
-    }
-  }, [router]);
+  // ── Refs ──────────────────────────────────────────────────────────────────────
 
-  // Amber video: beweeg alleen als Lisa spreekt
-  useEffect(() => {
-    const vid = amberVideoRef.current;
-    if (!vid) return;
-    if (stage === "speaking") {
-      void vid.play();
-    } else {
-      vid.pause();
-      vid.currentTime = 0;
-    }
-  }, [stage]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const selfViewRef = useRef<HTMLVideoElement>(null);
+  const nextPlayTimeRef = useRef(0);
+  const messagesRef = useRef<Message[]>([]); // sync ref voor WebSocket handlers
+  const lisaTurnRef = useRef(0);
+  const currentLisaTranscriptRef = useRef(""); // lopend Lisa-transcript per beurt
 
-  // Opruimen self-view stream bij unmount
-  useEffect(() => {
-    return () => {
-      const vid = selfViewRef.current;
-      if (vid && vid.srcObject) {
-        (vid.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-      }
-    };
-  }, []);
+  // ── Audio playback (PCM16 chunks van OpenAI) ─────────────────────────────────
 
-  // ── Self-view camera ────────────────────────────────────────────────────────
+  const enqueueAudio = (base64: string) => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    const float32 = base64ToFloat32(base64);
 
-  const startSelfView = useCallback(async () => {
+    // ── TODO Simli: stuur float32 ook naar Simli voor lip-sync ──────────────────
+    // simliClient.sendAudioData(float32ToInt16(float32))
+    // ────────────────────────────────────────────────────────────────────────────
+
+    const buffer = ctx.createBuffer(1, float32.length, 24000);
+    buffer.getChannelData(0).set(float32);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+
+    // Naadloos aaneenrijgen: start precies na het vorige chunk
+    const startAt = Math.max(ctx.currentTime, nextPlayTimeRef.current);
+    source.start(startAt);
+    nextPlayTimeRef.current = startAt + buffer.duration;
+  };
+
+  // ── Microfoon starten (PCM16 streaming naar OpenAI) ──────────────────────────
+
+  const startMicrophone = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" },
-        audio: false, // audio loopt via SpeechRecognition, niet hier
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 24000 },
       });
+      micStreamRef.current = stream;
+
+      // Self-view camera
       if (selfViewRef.current) {
         selfViewRef.current.srcObject = stream;
-        setHasSelfView(true);
       }
-    } catch {
-      // Camera-toegang geweigerd of niet aanwezig — stil falen
+
+      // AudioContext op 24kHz (OpenAI Realtime verwacht 24kHz PCM16)
+      // TODO (upgrade): vervang ScriptProcessor door AudioWorklet voor betere performance
+      const ctx = new AudioContext({ sampleRate: 24000 });
+      audioCtxRef.current = ctx;
+
+      const source = ctx.createMediaStreamSource(stream);
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      source.connect(processor);
+      processor.connect(ctx.destination);
+
+      processor.onaudioprocess = (e) => {
+        if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        const floatData = e.inputBuffer.getChannelData(0);
+        const pcm16 = floatTo16BitPCM(floatData);
+        wsRef.current.send(JSON.stringify({
+          type: "input_audio_buffer.append",
+          audio: toBase64(pcm16),
+        }));
+      };
+    } catch (err) {
+      setErrorMsg("Microfoon toegang geweigerd. Sta microfoon toe en probeer opnieuw.");
+      setStage("error");
     }
-  }, []);
+  };
 
-  // ── API helpers ─────────────────────────────────────────────────────────────
+  // ── WebSocket verbinding met OpenAI Realtime ──────────────────────────────────
 
-  const apiPost = useCallback(
-    async (path: string, body?: object) => {
-      const resp = await fetch(`${BASE}${path}`, {
+  const connectWebSocket = (clientSecret: string) => {
+    const ws = new WebSocket(OPENAI_REALTIME_WS, [
+      "realtime",
+      `openai-insecure-api-key.${clientSecret}`,
+      "openai-beta.realtime-v1",
+    ]);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      // Sessie is al geconfigureerd via backend /realtime-token
+      // Geef Lisa een seintje om haar intro te starten
+      ws.send(JSON.stringify({
+        type: "response.create",
+        response: { modalities: ["text", "audio"] },
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      let msg: Record<string, unknown>;
+      try {
+        msg = JSON.parse(event.data as string);
+      } catch {
+        return;
+      }
+
+      const type = msg.type as string;
+
+      switch (type) {
+
+        case "session.created":
+          setStage("active");
+          break;
+
+        case "response.created":
+          setLisaIsSpeaking(true);
+          currentLisaTranscriptRef.current = "";
+          setLisaLiveText("");
+          break;
+
+        case "response.audio.delta":
+          // Audio chunk van Lisa — afspelen
+          enqueueAudio(msg.delta as string);
+          break;
+
+        case "response.audio_transcript.delta":
+          // Streaming tekst van Lisa
+          currentLisaTranscriptRef.current += (msg.delta as string) || "";
+          setLisaLiveText(currentLisaTranscriptRef.current);
+          break;
+
+        case "response.audio_transcript.done":
+        case "response.text.done": {
+          // Lisa's volledige beurt is klaar → toevoegen aan transcript
+          const text = (msg.transcript || msg.text || currentLisaTranscriptRef.current) as string;
+          if (text?.trim()) {
+            const newMsg: Message = { role: "recruiter", content: text.trim() };
+            const updated = [...messagesRef.current, newMsg];
+            messagesRef.current = updated;
+            setMessages([...updated]);
+          }
+          setLisaLiveText("");
+          break;
+        }
+
+        case "response.done": {
+          setLisaIsSpeaking(false);
+          const newCount = lisaTurnRef.current + 1;
+          lisaTurnRef.current = newCount;
+          setLisaTurnCount(newCount);
+
+          // Na MAX_LISA_TURNS: geef Lisa een seintje om af te sluiten
+          if (newCount === MAX_LISA_TURNS - 1) {
+            setStage("wrapping");
+            ws.send(JSON.stringify({
+              type: "conversation.item.create",
+              item: {
+                type: "message",
+                role: "user",
+                content: [{
+                  type: "input_text",
+                  text: "[SYSTEEM: Sluit het interview nu vriendelijk af. Bedank de kandidaat en vertel wat de volgende stap is.]",
+                }],
+              },
+            }));
+            ws.send(JSON.stringify({
+              type: "response.create",
+              response: { modalities: ["text", "audio"] },
+            }));
+          } else if (newCount >= MAX_LISA_TURNS) {
+            // Auto-einde
+            endInterview();
+          }
+          break;
+        }
+
+        case "input_audio_buffer.speech_started":
+          setCandidateIsSpeaking(true);
+          setCandidateLiveText("");
+          // Onderbreek lopende audio (Lisa wordt onderbroken)
+          nextPlayTimeRef.current = audioCtxRef.current?.currentTime || 0;
+          break;
+
+        case "input_audio_buffer.speech_stopped":
+          setCandidateIsSpeaking(false);
+          break;
+
+        case "conversation.item.input_audio_transcription.completed": {
+          // Kandidaat transcript klaar
+          const transcript = (msg.transcript as string)?.trim();
+          if (transcript) {
+            const newMsg: Message = { role: "candidate", content: transcript };
+            const updated = [...messagesRef.current, newMsg];
+            messagesRef.current = updated;
+            setMessages([...updated]);
+            setCandidateLiveText("");
+          }
+          break;
+        }
+
+        case "error": {
+          const errData = msg.error as Record<string, unknown>;
+          setErrorMsg(`OpenAI fout: ${errData?.message || "Onbekende fout"}`);
+          setStage("error");
+          cleanup();
+          break;
+        }
+      }
+    };
+
+    ws.onerror = () => {
+      setErrorMsg("Verbindingsfout met Lisa. Controleer je internetverbinding.");
+      setStage("error");
+      cleanup();
+    };
+
+    ws.onclose = (e) => {
+      if (stage !== "completed" && e.code !== 1000) {
+        setErrorMsg("Verbinding verbroken. Probeer opnieuw.");
+        setStage("error");
+      }
+    };
+  };
+
+  // ── Interview starten ─────────────────────────────────────────────────────────
+
+  const startInterview = async () => {
+    setStage("connecting");
+    setErrorMsg("");
+    setMessages([]);
+    messagesRef.current = [];
+    lisaTurnRef.current = 0;
+    setLisaTurnCount(0);
+
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE}/virtual-interview/session/${appId}/realtime-token`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      const { client_secret } = await res.json();
+
+      await startMicrophone();
+      connectWebSocket(client_secret);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Onbekende fout";
+      setErrorMsg(`Kan interview niet starten: ${msg}`);
+      setStage("error");
+    }
+  };
+
+  // ── Interview beëindigen + scoren ─────────────────────────────────────────────
+
+  const endInterview = async () => {
+    cleanup();
+    setStage("connecting"); // loading state tijdens scoren
+
+    try {
+      const token = getToken();
+      const res = await fetch(`${BASE}/virtual-interview/session/${appId}/v2-complete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token.current}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify({ transcript: messagesRef.current }),
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-        throw new Error(err.detail || "API fout");
-      }
-      return resp.json();
-    },
-    []
-  );
-
-  // ── TTS helpers ─────────────────────────────────────────────────────────────
-
-  const browserSpeak = useCallback((text: string): Promise<void> => {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined" || !window.speechSynthesis) {
-        setTimeout(resolve, 3000);
-        return;
-      }
-      window.speechSynthesis.cancel();
-
-      // Guard: zorg dat doSpeak maar 1x wordt aangeroepen,
-      // ook als zowel 'voiceschanged' als de fallback-timeout triggeren.
-      let called = false;
-      const doSpeak = () => {
-        if (called) return;
-        called = true;
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "nl-NL";
-
-        const voices = window.speechSynthesis.getVoices();
-        const nlVoices = voices.filter((v) => v.lang.startsWith("nl"));
-        const best =
-          nlVoices.find((v) => /lotte|fenna|ellen/i.test(v.name)) ||
-          nlVoices.find((v) => /google/i.test(v.name)) ||
-          nlVoices.find((v) => /female|vrouw/i.test(v.name)) ||
-          nlVoices[0] ||
-          null;
-        if (best) utterance.voice = best;
-
-        utterance.rate = 0.92;
-        utterance.pitch = 1.05;
-        utterance.volume = 1.0;
-        utterance.onend = () => resolve();
-        utterance.onerror = () => setTimeout(resolve, 2000);
-        window.speechSynthesis.speak(utterance);
-      };
-
-      if (window.speechSynthesis.getVoices().length > 0) {
-        doSpeak();
-      } else {
-        window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
-        setTimeout(doSpeak, 600); // fallback — beschermd door `called` guard
-      }
-    });
-  }, []);
-
-  // ── speakText: D-ID of OpenAI TTS ──────────────────────────────────────────
-
-  const speakText = useCallback(
-    async (text: string) => {
-      setLiveCaption(text);
-
-      if (ttsModeRef.current) {
-        try {
-          const resp = await fetch(
-            `${BASE}/virtual-interview/session/${appId}/tts`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token.current}`,
-              },
-              body: JSON.stringify({ text }),
-            }
-          );
-
-          if (!resp.ok) {
-            const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-            throw new Error(`TTS ${resp.status}: ${err.detail}`);
-          }
-
-          const blob = await resp.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-
-          // Kort wachten zodat audio buffered is — max 150ms
-          await new Promise<void>((resolve) => {
-            audio.oncanplaythrough = () => resolve();
-            audio.onerror = () => resolve();
-            audio.load();
-            setTimeout(resolve, 150);
-          });
-
-          setStage("speaking");
-          setTtsMode("openai");
-
-          await new Promise<void>((resolve) => {
-            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.play().catch((e) => {
-              console.warn("Audio play blocked:", e);
-              URL.revokeObjectURL(url);
-              resolve();
-            });
-          });
-        } catch (e) {
-          console.warn("OpenAI TTS mislukt, browser TTS als fallback:", e);
-          setTtsMode("browser");
-          setStage("speaking");
-          await browserSpeak(text);
-        }
-      } else {
-        // D-ID modus
-        setStage("speaking");
-        if (!sessionData) {
-          await new Promise((r) => setTimeout(r, 3000));
-        } else {
-          await new Promise<void>((resolve) => {
-            const words = text.split(" ").length;
-            const fallbackMs = Math.max(5000, words * 380 + 2500);
-            const timeout = setTimeout(() => {
-              didSpeakDoneRef.current = null;
-              resolve();
-            }, fallbackMs);
-
-            didSpeakDoneRef.current = () => {
-              clearTimeout(timeout);
-              didSpeakDoneRef.current = null;
-              resolve();
-            };
-
-            apiPost(`/virtual-interview/session/${appId}/speak`, { text }).catch(() => {
-              clearTimeout(timeout);
-              didSpeakDoneRef.current = null;
-              resolve();
-            });
-          });
-        }
-      }
-      setStage("processing");
-      setLiveCaption("");
-    },
-    [appId, apiPost, sessionData, browserSpeak]
-  );
-
-  // ── STT ─────────────────────────────────────────────────────────────────────
-
-  const startListening = useCallback(() => {
-    const SpeechRec =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) {
-      setErrorMsg("Spraakherkenning niet ondersteund. Gebruik Chrome.");
-      setStage("error");
-      return;
-    }
-
-    setStage("listening");
-    setTranscript("");
-    transcriptRef.current = "";
-
-    const recognition = new SpeechRec();
-    recognition.lang = "nl-NL";
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognitionRef.current = recognition;
-
-    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let full = "";
-      for (let i = 0; i < event.results.length; i++) {
-        full += event.results[i][0].transcript;
-      }
-      transcriptRef.current = full;
-      setTranscript(full);
-
-      // Auto-submit na 2.5s stilte zodra kandidaat ≥5 woorden heeft gezegd
-      if (silenceTimer) clearTimeout(silenceTimer);
-      const wordCount = full.trim().split(/\s+/).filter(Boolean).length;
-      if (wordCount >= 5) {
-        silenceTimer = setTimeout(() => {
-          stopListeningAndAnswerRef.current?.();
-        }, 2500);
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        setErrorMsg(`Microfoon fout: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      if (silenceTimer) clearTimeout(silenceTimer);
-      if (transcriptRef.current.trim()) {
-        stopListeningAndAnswerRef.current?.();
-      }
-    };
-    recognition.start();
-  }, []);
-
-  // ── finishInterview ─────────────────────────────────────────────────────────
-
-  const finishInterview = useCallback(async () => {
-    setStage("processing");
-    try {
-      const res = await apiPost(`/virtual-interview/session/${appId}/complete`);
-      // Stop self-view stream netjes
-      const vid = selfViewRef.current;
-      if (vid && vid.srcObject) {
-        (vid.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-      }
-      setResult(res);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: InterviewResult = await res.json();
+      setResult(data);
       setStage("completed");
-    } catch (e: unknown) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Onbekende fout";
+      setErrorMsg(`Score berekening mislukt: ${msg}`);
       setStage("error");
-      setErrorMsg((e as Error).message || "Fout bij afsluiten interview");
     }
-  }, [appId, apiPost]);
-
-  // ── stopListeningAndAnswer ──────────────────────────────────────────────────
-
-  const stopListeningAndAnswer = useCallback(async () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    const answer = transcriptRef.current.trim() || "[Geen antwoord gegeven]";
-    transcriptRef.current = "";
-    setTranscript("");
-    setStage("processing");
-
-    try {
-      const resp = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-        transcript: answer,
-      });
-      setQuestionNumber(resp.question_number);
-
-      if (resp.ended) {
-        await speakText(resp.next_text);
-        await finishInterview();
-      } else {
-        await speakText(resp.next_text);
-        setStage("listening");
-        startListening();
-      }
-    } catch (e: unknown) {
-      setStage("error");
-      setErrorMsg((e as Error).message || "Fout bij verwerken antwoord");
-    }
-  }, [appId, apiPost, speakText, startListening, finishInterview]);
-
-  useEffect(() => {
-    stopListeningAndAnswerRef.current = stopListeningAndAnswer;
-  }, [stopListeningAndAnswer]);
-
-  // ── startInterview ──────────────────────────────────────────────────────────
-
-  const startInterview = useCallback(async () => {
-    setStage("connecting");
-    setErrorMsg("");
-
-    // Start self-view camera direct — parallel met API-verbinding
-    startSelfView();
-
-    try {
-      const data = await apiPost(`/virtual-interview/session/${appId}/start`);
-      setSessionData({ did_stream_id: data.did_stream_id, did_session_id: data.did_session_id });
-
-      if (data.tts_mode) {
-        // ── TTS MODUS ──
-        ttsModeRef.current = true;
-        setIsTTSMode(true);
-
-        // Geen kunstmatige delay — direct starten
-        try {
-          const introText = `Hoi! Ik ben Lisa van VorzaIQ. Fijn dat je er bent — laten we direct beginnen.`;
-          await speakText(introText);
-
-          const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-            transcript: "[Interview gestart - kandidaat is aanwezig]",
-          });
-          setQuestionNumber(firstAnswer.question_number);
-          await speakText(firstAnswer.next_text);
-          if (!firstAnswer.ended) {
-            setStage("listening");
-            startListening();
-          } else {
-            await finishInterview();
-          }
-        } catch (e: unknown) {
-          setStage("error");
-          setErrorMsg((e as Error).message || "Fout bij starten interview");
-        }
-        return;
-      }
-
-      // ── D-ID MODUS ──
-      const pc = new RTCPeerConnection({ iceServers: data.ice_servers });
-      peerRef.current = pc;
-
-      pc.ontrack = (event) => {
-        if (videoRef.current && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0];
-        }
-      };
-
-      pc.onicecandidate = async (event) => {
-        if (event.candidate) {
-          try {
-            await apiPost(`/virtual-interview/session/${appId}/ice-candidate`, {
-              candidate: event.candidate.candidate,
-              sdpMid: event.candidate.sdpMid ?? "",
-              sdpMLineIndex: event.candidate.sdpMLineIndex ?? 0,
-            });
-          } catch {
-            // ICE errors zijn niet fataal
-          }
-        }
-      };
-
-      pc.ondatachannel = (event) => {
-        const ch = event.channel;
-        ch.onmessage = (e) => {
-          try {
-            const msg = JSON.parse(e.data as string);
-            const evtName = (msg.event || msg.type || msg.status || "").toString();
-            if (evtName === "stream/done" || evtName === "done" || evtName === "stream/ready") {
-              didSpeakDoneRef.current?.();
-            }
-          } catch {
-            // negeer parse fouten
-          }
-        };
-      };
-
-      await pc.setRemoteDescription(
-        new RTCSessionDescription({ type: "offer", sdp: data.offer.sdp })
-      );
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await apiPost(`/virtual-interview/session/${appId}/sdp-answer`, {
-        sdp: answer.sdp,
-        type: "answer",
-      });
-
-      // Kleine buffer voor WebRTC verbinding
-      await new Promise((r) => setTimeout(r, 300));
-
-      try {
-        const introText = `Hoi! Ik ben Lisa van VorzaIQ. Leuk dat je er bent — we starten direct.`;
-        await speakText(introText);
-        const firstAnswer = await apiPost(`/virtual-interview/session/${appId}/answer`, {
-          transcript: "[Interview gestart - kandidaat is aanwezig]",
-        });
-        setQuestionNumber(firstAnswer.question_number);
-        await speakText(firstAnswer.next_text);
-        if (!firstAnswer.ended) {
-          setStage("listening");
-          startListening();
-        } else {
-          await finishInterview();
-        }
-      } catch (e: unknown) {
-        setStage("error");
-        setErrorMsg((e as Error).message || "Fout bij starten interview");
-      }
-    } catch (e: unknown) {
-      setStage("error");
-      setErrorMsg((e as Error).message || "Verbinding mislukt");
-    }
-  }, [appId, apiPost, speakText, startListening, finishInterview, startSelfView]);
-
-  // ── UI helpers ──────────────────────────────────────────────────────────────
-
-  const progressPct = Math.min(100, Math.round((questionNumber / totalQuestions) * 100));
-
-  const stageLabel: Record<InterviewStage, string> = {
-    idle: "Klaar om te starten",
-    connecting: "Verbinding maken...",
-    intro: "Lisa stelt zich voor",
-    listening: "Jouw beurt — spreek nu",
-    speaking: "Lisa spreekt...",
-    processing: "Even geduld...",
-    completed: "Interview afgerond",
-    error: "Fout opgetreden",
   };
 
-  const scoreColor = result
-    ? result.score >= 70 ? "#059669" : result.score >= 50 ? "#d97706" : "#dc2626"
-    : "#6b7280";
-  const scoreBg = result
-    ? result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2"
-    : "#f3f4f6";
+  // ── Opruimen ──────────────────────────────────────────────────────────────────
 
-  // ── Resultaatscherm ─────────────────────────────────────────────────────────
+  const cleanup = () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.close(1000, "Interview beëindigd");
+    }
+    processorRef.current?.disconnect();
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    audioCtxRef.current?.close();
+    processorRef.current = null;
+    micStreamRef.current = null;
+    audioCtxRef.current = null;
+  };
+
+  useEffect(() => () => cleanup(), []);
+
+  // ── Resultaatscherm ───────────────────────────────────────────────────────────
 
   if (stage === "completed" && result) {
+    const scoreColor = result.score >= 70 ? "#059669" : result.score >= 50 ? "#d97706" : "#dc2626";
+    const scoreBg = result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2";
     return (
       <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ background: "#fff", borderRadius: 20, padding: "40px 36px", maxWidth: 520, width: "100%", textAlign: "center" }}>
@@ -592,48 +459,23 @@ export default function VideoInterviewPage() {
           <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 28 }}>
             Bedankt voor je tijd. Je resultaat:
           </p>
-
-          <div style={{
-            width: 90, height: 90, borderRadius: "50%",
-            background: scoreBg, border: `4px solid ${scoreColor}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 20px",
-            fontSize: 26, fontWeight: 900, color: scoreColor,
-          }}>
+          <div style={{ width: 90, height: 90, borderRadius: "50%", background: scoreBg, border: `4px solid ${scoreColor}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 26, fontWeight: 900, color: scoreColor }}>
             {result.score}
           </div>
-
           <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 24, textAlign: "left" }}>
             {result.summary}
           </p>
-
-          {result.followup_scheduled && result.scheduled_at ? (
-            <div style={{ background: "#d1fae5", borderRadius: 12, padding: "16px 20px", marginBottom: 24, textAlign: "left" }}>
-              <div style={{ fontWeight: 700, color: "#065f46", marginBottom: 6, fontSize: 15 }}>
-                ✅ 2e gesprek ingepland!
-              </div>
-              <div style={{ fontSize: 13, color: "#065f46" }}>
-                {new Date(result.scheduled_at).toLocaleString("nl-NL", {
-                  weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
-                })}
-              </div>
-              {result.teams_join_url && (
-                <a href={result.teams_join_url} target="_blank" rel="noopener noreferrer"
-                  style={{ display: "block", marginTop: 10, color: "#0284c7", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-                  Teams meeting openen →
-                </a>
-              )}
-            </div>
-          ) : (
-            <div style={{ background: "#f3f4f6", borderRadius: 12, padding: "14px 16px", marginBottom: 24, fontSize: 13, color: "#6b7280", textAlign: "left" }}>
-              Je hoort spoedig van de werkgever.
+          {result.followup_scheduled && result.teams_join_url && (
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "14px 16px", marginBottom: 24, textAlign: "left" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1e40af", margin: "0 0 6px" }}>
+                ✅ Vervolgafspraak ingepland
+              </p>
+              <a href={result.teams_join_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "#2563eb", textDecoration: "underline" }}>
+                Teams meeting openen →
+              </a>
             </div>
           )}
-
-          <button
-            onClick={() => router.push(`/candidate/sollicitaties/${appId}`)}
-            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" }}
-          >
+          <button onClick={() => router.back()} style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
             Terug naar sollicitatie
           </button>
         </div>
@@ -641,294 +483,179 @@ export default function VideoInterviewPage() {
     );
   }
 
-  // ── Interviewscherm ─────────────────────────────────────────────────────────
+  // ── Hoofd UI ──────────────────────────────────────────────────────────────────
+
+  const isConnecting = stage === "connecting";
+  const isActive = stage === "active" || stage === "wrapping";
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <style>{`
-        @keyframes micPulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-          50% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(34,197,94,0); }
-        }
-        @keyframes dot {
-          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-          40% { opacity: 1; transform: scale(1.2); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+    <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", color: "#fff", display: "flex", flexDirection: "column" }}>
 
       {/* Header */}
-      <div style={{ width: "100%", maxWidth: 900, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>
-          VorzaIQ · Video Interview
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid #1f2937" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#10b981" : "#374151", boxShadow: isActive ? "0 0 8px #10b981" : "none" }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#e5e7eb" }}>
+            {isActive ? "Lisa is live" : isConnecting ? "Verbinding maken..." : "Lisa 2.0 Interview"}
+          </span>
         </div>
-        <div style={{
-          background: stage === "listening" ? "#22c55e" : stage === "speaking" ? "#3b82f6" : stage === "connecting" ? "#f59e0b" : "#6b7280",
-          color: "#fff", borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 700,
-          transition: "background 0.3s",
-        }}>
-          {stageLabel[stage]}
-        </div>
+        {isActive && (
+          <div style={{ fontSize: 12, color: "#6b7280" }}>
+            {lisaTurnCount}/{MAX_LISA_TURNS} vragen
+          </div>
+        )}
       </div>
 
-      {/* Hoofd layout */}
-      <div style={{ width: "100%", maxWidth: 900, display: "flex", gap: 16, marginBottom: 16 }}>
+      {/* Video area */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr auto", gap: 16, padding: 20, maxWidth: 960, margin: "0 auto", width: "100%" }}>
 
-        {/* Lisa — avatar / D-ID video */}
-        <div style={{ flex: 1, background: "#1c1f26", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {/* D-ID WebRTC video */}
-          {!isTTSMode && (
-            <video ref={videoRef} autoPlay playsInline
-              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
-          )}
+        {/* Lisa avatar */}
+        <div style={{ position: "relative", background: "#111827", borderRadius: 16, overflow: "hidden", minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
 
-          {/* TTS modus: Amber avatar video */}
-          {isTTSMode && (
-            <video
-              ref={amberVideoRef}
-              loop muted playsInline
-              style={{
-                width: "100%", height: "100%", objectFit: "cover", borderRadius: 16,
-                opacity: stage === "speaking" ? 1 : 0.35,
-                transition: "opacity 0.4s",
-              }}
-              src={AMBER_VIDEO_URL}
-            />
-          )}
+          {/* ── Amber video (placeholder) ───────────────────────────────────────
+              TODO Simli (Lisa 2.1): vervang dit <video> element door Simli WebRTC component.
+              Stappen:
+                1. npm install @simli/sdk
+                2. import { SimliClient } from "@simli/sdk"
+                3. const simli = new SimliClient({ apiKey: SIMLI_API_KEY, faceId: SIMLI_FACE_ID })
+                4. Pipe OpenAI audio chunks: simli.sendAudioData(pcm16Chunk)
+                5. Render: <video ref={simliVideoRef} autoPlay />
+              ────────────────────────────────────────────────────────────────── */}
+          <video
+            src={AMBER_VIDEO_URL}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isActive ? 1 : 0.4 }}
+          />
 
-          {/* Idle/connecting placeholder */}
-          {!isTTSMode && (stage === "idle" || stage === "connecting") && (
-            <div style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <video
-                src={AMBER_VIDEO_URL}
-                muted playsInline
-                style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover" }}
-              />
-              <div style={{ color: "#9ca3af", fontSize: 14, fontWeight: 600 }}>Lisa · HR-Recruiter</div>
-              {stage === "connecting" && (
-                <div style={{ color: "#f59e0b", fontSize: 12 }}>Verbinding maken...</div>
-              )}
+          {/* Lisa speaking indicator */}
+          {lisaIsSpeaking && (
+            <div style={{ position: "absolute", bottom: 16, left: 16, background: "rgba(124,58,237,0.85)", borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", animation: "pulse 1s infinite" }} />
+              Lisa spreekt
             </div>
           )}
 
-          {/* "Lisa denkt na..." indicator */}
-          {stage === "processing" && !liveCaption && (
-            <div style={{
-              position: "absolute", bottom: 16, left: 16, right: 16,
-              background: "rgba(0,0,0,0.65)", color: "#9ca3af",
-              padding: "10px 14px", borderRadius: 10, fontSize: 13,
-              backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 8,
-            }}>
-              <div style={{ display: "flex", gap: 4 }}>
-                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "0ms" }}>●</span>
-                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "300ms" }}>●</span>
-                <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "600ms" }}>●</span>
+          {/* Live Lisa tekst */}
+          {lisaLiveText && (
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.85))", padding: "32px 16px 16px", fontSize: 14, lineHeight: 1.6 }}>
+              {lisaLiveText}
+            </div>
+          )}
+
+          {/* Idle overlay */}
+          {stage === "idle" && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)" }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🎙</div>
+                <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>Klik op start om het interview te beginnen</p>
               </div>
-              Lisa denkt na...
             </div>
           )}
-
-          {/* Live ondertiteling */}
-          {liveCaption && (
-            <div style={{
-              position: "absolute", bottom: 16, left: 16, right: 16,
-              background: "rgba(0,0,0,0.82)", color: "#fff",
-              padding: "10px 14px", borderRadius: 10, fontSize: 14, lineHeight: 1.5,
-              backdropFilter: "blur(4px)",
-              animation: "fadeIn 0.2s ease",
-            }}>
-              {liveCaption}
-            </div>
-          )}
-
-          {/* Lisa label */}
-          <div style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.65)", color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
-            Lisa — HR-Recruiter
-          </div>
-
-          {/* Spreekt / stil indicator */}
-          <div style={{
-            position: "absolute", top: 12, right: 12,
-            background: stage === "speaking" ? "#3b82f6" : "rgba(0,0,0,0.5)",
-            color: "#fff", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-            transition: "background 0.3s",
-          }}>
-            {stage === "speaking" ? "🎙 Spreekt" : "⏸ Stil"}
-          </div>
         </div>
 
-        {/* Rechter kolom: self-view + voortgang */}
-        <div style={{ width: 240, display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Self-view + transcript kolom */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: 200 }}>
 
-          {/* Self-view: kandidaat ziet zichzelf */}
-          <div style={{
-            flex: 1,
-            background: "#1c1f26",
-            borderRadius: 16,
-            overflow: "hidden",
-            minHeight: 160,
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            {/* Camera feed (altijd gemount, zichtbaar zodra stream actief is) */}
+          {/* Self-view */}
+          <div style={{ background: "#111827", borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", position: "relative" }}>
             <video
               ref={selfViewRef}
               autoPlay
-              playsInline
               muted
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                borderRadius: 16,
-                transform: "scaleX(-1)", // spiegel (selfie-view)
-                display: hasSelfView ? "block" : "none",
-              }}
+              playsInline
+              style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
             />
-
-            {/* Placeholder als camera nog niet actief is */}
-            {!hasSelfView && (
-              <div style={{ textAlign: "center", color: "#4b5563" }}>
-                {stage === "listening" ? (
-                  <>
-                    <div style={{
-                      width: 56, height: 56, borderRadius: "50%",
-                      background: "rgba(34,197,94,0.12)", border: "2px solid #22c55e",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      margin: "0 auto 8px",
-                      animation: "micPulse 1.5s ease-in-out infinite",
-                    }}>
-                      <span style={{ fontSize: 24 }}>🎤</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 700 }}>Luistert...</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 28, marginBottom: 6 }}>👤</div>
-                    <div style={{ fontSize: 11 }}>Jij</div>
-                  </>
-                )}
+            {candidateIsSpeaking && (
+              <div style={{ position: "absolute", bottom: 8, left: 8, width: 8, height: 8, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
+            )}
+            {!isActive && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", fontSize: 24 }}>
+                👤
               </div>
             )}
-
-            {/* Mic overlay op self-view als aan het luisteren */}
-            {hasSelfView && stage === "listening" && (
-              <div style={{
-                position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)",
-                background: "rgba(34,197,94,0.9)", color: "#fff",
-                padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                animation: "fadeIn 0.3s ease",
-              }}>
-                🎤 Luistert
-              </div>
-            )}
-
-            {/* Label */}
-            <div style={{
-              position: "absolute", top: 8, left: 8,
-              background: "rgba(0,0,0,0.6)", color: "#fff",
-              padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600,
-            }}>
-              Jij
-            </div>
           </div>
 
-          {/* Voortgang */}
-          <div style={{ background: "#1c1f26", borderRadius: 12, padding: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 600 }}>Voortgang</span>
-              <span style={{ fontSize: 12, color: "#9ca3af" }}>{questionNumber}/{totalQuestions}</span>
-            </div>
-            {ttsMode && (
-              <div style={{ fontSize: 10, color: ttsMode === "openai" ? "#4ade80" : "#f59e0b", marginBottom: 6 }}>
-                {ttsMode === "openai" ? "🎤 AI stem" : "⚠ Browser stem"}
+          {/* Voortgangsbalk */}
+          {isActive && (
+            <div style={{ background: "#1f2937", borderRadius: 8, padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>Voortgang</div>
+              <div style={{ background: "#374151", borderRadius: 4, height: 6 }}>
+                <div style={{ background: "#7C3AED", borderRadius: 4, height: 6, width: `${Math.min(100, (lisaTurnCount / MAX_LISA_TURNS) * 100)}%`, transition: "width 0.5s" }} />
               </div>
-            )}
-            <div style={{ background: "#374151", borderRadius: 6, height: 6, overflow: "hidden" }}>
-              <div style={{ background: "#7C3AED", height: "100%", width: `${progressPct}%`, borderRadius: 6, transition: "width 0.5s ease" }} />
+              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                {lisaTurnCount} van {MAX_LISA_TURNS}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Kandidaat live tekst */}
+          {candidateLiveText && (
+            <div style={{ background: "#1f2937", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#d1d5db", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 4 }}>Jij:</div>
+              {candidateLiveText}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Onderin: transcript + actieknoppen */}
-      <div style={{ width: "100%", maxWidth: 900, background: "#1c1f26", borderRadius: 16, padding: 20 }}>
-        {stage === "listening" && (
-          <div style={{ marginBottom: 14, animation: "fadeIn 0.2s ease" }}>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>
-              🎤 Jouw antwoord (live):
+      {/* Transcript scroll */}
+      {messages.length > 0 && (
+        <div style={{ maxWidth: 960, margin: "0 auto", width: "100%", padding: "0 20px 12px", maxHeight: 160, overflowY: "auto" }}>
+          {messages.slice(-4).map((m, i) => (
+            <div key={i} style={{ fontSize: 13, color: m.role === "recruiter" ? "#a78bfa" : "#d1d5db", marginBottom: 6, lineHeight: 1.5 }}>
+              <strong>{m.role === "recruiter" ? "Lisa" : "Jij"}:</strong> {m.content}
             </div>
-            <div style={{ background: "#0f1117", borderRadius: 10, padding: "12px 14px", fontSize: 14, color: transcript ? "#f9fafb" : "#4b5563", lineHeight: 1.6, minHeight: 50 }}>
-              {transcript || "Spreek nu..."}
-            </div>
-            {/* Hint: automatische verwerking */}
-            <div style={{ marginTop: 8, fontSize: 11, color: "#4b5563", textAlign: "center" }}>
-              Wordt automatisch verwerkt na een korte stilte
-            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Knoppen */}
+      <div style={{ padding: "16px 24px 28px", display: "flex", gap: 12, justifyContent: "center", alignItems: "center", borderTop: "1px solid #1f2937" }}>
+        {stage === "idle" && (
+          <button
+            onClick={startInterview}
+            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "14px 40px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}
+          >
+            Interview starten
+          </button>
+        )}
+
+        {isConnecting && (
+          <div style={{ color: "#9ca3af", fontSize: 14, display: "flex", gap: 8, alignItems: "center" }}>
+            <span>●</span><span>●</span><span>●</span> Even geduld...
           </div>
+        )}
+
+        {isActive && (
+          <button
+            onClick={endInterview}
+            style={{ background: "#374151", color: "#d1d5db", border: "1px solid #4b5563", borderRadius: 12, padding: "10px 24px", fontSize: 14, cursor: "pointer" }}
+          >
+            Interview beëindigen
+          </button>
         )}
 
         {stage === "error" && (
-          <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 14 }}>
-            {errorMsg}
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center" }}>
-          {stage === "idle" && (
-            <button onClick={startInterview}
-              style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "14px 40px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-              Interview starten
-            </button>
-          )}
-
-          {/* Knop verborgen tijdens luisteren — auto-submit doet het werk.
-              Enkel als noodknop: kleine subtiele link */}
-          {stage === "listening" && (
-            <button
-              onClick={stopListeningAndAnswer}
-              style={{
-                background: "transparent",
-                color: "#6b7280",
-                border: "1px solid #374151",
-                borderRadius: 10,
-                padding: "8px 20px",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              Nu versturen
-            </button>
-          )}
-
-          {(stage === "processing" || stage === "connecting") && (
-            <div style={{ color: "#9ca3af", fontSize: 14, padding: "14px 0", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "0ms" }}>●</span>
-              <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "300ms" }}>●</span>
-              <span style={{ animation: "dot 1.2s ease-in-out infinite", animationDelay: "600ms" }}>●</span>
-              Even geduld...
+          <div style={{ textAlign: "center" }}>
+            <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "10px 16px", marginBottom: 12, fontSize: 14 }}>
+              {errorMsg}
             </div>
-          )}
-
-          {stage === "error" && (
-            <button onClick={() => { setStage("idle"); setErrorMsg(""); }}
-              style={{ background: "#374151", color: "#fff", border: "none", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            <button
+              onClick={() => { setStage("idle"); setErrorMsg(""); setMessages([]); messagesRef.current = []; }}
+              style={{ background: "#374151", color: "#fff", border: "none", borderRadius: 12, padding: "10px 24px", fontSize: 14, cursor: "pointer" }}
+            >
               Opnieuw proberen
             </button>
-          )}
-        </div>
-
-        {stage === "idle" && typeof window !== "undefined" && !window.SpeechRecognition && !window.webkitSpeechRecognition && (
-          <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "#f59e0b" }}>
-            ⚠ Gebruik Google Chrome voor de beste spraakherkenning
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      `}</style>
     </div>
   );
 }

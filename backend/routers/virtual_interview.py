@@ -839,6 +839,278 @@ def text_to_speech(
         raise HTTPException(status_code=502, detail=f"TTS mislukt: {str(e)}")
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# LISA 2.0 — OpenAI Realtime API (full-duplex voice)
+#
+# Activeren: zet LISA_MAINTENANCE = false in de frontend zodra je:
+#   1. LISA_V2_VOICE (optioneel, default: shimmer) hebt ingesteld
+#   2. OPENAI_API_KEY al geconfigureerd (is al klaar)
+#   3. Optioneel: SIMLI_API_KEY + SIMLI_FACE_ID voor live avatar lip-sync
+#   4. Optioneel: ELEVENLABS_API_KEY voor aangepaste stem
+#
+# Verschil met V1:
+#   V1: Kandidaat audio → Web Speech API → tekst → GPT → tekst → TTS → audio → D-ID
+#   V2: Kandidaat audio → OpenAI Realtime → audio out  (alles in één, ~300ms latency)
+# ══════════════════════════════════════════════════════════════════════════════
+
+LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "shimmer")  # shimmer | alloy | echo | nova | fable | onyx
+
+
+class V2CompleteIn(BaseModel):
+    transcript: List[dict]   # [{role: "recruiter"|"candidate", content: str}]
+
+
+@router.post("/session/{app_id}/realtime-token")
+def create_realtime_token(
+    app_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Lisa 2.0 — Maak een ephemeral OpenAI Realtime API token aan.
+    De browser gebruikt dit token om DIRECT met OpenAI te verbinden via WebSocket.
+
+    Flow:
+      Browser → POST /realtime-token → krijgt client_secret
+      Browser → WebSocket wss://api.openai.com/v1/realtime?model=...
+      Browser ↔ OpenAI Realtime (full-duplex audio, geen backend meer nodig)
+      Browser → POST /v2-complete (met transcript) voor scoring
+
+    Vereist: OPENAI_API_KEY (al geconfigureerd)
+    """
+    # Toegangscontrole
+    app = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
+    if app.candidate_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    # Premium check
+    employer = db.query(models.User).filter(models.User.id == app.employer_id).first()
+    if not employer or (employer.plan or "gratis") != "premium":
+        raise HTTPException(status_code=403, detail="Virtueel interview vereist Premium abonnement")
+
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY niet geconfigureerd")
+
+    # Haal context op voor Lisa's systeem-prompt
+    ctx = _get_context(app_id, db)
+
+    system_prompt = f"""Je bent Lisa, een enthousiaste en empathische HR-recruiter bij VorzaIQ.
+
+Je voert een gesproken video-interview met {ctx['candidate_name']} voor de positie van {ctx['vacancy_title']}.
+Je bent warm, nieuwsgierig en direct. Praat alsof je echt tegenover iemand zit — energiek maar ontspannen.
+
+SPREEKTAALREGELS:
+- Maximaal 2 zinnen per beurt — kort en krachtig
+- Reageer eerst in één zin op wat de kandidaat zei ("Interessant!", "Dat snap ik.")
+- Stel dan precies één gerichte vervolgvraag
+- Gebruik altijd "je" en "jij", nooit "u"
+- Geen opsommingen, geen bullets — praat zoals je praat
+- Je mag de kandidaat onderbreken als je iets wil verduidelijken
+
+CONTEXT:
+- Functie: {ctx['vacancy_title']}
+- Sterke punten kandidaat: {ctx['strengths'] or 'onbekend'}
+- Aandachtspunten: {ctx['gaps'] or 'onbekend'}
+- CV samenvatting: {(ctx.get('cv_text') or '')[:300]}
+
+STRUCTUUR (4-6 vragen, volledig vrij gesprek):
+1. Stel jezelf voor en verwelkom {ctx['candidate_name']} warm
+2. Stel 4 tot 6 gerichte vragen — volg het gesprek, niet een script
+3. Als een antwoord vaag is, vraag door — dit is jouw kans om diepgang te krijgen
+4. Sluit warm af: bedank de kandidaat en vertel wat de volgende stap is
+
+Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
+
+    # Maak of hergebruik VirtualInterviewSession
+    vi_session = (
+        db.query(models.VirtualInterviewSession)
+        .filter(models.VirtualInterviewSession.application_id == app_id)
+        .first()
+    )
+    if not vi_session:
+        vi_session = models.VirtualInterviewSession(
+            application_id=app_id,
+            status="pending",
+        )
+        db.add(vi_session)
+        db.commit()
+        db.refresh(vi_session)
+
+    # Vraag ephemeral token op bij OpenAI Realtime Sessions API
+    try:
+        resp = http.post(
+            "https://api.openai.com/v1/realtime/sessions",
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "gpt-4o-realtime-preview",
+                "voice": LISA_V2_VOICE,
+                "instructions": system_prompt,
+                "turn_detection": {
+                    "type": "server_vad",
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 800,
+                },
+                "input_audio_transcription": {"model": "whisper-1"},
+                "temperature": 0.8,
+                "max_response_output_tokens": 150,
+            },
+            timeout=15,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI Realtime verbinding mislukt: {str(e)}")
+
+    if not resp.ok:
+        raise HTTPException(
+            status_code=502,
+            detail=f"OpenAI Realtime sessie mislukt ({resp.status_code}): {resp.text[:200]}",
+        )
+
+    data = resp.json()
+    client_secret = (data.get("client_secret") or {}).get("value", "")
+
+    if not client_secret:
+        raise HTTPException(status_code=502, detail="Geen client_secret ontvangen van OpenAI")
+
+    vi_session.status = "in_progress"
+    db.commit()
+
+    return {
+        "client_secret": client_secret,
+        "session_id": vi_session.id,
+        "model": "gpt-4o-realtime-preview",
+        "voice": LISA_V2_VOICE,
+    }
+
+
+@router.post("/session/{app_id}/v2-complete", response_model=CompleteOut)
+def complete_v2_interview(
+    app_id: int,
+    payload: V2CompleteIn,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Lisa 2.0 — Finaliseer interview: score het transcript en plan evt. vervolgafspraak.
+    Het transcript wordt aangeleverd vanuit de browser (OpenAI Realtime WebSocket).
+
+    Transcript formaat: [{role: "recruiter"|"candidate", content: str}, ...]
+    """
+    app = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
+    if app.candidate_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    vi_session = (
+        db.query(models.VirtualInterviewSession)
+        .filter(models.VirtualInterviewSession.application_id == app_id)
+        .first()
+    )
+    if not vi_session:
+        raise HTTPException(status_code=404, detail="Geen interview sessie gevonden")
+
+    ctx = _get_context(app_id, db)
+    score, summary = _score_transcript(ctx, payload.transcript)
+
+    vi_session.score = score
+    vi_session.score_summary = summary
+    vi_session.status = "completed"
+    vi_session.transcript = json.dumps(payload.transcript, ensure_ascii=False)
+    db.commit()
+
+    # Verrijk of maak AIResult aan
+    ai_result = (
+        db.query(models.AIResult).filter(models.AIResult.application_id == app_id).first()
+    )
+    if ai_result:
+        ai_result.match_score = max(ai_result.match_score or 0, score)
+        ai_result.summary = (ai_result.summary or "") + f"\n\n[Video interview score: {score}/100]\n{summary}"
+    else:
+        ai_result = models.AIResult(
+            application_id=app_id,
+            match_score=score,
+            summary=f"[Video interview score: {score}/100]\n{summary}",
+        )
+        db.add(ai_result)
+    db.commit()
+
+    # Auto-plan vervolgafspraak als score hoog genoeg + MS Graph geconfigureerd
+    followup_scheduled = False
+    teams_join_url = None
+    scheduled_at_str = None
+
+    if score >= SCORE_THRESHOLD and MS_ORGANIZER_EMAIL:
+        try:
+            employer = db.query(models.User).filter(models.User.id == ctx["employer_id"]).first()
+            now = datetime.now(timezone.utc)
+            followup_dt = (now + timedelta(days=3)).replace(hour=9, minute=0, second=0, microsecond=0)
+            end_dt = followup_dt + timedelta(minutes=45)
+            subject = f"2e gesprek: {ctx['candidate_name']} — {ctx['vacancy_title']}"
+
+            meeting = _create_teams_online_meeting(
+                subject=subject, start_dt=followup_dt, end_dt=end_dt, organizer_email=MS_ORGANIZER_EMAIL,
+            )
+            join_url = meeting.get("joinWebUrl") or meeting.get("joinUrl")
+
+            interview_session = models.InterviewSession(
+                application_id=app_id,
+                scheduled_at=followup_dt,
+                duration_minutes=45,
+                interview_type="teams",
+                status="scheduled",
+                teams_meeting_id=meeting.get("id"),
+                teams_join_url=join_url,
+                teams_organizer_email=MS_ORGANIZER_EMAIL,
+                notes=f"Automatisch ingepland na Lisa 2.0 video interview. Score: {score}/100",
+            )
+            db.add(interview_session)
+            db.commit()
+            db.refresh(interview_session)
+
+            vi_session.followup_interview_id = interview_session.id
+            db.commit()
+
+            attendees = []
+            if employer:
+                attendees.append(employer.email)
+            if ctx["candidate_email"]:
+                attendees.append(ctx["candidate_email"])
+
+            _send_calendar_invite(
+                organizer_email=MS_ORGANIZER_EMAIL,
+                attendee_emails=attendees,
+                subject=subject,
+                body_html=(
+                    f"<p>Beste {ctx['candidate_name']},</p>"
+                    f"<p>Op basis van uw video interview nodigen we u uit voor een 2e gesprek "
+                    f"over de functie <strong>{ctx['vacancy_title']}</strong>.</p>"
+                    f"<p>Score video interview: <strong>{score}/100</strong></p>"
+                ),
+                start_dt=followup_dt,
+                end_dt=end_dt,
+                teams_join_url=join_url,
+            )
+            followup_scheduled = True
+            teams_join_url = join_url
+            scheduled_at_str = followup_dt.isoformat()
+        except Exception:
+            pass
+
+    return CompleteOut(
+        score=score,
+        summary=summary,
+        followup_scheduled=followup_scheduled,
+        teams_join_url=teams_join_url,
+        scheduled_at=scheduled_at_str,
+    )
+
+
 @router.get("/session/{app_id}", response_model=SessionStatusOut)
 def get_session(
     app_id: int,
