@@ -14,6 +14,7 @@ import {
   VideoInterviewSession, TeamMember, AddTeamMemberResponse,
 } from "@/lib/api";
 import { clearSession, getRole, getToken } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 type Vacancy = {
   id: number;
@@ -28,12 +29,12 @@ type Vacancy = {
   interview_type?: string | null;
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; next: string[] }> = {
-  applied:     { label: "Nieuw",        color: "#6b7280", bg: "#f3f4f6", next: ["shortlisted", "rejected"] },
-  shortlisted: { label: "Geselecteerd", color: "#1d4ed8", bg: "#dbeafe", next: ["interview", "rejected"] },
-  interview:   { label: "Interview",    color: "#d97706", bg: "#fef3c7", next: ["hired", "rejected"] },
-  hired:       { label: "Aangenomen",   color: "#059669", bg: "#d1fae5", next: [] },
-  rejected:    { label: "Afgewezen",    color: "#dc2626", bg: "#fee2e2", next: [] },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; next: string[] }> = {
+  applied:     { color: "#6b7280", bg: "#f3f4f6", next: ["shortlisted", "rejected"] },
+  shortlisted: { color: "#1d4ed8", bg: "#dbeafe", next: ["interview", "rejected"] },
+  interview:   { color: "#d97706", bg: "#fef3c7", next: ["hired", "rejected"] },
+  hired:       { color: "#059669", bg: "#d1fae5", next: [] },
+  rejected:    { color: "#dc2626", bg: "#fee2e2", next: [] },
 };
 
 const AVATAR_COLORS = ["bg-purple-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-green-500"];
@@ -43,7 +44,7 @@ function getInitials(name: string) {
 }
 
 function ScoreBar({ score }: { score: number | null }) {
-  if (score === null) return <span className="text-xs text-gray-400">Geen score</span>;
+  if (score === null) return <span className="text-xs text-gray-400">—</span>;
   const color = score >= 70 ? "#059669" : score >= 40 ? "#d97706" : "#dc2626";
   return (
     <div className="flex items-center gap-2">
@@ -59,6 +60,7 @@ export default function EmployerPage() {
   const router = useRouter();
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
+  const { lang, T } = useLanguage();
 
   const [userEmail, setUserEmail] = useState("");
   const [userPlan, setUserPlan] = useState<string>("gratis");
@@ -210,7 +212,7 @@ export default function EmployerPage() {
       const apps = await getEmployerApplications(token, vacancyId);
       setApplications(apps);
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Kon sollicitaties niet laden");
+      setErr(e instanceof Error ? e.message : txt.loadFailed);
     }
   }
 
@@ -331,7 +333,7 @@ export default function EmployerPage() {
       setApplications((prev) =>
         prev.map((a) => (a.id === appId ? { ...a, status: newStatus } : a))
       );
-      setMsg(`Status bijgewerkt naar "${STATUS_CONFIG[newStatus]?.label ?? newStatus}"`);
+      setMsg(`${txt.statusUpdated} "${STATUS_LABELS[newStatus] ?? newStatus}"`);
       setTimeout(() => setMsg(""), 3000);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Status bijwerken mislukt");
@@ -512,23 +514,91 @@ export default function EmployerPage() {
       const vacs = await employerVacancies(token);
       setVacancies(vacs || []);
       setTitle(""); setLocation(""); setHours(""); setSalary(""); setDesc(""); setVacancyInterviewType("both"); setVacancyEmploymentType(""); setVacancyWorkLocation("");
-      setMsg("Vacature aangemaakt!");
+      setMsg(txt.vacancyCreated);
       setView("vacancies");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Aanmaken mislukt");
+      setErr(e instanceof Error ? e.message : txt.createFailed);
     } finally {
       setCreating(false);
     }
   }
 
-  const selectedVacancyName = vacancies.find((v) => v.id === selectedVacancy)?.title ?? "Alle vacatures";
+  const selectedVacancyName = vacancies.find((v) => v.id === selectedVacancy)?.title ?? ({ nl: "Alle vacatures", en: "All jobs", de: "Alle Stellen", fr: "Toutes les offres", es: "Todos los empleos" }[lang] ?? "Alle vacatures");
   const appCountPerVacancy = (id: number) => applications.filter((a) => a.vacancy_id === id).length;
   const totalApps = applications.length;
+
+  // Vertaalde status labels
+  const STATUS_LABELS: Record<string, string> = {
+    applied:     { nl: "Nieuw",        en: "New",         de: "Neu",           fr: "Nouveau",      es: "Nuevo" }[lang] ?? "Nieuw",
+    shortlisted: { nl: "Geselecteerd", en: "Shortlisted", de: "Vorausgewählt", fr: "Présélectionné", es: "Preseleccionado" }[lang] ?? "Geselecteerd",
+    interview:   { nl: "Interview",    en: "Interview",   de: "Interview",     fr: "Entretien",    es: "Entrevista" }[lang] ?? "Interview",
+    hired:       { nl: "Aangenomen",   en: "Hired",       de: "Eingestellt",   fr: "Embauché",     es: "Contratado" }[lang] ?? "Aangenomen",
+    rejected:    { nl: "Afgewezen",    en: "Rejected",    de: "Abgelehnt",     fr: "Refusé",       es: "Rechazado" }[lang] ?? "Afgewezen",
+  };
+
+  // UI vertalingen
+  const txt = {
+    // Nav
+    navigation:        { nl: "Navigatie",          en: "Navigation",      de: "Navigation",       fr: "Navigation",       es: "Navegación" }[lang] ?? "Navigatie",
+    myVacancies:       T.employer.myVacancies,
+    allApplicants:     { nl: "Alle sollicitanten",  en: "All applicants",  de: "Alle Bewerber",    fr: "Tous les candidats", es: "Todos los candidatos" }[lang] ?? "Alle sollicitanten",
+    postVacancy:       { nl: "+ Vacature plaatsen", en: "+ Post job",      de: "+ Stelle posten",  fr: "+ Publier une offre", es: "+ Publicar empleo" }[lang] ?? "+ Vacature plaatsen",
+    analytics:         T.employer.analytics,
+    manageTeam:        { nl: "Team beheren",        en: "Manage team",    de: "Team verwalten",   fr: "Gérer l'équipe",   es: "Gestionar equipo" }[lang] ?? "Team beheren",
+    integrations:      { nl: "Integraties",         en: "Integrations",   de: "Integrationen",    fr: "Intégrations",     es: "Integraciones" }[lang] ?? "Integraties",
+    settings:          T.employer.settings,
+    logout:            T.employer.logout,
+    vacancies:         { nl: "Vacatures",            en: "Jobs",           de: "Stellen",          fr: "Offres",           es: "Empleos" }[lang] ?? "Vacatures",
+    // Headers
+    employerPortal:    { nl: "Werkgever portaal",    en: "Employer portal", de: "Arbeitgeber-Portal", fr: "Portail employeur", es: "Portal empleador" }[lang] ?? "Werkgever portaal",
+    myVacanciesTitle:  { nl: "Mijn vacatures",       en: "My jobs",        de: "Meine Stellen",    fr: "Mes offres",       es: "Mis empleos" }[lang] ?? "Mijn vacancies",
+    activeVacancies:   { nl: "Actieve vacature",     en: "active job",     de: "aktive Stelle",    fr: "offre active",     es: "empleo activo" }[lang] ?? "Actieve vacature",
+    activeVacanciesP:  { nl: "Actieve vacatures",    en: "active jobs",    de: "aktive Stellen",   fr: "offres actives",   es: "empleos activos" }[lang] ?? "Actieve vacatures",
+    // Stats
+    statActiveVac:     { nl: "Actieve vacatures",    en: "Active jobs",    de: "Aktive Stellen",   fr: "Offres actives",   es: "Empleos activos" }[lang] ?? "Actieve vacatures",
+    statTotalApps:     { nl: "Totaal sollicitanten", en: "Total applicants", de: "Bewerber gesamt", fr: "Candidats total", es: "Total candidatos" }[lang] ?? "Totaal sollicitanten",
+    statAvgScore:      { nl: "Gem. matchscore",      en: "Avg. match score", de: "Ø Match-Score",   fr: "Score moy.",      es: "Puntuación media" }[lang] ?? "Gem. matchscore",
+    // Vacature kaart
+    applicants:        T.employer.applicants,
+    topScore:          { nl: "top score",            en: "top score",      de: "Top-Score",        fr: "meilleur score",   es: "puntuación top" }[lang] ?? "top score",
+    applicant:         { nl: "sollicitant",          en: "applicant",      de: "Bewerber",         fr: "candidat",         es: "candidato" }[lang] ?? "sollicitant",
+    applicantsP:       { nl: "sollicitanten",        en: "applicants",     de: "Bewerber",         fr: "candidats",        es: "candidatos" }[lang] ?? "sollicitanten",
+    // Leeg
+    noVacancies:       T.employer.noVacancies,
+    noVacanciesSub:    { nl: "Plaats je eerste vacature en vind de beste kandidaten.", en: "Post your first job and find the best candidates.", de: "Veröffentliche deine erste Stelle und finde die besten Kandidaten.", fr: "Publiez votre première offre et trouvez les meilleurs candidats.", es: "Publica tu primer empleo y encuentra los mejores candidatos." }[lang] ?? "Plaats je eerste vacature en vind de beste kandidaten.",
+    // Sollicitanten
+    allApplicationsTitle: { nl: "Alle sollicitanten", en: "All applicants", de: "Alle Bewerber", fr: "Tous les candidats", es: "Todos los candidatos" }[lang] ?? "Alle sollicitanten",
+    noApplicants:      T.employer.noApplicants,
+    noApplicantsSub:   { nl: "Nog geen sollicitaties ontvangen voor dit filter.", en: "No applications received for this filter.", de: "Noch keine Bewerbungen für diesen Filter.", fr: "Aucune candidature pour ce filtre.", es: "Sin solicitudes para este filtro." }[lang] ?? "Nog geen sollicitaties ontvangen voor dit filter.",
+    // Vacature status
+    online:            { nl: "Online",   en: "Online",   de: "Online",   fr: "En ligne", es: "Online" }[lang] ?? "Online",
+    offline:           { nl: "Offline",  en: "Offline",  de: "Offline",  fr: "Hors ligne", es: "Offline" }[lang] ?? "Offline",
+    concept:           { nl: "Concept",  en: "Draft",    de: "Entwurf",  fr: "Brouillon", es: "Borrador" }[lang] ?? "Concept",
+    // Formulier
+    loading:           T.common.loading,
+    save:              T.common.save,
+    cancel:            T.common.cancel,
+    saving:            { nl: "Opslaan...", en: "Saving...", de: "Speichern...", fr: "Enregistrement...", es: "Guardando..." }[lang] ?? "Opslaan...",
+    creating:          { nl: "Aanmaken...", en: "Creating...", de: "Erstellen...", fr: "Création...", es: "Creando..." }[lang] ?? "Aanmaken...",
+    // Trial banner
+    trialExpired:      { nl: "Je gratis proefperiode is verlopen. Kies een abonnement om te blijven werven.", en: "Your free trial has expired. Choose a subscription to continue hiring.", de: "Dein kostenloser Testzeitraum ist abgelaufen.", fr: "Votre période d'essai a expiré. Choisissez un abonnement.", es: "Tu período de prueba ha expirado. Elige una suscripción." }[lang] ?? "Je gratis proefperiode is verlopen.",
+    trialExpiresIn:    { nl: "verloopt over", en: "expires in", de: "läuft ab in", fr: "expire dans", es: "vence en" }[lang] ?? "verloopt over",
+    trialDaysSingle:   { nl: "dag", en: "day", de: "Tag", fr: "jour", es: "día" }[lang] ?? "dag",
+    trialDaysPlural:   { nl: "dagen", en: "days", de: "Tagen", fr: "jours", es: "días" }[lang] ?? "dagen",
+    trialChoosePlan:   { nl: "Kies een abonnement om te blijven werven.", en: "Choose a subscription to continue hiring.", de: "Wähle ein Abonnement.", fr: "Choisissez un abonnement.", es: "Elige una suscripción." }[lang] ?? "Kies een abonnement om te blijven werven.",
+    upgrade:           { nl: "Upgrade", en: "Upgrade", de: "Upgrade", fr: "Mise à niveau", es: "Actualizar" }[lang] ?? "Upgrade",
+    // Status bijwerken
+    statusUpdated:     { nl: "Status bijgewerkt naar", en: "Status updated to", de: "Status aktualisiert zu", fr: "Statut mis à jour en", es: "Estado actualizado a" }[lang] ?? "Status bijgewerkt naar",
+    // Vacature aanmaken
+    vacancyCreated:    { nl: "Vacature aangemaakt!", en: "Job posted!", de: "Stelle erstellt!", fr: "Offre créée!", es: "¡Empleo publicado!" }[lang] ?? "Vacature aangemaakt!",
+    createFailed:      { nl: "Aanmaken mislukt", en: "Creation failed", de: "Erstellen fehlgeschlagen", fr: "Création échouée", es: "Error al crear" }[lang] ?? "Aanmaken mislukt",
+    loadFailed:        { nl: "Kon sollicitaties niet laden", en: "Could not load applications", de: "Bewerbungen konnten nicht geladen werden", fr: "Impossible de charger les candidatures", es: "No se pudieron cargar las solicitudes" }[lang] ?? "Kon sollicitaties niet laden",
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400 text-sm">Laden...</div>
+        <div className="text-gray-400 text-sm">{txt.loading}</div>
       </div>
     );
   }
@@ -555,7 +625,7 @@ export default function EmployerPage() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2">Navigatie</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2">{txt.navigation}</p>
 
           <button
             onClick={() => { setView("vacancies"); setSelectedVacancy(null); loadApplications(); setSidebarOpen(false); }}
@@ -563,7 +633,7 @@ export default function EmployerPage() {
               view === "vacancies" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            Mijn vacatures
+            {txt.myVacancies}
             <span className="float-right text-xs text-gray-400">{vacancies.length}</span>
           </button>
 
@@ -573,7 +643,7 @@ export default function EmployerPage() {
               view === "applications" && !selectedVacancy ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            Alle sollicitanten
+            {txt.allApplicants}
             <span className="float-right text-xs text-gray-400">{totalApps}</span>
           </button>
 
@@ -583,7 +653,7 @@ export default function EmployerPage() {
               view === "new-vacancy" ? "text-orange-700 bg-orange-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            + Vacature plaatsen
+            {txt.postVacancy}
           </button>
 
           <button
@@ -592,7 +662,7 @@ export default function EmployerPage() {
               view === "analytics" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            Analytics
+            {txt.analytics}
           </button>
 
           <button
@@ -601,26 +671,26 @@ export default function EmployerPage() {
               view === "team" ? "text-purple-700 bg-purple-50" : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            Team beheren
+            {txt.manageTeam}
           </button>
 
           <Link
             href="/employer/integraties"
             className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors no-underline block"
           >
-            Integraties
+            {txt.integrations}
           </Link>
 
           <Link
             href="/employer/instellingen"
             className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors no-underline block"
           >
-            Instellingen
+            {txt.settings}
           </Link>
 
           {vacancies.length > 0 && (
             <>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2 mt-4">Vacatures</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-3 py-2 mt-4">{txt.vacancies}</p>
               {vacancies.map((v) => (
                 <button
                   key={v.id}
@@ -642,7 +712,7 @@ export default function EmployerPage() {
             onClick={() => { clearSession(); router.push("/"); }}
             className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors"
           >
-            Uitloggen
+            {txt.logout}
           </button>
         </div>
       </aside>
@@ -661,7 +731,7 @@ export default function EmployerPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="font-bold text-gray-900 text-sm">Werkgever portaal</span>
+          <span className="font-bold text-gray-900 text-sm">{txt.employerPortal}</span>
         </div>
 
         {/* Trial-expiry banner */}
@@ -672,10 +742,10 @@ export default function EmployerPage() {
             <div className={`rounded-xl px-4 py-3 text-sm mb-5 flex items-center justify-between gap-4 ${daysLeft <= 0 ? "bg-red-50 border border-red-200 text-red-700" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
               <span>
                 {daysLeft <= 0
-                  ? "Je gratis proefperiode is verlopen. Kies een abonnement om te blijven werven."
-                  : `Je gratis proefperiode verloopt over ${daysLeft} dag${daysLeft !== 1 ? "en" : ""}. Kies een abonnement om te blijven werven.`}
+                  ? txt.trialExpired
+                  : `${txt.trialExpiresIn} ${daysLeft} ${daysLeft !== 1 ? txt.trialDaysPlural : txt.trialDaysSingle}. ${txt.trialChoosePlan}`}
               </span>
-              <a href="/employer/abonnementen" className="shrink-0 font-semibold underline">Upgrade</a>
+              <a href="/employer/abonnementen" className="shrink-0 font-semibold underline">{txt.upgrade}</a>
             </div>
           );
         })()}
@@ -693,24 +763,24 @@ export default function EmployerPage() {
           <>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">Mijn vacatures</h1>
-                <p className="text-sm text-gray-500 mt-1">{vacancies.length} actieve vacature{vacancies.length !== 1 ? "s" : ""}</p>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">{txt.myVacanciesTitle}</h1>
+                <p className="text-sm text-gray-500 mt-1">{vacancies.length} {vacancies.length !== 1 ? txt.activeVacanciesP : txt.activeVacancies}</p>
               </div>
               <button
                 onClick={handleNewVacancy}
                 className="px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-xs md:text-sm font-bold text-white hover:opacity-90 whitespace-nowrap"
                 style={{ background: "#f97316" }}
               >
-                + Vacature plaatsen
+                {txt.postVacancy}
               </button>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
               {[
-                { label: "Actieve vacatures", value: vacancies.length, color: "#7C3AED" },
-                { label: "Totaal sollicitanten", value: totalApps, color: "#3b82f6" },
-                { label: "Gem. matchscore", value: (() => {
+                { label: txt.statActiveVac, value: vacancies.length, color: "#7C3AED" },
+                { label: txt.statTotalApps, value: totalApps, color: "#3b82f6" },
+                { label: txt.statAvgScore, value: (() => {
                   const scored = applications.filter((a) => a.match_score !== null);
                   if (!scored.length) return "—";
                   return Math.round(scored.reduce((s, a) => s + (a.match_score ?? 0), 0) / scored.length) + "%";
@@ -725,11 +795,11 @@ export default function EmployerPage() {
 
             {vacancies.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
-                <div className="text-lg font-semibold text-gray-700 mb-2">Nog geen vacatures</div>
-                <div className="text-gray-400 text-sm mb-6">Plaats je eerste vacature en vind de beste kandidaten.</div>
+                <div className="text-lg font-semibold text-gray-700 mb-2">{txt.noVacancies}</div>
+                <div className="text-gray-400 text-sm mb-6">{txt.noVacanciesSub}</div>
                 <button onClick={handleNewVacancy}
                   className="px-6 py-3 rounded-xl text-sm font-bold text-white hover:opacity-90" style={{ background: "#f97316" }}>
-                  + Vacature plaatsen
+                  {txt.postVacancy}
                 </button>
               </div>
             ) : (
@@ -751,10 +821,10 @@ export default function EmployerPage() {
                             {(() => {
                               const s = v.status || "concept";
                               const cfg = s === "actief"
-                                ? { label: "Online", color: "#059669", bg: "#d1fae5" }
+                                ? { label: txt.online, color: "#059669", bg: "#d1fae5" }
                                 : s === "offline"
-                                ? { label: "Offline", color: "#6b7280", bg: "#f3f4f6" }
-                                : { label: "Concept", color: "#d97706", bg: "#fef3c7" };
+                                ? { label: txt.offline, color: "#6b7280", bg: "#f3f4f6" }
+                                : { label: txt.concept, color: "#d97706", bg: "#fef3c7" };
                               return (
                                 <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ color: cfg.color, background: cfg.bg }}>
                                   {cfg.label}
@@ -769,12 +839,12 @@ export default function EmployerPage() {
                         <div className="employer-vac-right flex items-center gap-3 flex-shrink-0">
                           <div className="text-center">
                             <div className="text-xl font-bold text-gray-900">{appCount}</div>
-                            <div className="text-xs text-gray-400">sollicitant{appCount !== 1 ? "en" : ""}</div>
+                            <div className="text-xs text-gray-400">{appCount !== 1 ? txt.applicantsP : txt.applicant}</div>
                           </div>
                           {topScore > 0 && (
                             <div className="employer-vac-score text-center">
                               <div className="text-xl font-bold" style={{ color: topScore >= 70 ? "#059669" : "#d97706" }}>{topScore}%</div>
-                              <div className="text-xs text-gray-400">top score</div>
+                              <div className="text-xs text-gray-400">{txt.topScore}</div>
                             </div>
                           )}
                           <div className="flex items-center gap-2 ml-auto md:ml-0">
@@ -783,7 +853,7 @@ export default function EmployerPage() {
                               onClick={() => handleVacancyClick(v)}
                               className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors"
                             >
-                              Sollicitanten
+                              {txt.applicants}
                             </button>
 
                             {/* ⋯ overflow actiemenu */}
@@ -900,21 +970,21 @@ export default function EmployerPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {selectedVacancy ? selectedVacancyName : "Alle sollicitanten"}
+                  {selectedVacancy ? selectedVacancyName : txt.allApplicationsTitle}
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">{applications.length} sollicitant{applications.length !== 1 ? "en" : ""}</p>
+                <p className="text-sm text-gray-500 mt-1">{applications.length} {applications.length !== 1 ? txt.applicantsP : txt.applicant}</p>
               </div>
             </div>
 
             {applications.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
-                <div className="text-lg font-semibold text-gray-700 mb-2">Nog geen sollicitanten</div>
-                <div className="text-gray-400 text-sm">Deel de vacature en wacht op de eerste sollicitaties.</div>
+                <div className="text-lg font-semibold text-gray-700 mb-2">{txt.noApplicants}</div>
+                <div className="text-gray-400 text-sm">{txt.noApplicantsSub}</div>
               </div>
             ) : (
               <div className="space-y-3">
                 {applications.map((app) => {
-                  const sc = STATUS_CONFIG[app.status] ?? { label: app.status, color: "#374151", bg: "#f3f4f6", next: [] };
+                  const sc = { ...(STATUS_CONFIG[app.status] ?? { color: "#374151", bg: "#f3f4f6", next: [] }), label: STATUS_LABELS[app.status] ?? app.status };
                   const initials = getInitials(app.candidate_name);
                   const color = avatarColor(app.candidate_id);
                   return (
@@ -938,7 +1008,7 @@ export default function EmployerPage() {
                               )}
                             </div>
                             <div className="text-xs text-gray-400 flex-shrink-0">
-                              {new Date(app.created_at).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
+                              {new Date(app.created_at).toLocaleDateString(lang === "de" ? "de-DE" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : lang === "en" ? "en-GB" : "nl-NL", { day: "numeric", month: "short" })}
                             </div>
                           </div>
 
@@ -1160,7 +1230,7 @@ export default function EmployerPage() {
                                     className="px-3 py-1 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
                                     style={{ color: ns.color, background: ns.bg }}
                                   >
-                                    → {ns.label}
+                                    → {STATUS_LABELS[nextStatus] ?? nextStatus}
                                   </button>
                                 );
                               })}
@@ -1585,7 +1655,7 @@ export default function EmployerPage() {
                         return (
                           <div key={status}>
                             <div className="flex justify-between mb-1">
-                              <span className="text-xs font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+                              <span className="text-xs font-medium" style={{ color: cfg.color }}>{STATUS_LABELS[status] ?? status}</span>
                               <span className="text-xs font-bold text-gray-700">{count} ({pct}%)</span>
                             </div>
                             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

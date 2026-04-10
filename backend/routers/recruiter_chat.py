@@ -21,7 +21,7 @@ Flow:
 import os
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from openai import OpenAI
@@ -36,6 +36,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 MAX_QUESTIONS = 3  # Lisa stelt 3 vragen, bericht 4 is het sluitingsbericht
+
+LANG_NAMES = {"nl": "Dutch", "en": "English", "de": "German", "fr": "French", "es": "Spanish"}
+
+def _get_language(request: Request) -> str:
+    """Lees de voorkeurstaal uit de Accept-Language header."""
+    header = request.headers.get("accept-language", "nl")
+    lang = header.split(",")[0].strip().split("-")[0].lower()
+    return lang if lang in LANG_NAMES else "nl"
 
 
 # ── Schemas ─────────────────────────────────────────────────────────────
@@ -95,7 +103,8 @@ def _get_application_context(app_id: int, db: Session) -> dict:
     }
 
 
-def _build_system_prompt(ctx: dict) -> str:
+def _build_system_prompt(ctx: dict, language: str = "nl") -> str:
+    lang_instruction = f"Always respond in {LANG_NAMES.get(language, 'Dutch')}."
     return f"""Je bent Lisa, HR-recruiter bij {ctx['employer_name']}.
 
 Je hebt {ctx['candidate_name']} uitgenodigd voor een eerste kennismakingsgesprek over de functie {ctx['vacancy_title']}.
@@ -122,6 +131,8 @@ GESPREKSDOEL:
 - Diep door op interessante antwoorden ("Interessant, kun je daar een voorbeeld van geven?")
 - Als een antwoord onduidelijk is, vraag vriendelijk om verduidelijking
 - Sluit het gesprek na {MAX_QUESTIONS} vragen positief af zonder nieuwe vragen te stellen
+
+{lang_instruction}
 """
 
 
@@ -181,6 +192,7 @@ def _call_ai(system_prompt: str, history: list) -> str:
 @router.post("/{app_id}/start", response_model=ChatMessageOut)
 def start_conversation(
     app_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -245,8 +257,9 @@ def start_conversation(
         )
 
     # Bouw context en genereer openingsbericht
+    language = _get_language(request)
     ctx = _get_application_context(app_id, db)
-    system_prompt = _build_system_prompt(ctx)
+    system_prompt = _build_system_prompt(ctx, language)
 
     opening_instruction = (
         f"Stel jezelf voor als Lisa en bedank {ctx['candidate_name']} kort voor de sollicitatie "
@@ -269,6 +282,7 @@ def start_conversation(
 def send_message(
     app_id: int,
     payload: SendMessageIn,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -289,8 +303,9 @@ def send_message(
     recruiter_count = _count_recruiter_messages(app_id, db)
 
     # Bouw context + conversatiegeschiedenis
+    language = _get_language(request)
     ctx = _get_application_context(app_id, db)
-    system_prompt = _build_system_prompt(ctx)
+    system_prompt = _build_system_prompt(ctx, language)
     history = _get_conversation_history(app_id, db)
 
     # Sluit af na MAX_QUESTIONS recruiter berichten

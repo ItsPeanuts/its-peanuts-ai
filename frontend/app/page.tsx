@@ -36,17 +36,12 @@ export default function HomePage() {
     window.location.href = `/vacatures?${p.toString()}`;
   };
 
-  const stats = lang === "en"
-    ? [
-        { n: vacancies.length > 0 ? `${vacancies.length}+` : "14,780+", label: "jobs" },
-        { n: "200+", label: "companies" },
-        { n: "5,000+", label: "candidates" },
-      ]
-    : [
-        { n: vacancies.length > 0 ? `${vacancies.length}+` : "14.780+", label: "vacatures" },
-        { n: "200+", label: "bedrijven" },
-        { n: "5.000+", label: "kandidaten" },
-      ];
+  const sep = lang === "nl" ? "." : ",";
+  const stats = [
+    { n: vacancies.length > 0 ? `${vacancies.length}+` : `14${sep}780+`, label: T.page.statsJobs },
+    { n: "200+", label: T.page.statsCompanies },
+    { n: `5${sep}000+`, label: T.page.statsCandidates },
+  ];
 
   return (
     <div>
@@ -110,7 +105,7 @@ export default function HomePage() {
       <section style={{ background: "#f9fafb", borderBottom: "1px solid #f3f4f6", padding: "40px 0" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
-            {lang === "en" ? "Categories" : "Categorieën"}
+            {T.page.categories}
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {CATEGORIES.map(cat => (
@@ -139,7 +134,7 @@ export default function HomePage() {
               href="/vacatures"
               style={{ display: "inline-block", padding: "7px 16px", borderRadius: 100, border: "1px solid transparent", background: "transparent", fontSize: 13, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}
             >
-              {lang === "en" ? "All categories →" : "Alle categorieën →"}
+              {T.page.allCategories}
             </Link>
           </div>
         </div>
@@ -181,7 +176,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.title}</div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || (lang === "en" ? "Location unknown" : "Locatie onbekend")}</div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || T.page.locationUnknown}</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {v.salary_range && (
@@ -206,16 +201,14 @@ export default function HomePage() {
       <section style={{ background: "#f8fafc", borderTop: "1px solid #f3f4f6", padding: "60px 24px" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 8 }}>
-            {lang === "en" ? "Ready to get started?" : "Klaar om te starten?"}
+            {T.page.ctaTitle}
           </h2>
           <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, marginBottom: 24 }}>
-            {lang === "en"
-              ? "Create a free account, upload your CV and receive tailored AI matches."
-              : "Maak een gratis account, upload je CV en ontvang AI-matches op maat."}
+            {T.page.ctaSubtitle}
           </p>
           <div className="cta-buttons" style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <Link href="/candidate/login" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
-              {lang === "en" ? "Create account" : "Maak account aan"}
+              {T.page.ctaCreateAccount}
             </Link>
             <Link href="/vacatures" style={{ background: "#f9fafb", color: "#374151", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none", border: "1px solid #e5e7eb" }}>
               {T.hero.viewAll}

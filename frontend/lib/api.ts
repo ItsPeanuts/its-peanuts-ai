@@ -11,6 +11,11 @@ async function parseJson(res: Response) {
   }
 }
 
+function getLang(): string {
+  if (typeof window === "undefined") return "nl";
+  return localStorage.getItem("lang") || "nl";
+}
+
 export async function login(email: string, password: string) {
   const body = new URLSearchParams();
   body.set("username", email);
@@ -29,7 +34,7 @@ export async function login(email: string, password: string) {
 
 export async function me(token: string) {
   const res = await fetch(`${BASE}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Auth/me failed");
@@ -46,7 +51,7 @@ export async function me(token: string) {
 export async function updateProfile(token: string, fullName: string) {
   const res = await fetch(`${BASE}/auth/profile`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ full_name: fullName }),
   });
   const data = await parseJson(res);
@@ -56,7 +61,7 @@ export async function updateProfile(token: string, fullName: string) {
 
 export async function listCandidateVacancies(token: string) {
   const res = await fetch(`${BASE}/candidate/vacancies`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacancies failed");
@@ -81,7 +86,7 @@ export async function uploadCV(token: string, file: File) {
 export async function analyzeVacancy(token: string, vacancyId: number) {
   const res = await fetch(`${BASE}/candidate/analyze/${vacancyId}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
 
   const data = await parseJson(res);
@@ -101,7 +106,7 @@ export async function analyzeVacancy(token: string, vacancyId: number) {
 
 export async function employerVacancies(token: string) {
   const res = await fetch(`${BASE}/employer/vacancies`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Vacancies load failed");
@@ -127,6 +132,7 @@ export async function createVacancy(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       accept: "application/json",
+      "Accept-Language": getLang(),
     },
     body: JSON.stringify(payload),
   });
@@ -250,7 +256,7 @@ export async function generateVacancy(
 ): Promise<{ title: string; location: string; hours_per_week: string; salary_range: string; description: string }> {
   const res = await fetch(`${BASE}/ai/generate-vacancy`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ prompt, website_url }),
   });
   const data = await parseJson(res);
@@ -264,7 +270,7 @@ export async function generateMotivationLetter(
 ): Promise<string> {
   const res = await fetch(`${BASE}/ai/motivation-letter-for-vacancy/${vacancyId}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Genereren mislukt");
@@ -306,7 +312,7 @@ export type CandidateCVOut = {
 
 export async function getMyApplications(token: string): Promise<ApplicationWithDetails[]> {
   const res = await fetch(`${BASE}/candidate/my-applications`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon sollicitaties niet laden");
@@ -315,7 +321,7 @@ export async function getMyApplications(token: string): Promise<ApplicationWithD
 
 export async function getApplicationAIResult(token: string, appId: number): Promise<AIResult> {
   const res = await fetch(`${BASE}/candidate/applications/${appId}/ai-result`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Geen AI-analyse beschikbaar");
@@ -324,7 +330,7 @@ export async function getApplicationAIResult(token: string, appId: number): Prom
 
 export async function getCandidateCVs(token: string): Promise<CandidateCVOut[]> {
   const res = await fetch(`${BASE}/candidate/cvs`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon CV's niet laden");
@@ -333,7 +339,7 @@ export async function getCandidateCVs(token: string): Promise<CandidateCVOut[]> 
 
 export async function getCVFullText(token: string, cvId: number): Promise<string> {
   const res = await fetch(`${BASE}/candidate/cv/${cvId}/text`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "CV tekst laden mislukt");
@@ -343,7 +349,7 @@ export async function getCVFullText(token: string, cvId: number): Promise<string
 export async function updateCVText(token: string, cvId: number, extractedText: string): Promise<CandidateCVOut> {
   const res = await fetch(`${BASE}/candidate/cv/${cvId}`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ extracted_text: extractedText }),
   });
   const data = await parseJson(res);
@@ -354,7 +360,7 @@ export async function updateCVText(token: string, cvId: number, extractedText: s
 export async function register(email: string, password: string, fullName: string) {
   const res = await fetch(`${BASE}/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", accept: "application/json" },
+    headers: { "Content-Type": "application/json", accept: "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ email, password, full_name: fullName }),
   });
   const data = await parseJson(res);
@@ -376,7 +382,7 @@ export type IntakeQuestionOut = {
 
 export async function listIntakeQuestions(token: string, vacancyId: number): Promise<IntakeQuestionOut[]> {
   const res = await fetch(`${BASE}/intake/vacancies/${vacancyId}/questions`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Laden mislukt");
@@ -390,7 +396,7 @@ export async function createIntakeQuestion(
 ): Promise<IntakeQuestionOut> {
   const res = await fetch(`${BASE}/intake/vacancies/${vacancyId}/questions`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", accept: "application/json", "Accept-Language": getLang() },
     body: JSON.stringify(payload),
   });
   const data = await parseJson(res);
@@ -418,7 +424,7 @@ export type IntakeAnswerOut = {
 
 export async function getApplicationAnswers(token: string, applicationId: number): Promise<IntakeAnswerOut[]> {
   const res = await fetch(`${BASE}/intake/applications/${applicationId}/answers`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Laden mislukt");
@@ -450,7 +456,7 @@ export async function getEmployerApplications(
 ): Promise<ApplicationWithCandidate[]> {
   const url = `${BASE}/employer/applications${vacancy_id !== undefined ? `?vacancy_id=${vacancy_id}` : ""}`;
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon sollicitaties niet laden");
@@ -470,7 +476,7 @@ export async function getVideoInterviewSession(
   appId: number
 ): Promise<VideoInterviewSession | null> {
   const res = await fetch(`${BASE}/virtual-interview/session/${appId}`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   if (res.status === 404) return null;
   const data = await parseJson(res);
@@ -489,6 +495,7 @@ export async function updateApplicationStatus(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       accept: "application/json",
+      "Accept-Language": getLang(),
     },
     body: JSON.stringify({ status }),
   });
@@ -509,7 +516,7 @@ export type ChatMessage = {
 
 export async function getChatMessages(token: string, appId: number): Promise<ChatMessage[]> {
   const res = await fetch(`${BASE}/ai/recruiter/${appId}/messages`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Kon chatberichten niet laden");
@@ -552,6 +559,7 @@ export async function scheduleInterview(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
       accept: "application/json",
+      "Accept-Language": getLang(),
     },
     body: JSON.stringify(payload),
   });
@@ -565,7 +573,7 @@ export async function getInterviewsForApplication(
   appId: number
 ): Promise<InterviewSession[]> {
   const res = await fetch(`${BASE}/interviews/application/${appId}`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Interviews laden mislukt");
@@ -574,7 +582,7 @@ export async function getInterviewsForApplication(
 
 export async function getMyInterviews(token: string): Promise<InterviewSession[]> {
   const res = await fetch(`${BASE}/interviews/my`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Mijn gesprekken laden mislukt");
@@ -593,7 +601,7 @@ export async function syncCandidateToCRM(
   const url = `${BASE}/crm/sync/${candidateId}${applicationId ? `?application_id=${applicationId}` : ""}`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "CRM sync mislukt");
@@ -621,7 +629,7 @@ export type IntegrationsStatusResponse = {
 
 export async function getIntegrationsStatus(token: string): Promise<IntegrationsStatusResponse> {
   const res = await fetch(`${BASE}/integrations/status`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Status ophalen mislukt");
@@ -635,7 +643,7 @@ export async function createCheckoutSession(
 ): Promise<{ checkout_url: string }> {
   const res = await fetch(`${BASE}/billing/checkout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ plan, interval }),
   });
   const data = await parseJson(res);
@@ -646,7 +654,7 @@ export async function createCheckoutSession(
 export async function createVacancyCheckout(token: string): Promise<{ checkout_url: string }> {
   const res = await fetch(`${BASE}/billing/vacancy-checkout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Checkout aanmaken mislukt");
@@ -671,7 +679,7 @@ export async function updateVacancy(
 ): Promise<{ id: number; title: string; status: string }> {
   const res = await fetch(`${BASE}/employer/vacancies/${vacancyId}`, {
     method: "PUT",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify(payload),
   });
   const data = await parseJson(res);
@@ -686,7 +694,7 @@ export async function updateVacancyStatus(
 ): Promise<{ id: number; status: string }> {
   const res = await fetch(`${BASE}/employer/vacancies/${vacancyId}/status`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ status }),
   });
   const data = await parseJson(res);
@@ -716,7 +724,7 @@ export async function createPromotionCheckout(
 ): Promise<{ checkout_url: string }> {
   const res = await fetch(`${BASE}/promotions/vacancies/${vacancyId}/checkout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ duration_days: durationDays }),
   });
   const data = await parseJson(res);
@@ -729,7 +737,7 @@ export async function listVacancyPromotions(
   vacancyId: number,
 ): Promise<PromotionOut[]> {
   const res = await fetch(`${BASE}/promotions/vacancies/${vacancyId}`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Promoties ophalen mislukt");
@@ -768,7 +776,7 @@ export interface RecommendationOut {
 
 export async function getRecommendations(token: string): Promise<RecommendationOut[]> {
   const res = await fetch(`${BASE}/candidate/recommendations`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Aanbevelingen ophalen mislukt");
@@ -794,7 +802,7 @@ export interface AdminUser {
 
 export async function getAdminOrganisations(token: string): Promise<AdminOrganisation[]> {
   const res = await fetch(`${BASE}/admin/organisations`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Organisaties ophalen mislukt");
@@ -804,7 +812,7 @@ export async function getAdminOrganisations(token: string): Promise<AdminOrganis
 export async function createAdminOrganisation(token: string, name: string): Promise<AdminOrganisation> {
   const res = await fetch(`${BASE}/admin/organisations`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ name }),
   });
   const data = await parseJson(res);
@@ -825,7 +833,7 @@ export async function deleteAdminOrganisation(token: string, id: number): Promis
 
 export async function getAdminUsers(token: string): Promise<AdminUser[]> {
   const res = await fetch(`${BASE}/admin/users`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Gebruikers ophalen mislukt");
@@ -835,7 +843,7 @@ export async function getAdminUsers(token: string): Promise<AdminUser[]> {
 export async function patchUserOrganisation(token: string, userId: number, orgId: number | null): Promise<AdminUser> {
   const res = await fetch(`${BASE}/admin/users/${userId}/organisation`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ org_id: orgId }),
   });
   const data = await parseJson(res);
@@ -858,7 +866,7 @@ export interface AddTeamMemberResponse extends TeamMember {
 
 export async function getTeamMembers(token: string): Promise<TeamMember[]> {
   const res = await fetch(`${BASE}/employer/team`, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json", "Accept-Language": getLang() },
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Team ophalen mislukt");
@@ -868,7 +876,7 @@ export async function getTeamMembers(token: string): Promise<TeamMember[]> {
 export async function addTeamMember(token: string, full_name: string, email: string): Promise<AddTeamMemberResponse> {
   const res = await fetch(`${BASE}/employer/team`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ full_name, email }),
   });
   const data = await parseJson(res);
@@ -898,7 +906,7 @@ export async function changePassword(
 ): Promise<void> {
   const res = await fetch(`${BASE}/auth/password`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
   });
   const data = await parseJson(res);
@@ -912,7 +920,7 @@ export async function adminResetPassword(
 ): Promise<void> {
   const res = await fetch(`${BASE}/admin/users/${userId}/password`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
     body: JSON.stringify({ new_password: newPassword }),
   });
   const data = await parseJson(res);

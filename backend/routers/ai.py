@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from openai import OpenAI
@@ -79,6 +79,14 @@ class MatchJobResponse(BaseModel):
 # Helpers
 # =========================
 
+_LANG_NAMES = {"nl": "Dutch", "en": "English", "de": "German", "fr": "French", "es": "Spanish"}
+
+def _get_language(request: Request) -> str:
+    header = request.headers.get("accept-language", "nl")
+    lang = header.split(",")[0].strip().split("-")[0].lower()
+    return lang if lang in _LANG_NAMES else "nl"
+
+
 def ensure_client():
     if client is None:
         raise HTTPException(
@@ -99,12 +107,14 @@ def rewrite_cv(payload: RewriteCVRequest) -> RewriteCVResponse:
     """
     c = ensure_client()
 
+    lang_map = {"nl": "Dutch", "en": "English", "de": "German", "fr": "French", "es": "Spanish"}
+    lang_name = lang_map.get(payload.language, "Dutch")
     system_prompt = (
-        "Je bent een Nederlandse recruitment-copywriter. "
-        "Je herschrijft CV-tekst netjes, duidelijk en professioneel, "
-        "zodat recruiters het makkelijk kunnen scannen. "
-        "Gebruik duidelijke kopjes (Profiel, Werkervaring, Opleiding, Vaardigheden) "
-        "en bulletpoints. Houd de toon zakelijk maar menselijk."
+        "You are an experienced recruitment copywriter. "
+        "Rewrite the CV text neatly, clearly and professionally so recruiters can scan it easily. "
+        "Use clear headings (Profile, Work Experience, Education, Skills) and bullet points. "
+        "Keep the tone professional but human. "
+        f"Always respond in {lang_name}."
     )
 
     if payload.target_role:
@@ -156,11 +166,14 @@ def motivation_letter(payload: MotivationLetterRequest) -> MotivationLetterRespo
         else "Noem het bedrijf algemeen (bijvoorbeeld 'uw organisatie').\n"
     )
 
+    lang_map = {"nl": "Dutch", "en": "English", "de": "German", "fr": "French", "es": "Spanish"}
+    lang_name = lang_map.get(payload.language, "Dutch")
     system_prompt = (
-        "Je bent een Nederlandse recruiter die sterke motivatiebrieven schrijft. "
-        "Je schrijft in de ik-vorm, professioneel en concreet. "
-        "Maximaal ongeveer 3/4 A4, duidelijke opbouw: intro, waarom de functie/organisatie, "
-        "wat breng ik mee, afronding met call-to-action."
+        "You are an experienced recruiter who writes strong motivation letters. "
+        "Write in first person, professional and concrete. "
+        "Maximum about 3/4 A4 page, clear structure: intro, why the role/organisation, "
+        "what I bring, closing with call-to-action. "
+        f"Always respond in {lang_name}."
     )
 
     user_content = (
@@ -272,6 +285,7 @@ class GenerateVacancyResponse(BaseModel):
 @router.post("/motivation-letter-for-vacancy/{vacancy_id}", response_model=MotivationForVacancyResponse)
 def motivation_letter_for_vacancy(
     vacancy_id: int,
+    request: Request,
     current_user: models.User = Depends(_optional_user),
     db: Session = Depends(get_db),
 ) -> MotivationForVacancyResponse:
@@ -295,6 +309,8 @@ def motivation_letter_for_vacancy(
     if not cv_text:
         raise HTTPException(status_code=400, detail="Geen CV gevonden. Upload eerst je CV.")
 
+    language = _get_language(request)
+    lang_name = _LANG_NAMES.get(language, "Dutch")
     c = ensure_client()
     try:
         resp = c.chat.completions.create(
@@ -303,10 +319,11 @@ def motivation_letter_for_vacancy(
                 {
                     "role": "system",
                     "content": (
-                        "Je bent een Nederlandse recruitment-copywriter. "
-                        "Schrijf een sterke, persoonlijke motivatiebrief in de ik-vorm. "
-                        "Professioneel, concreet, max 3/4 A4. "
-                        "Opbouw: intro, waarom deze functie/organisatie, wat breng ik mee, call-to-action."
+                        "You are an experienced recruitment copywriter. "
+                        "Write a strong, personal motivation letter in first person. "
+                        "Professional, concrete, max 3/4 A4. "
+                        "Structure: intro, why this role/organisation, what I bring, call-to-action. "
+                        f"Always respond in {lang_name}."
                     ),
                 },
                 {
@@ -345,12 +362,15 @@ def _scrape_website(url: str, max_chars: int = 3000) -> str:
 @router.post("/generate-vacancy", response_model=GenerateVacancyResponse)
 def generate_vacancy(
     payload: GenerateVacancyRequest,
+    request: Request,
     current_user: models.User = Depends(_optional_user),
 ) -> GenerateVacancyResponse:
     """Genereer een complete vacaturetekst op basis van een korte omschrijving."""
     if not current_user or current_user.role not in ("employer", "admin"):
         raise HTTPException(status_code=403, detail="Alleen werkgevers kunnen vacatures genereren")
 
+    language = _get_language(request)
+    lang_name = _LANG_NAMES.get(language, "Dutch")
     c = ensure_client()
 
     # Bedrijfscontext ophalen van de website (optioneel)
@@ -371,17 +391,17 @@ def generate_vacancy(
                 {
                     "role": "system",
                     "content": (
-                        "Je bent een Nederlandse recruitment-copywriter. "
-                        "Je krijgt een korte omschrijving van een werkgever en maakt daar een complete vacature van. "
-                        "Als er bedrijfsinformatie beschikbaar is, gebruik je de toon, cultuur en waarden van dat bedrijf. "
-                        "Geef ALLEEN een JSON-object terug met deze keys:\n"
-                        "- title (string): de functietitel\n"
-                        "- location (string): locatie, leeg als onbekend\n"
-                        "- hours_per_week (string): bijv. '40 uur' of '32-40 uur'\n"
-                        "- salary_range (string): bijv. '€3.500 - €5.000 per maand', leeg als onbekend\n"
-                        "- description (string): volledige vacaturetekst met kopjes: "
-                        "Wat ga je doen?, Wat breng je mee?, Wat bieden wij? "
-                        "Gebruik markdown (**, bulletpoints). Max 400 woorden."
+                        "You are an experienced recruitment copywriter. "
+                        "You receive a short description from an employer and create a complete job vacancy from it. "
+                        "If company information is available, use the tone, culture and values of that company. "
+                        "Return ONLY a JSON object with these keys:\n"
+                        "- title (string): the job title\n"
+                        "- location (string): location, empty if unknown\n"
+                        "- hours_per_week (string): e.g. '40 hours' or '32-40 hours'\n"
+                        "- salary_range (string): e.g. '€3,500 - €5,000 per month', empty if unknown\n"
+                        "- description (string): full job vacancy text with headings: "
+                        "What will you do?, What do you bring?, What do we offer? "
+                        f"Use markdown (**, bullet points). Max 400 words. Always respond in {lang_name}."
                     ),
                 },
                 {
