@@ -38,6 +38,7 @@ Live gaan (na KvK):
 """
 
 import os
+from datetime import datetime
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -46,6 +47,7 @@ from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend import models
 from backend.routers.auth import get_current_user, require_role
+from backend.services.email import send_invoice_email
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -154,6 +156,77 @@ def create_vacancy_checkout(
     return {"checkout_url": session.url}
 
 
+def _log_payment_and_invoice(
+    db: Session,
+    user: models.User,
+    session_data: dict,
+    plan: str,
+    interval: str | None,
+    payment_type: str,
+) -> None:
+    """Log een betaling en stuur een factuur e-mail."""
+    stripe_session_id = session_data.get("id", "")
+
+    # Voorkom dubbele logs bij herhaalde webhooks
+    existing = db.query(models.PaymentLog).filter(
+        models.PaymentLog.stripe_session_id == stripe_session_id
+    ).first()
+    if existing:
+        return
+
+    # Stripe stuurt amount_total in centen
+    amount_cents = session_data.get("amount_total") or 0
+    amount_total = round(amount_cents / 100, 2)
+
+    # Genereer factuurnummer: INV-JAAR-{volgnummer}
+    year = datetime.utcnow().year
+    count = db.query(models.PaymentLog).filter(
+        models.PaymentLog.invoice_number.like(f"INV-{year}-%")
+    ).count()
+    invoice_number = f"INV-{year}-{count + 1:04d}"
+
+    # Detecteer interval uit price ID (optioneel, valt terug op None)
+    detected_interval = interval
+    if not detected_interval and payment_type == "subscription":
+        price_id = ""
+        line_items = session_data.get("line_items") or {}
+        # Probeer interval te bepalen via PRICE_IDS mapping
+        for (p, iv), pid in PRICE_IDS.items():
+            if p == plan and pid:
+                detected_interval = detected_interval  # blijft None als we het niet weten
+
+    log = models.PaymentLog(
+        user_id=user.id,
+        user_email=user.email,
+        user_name=user.full_name or "",
+        plan=plan,
+        interval=detected_interval,
+        amount_total=amount_total,
+        currency=session_data.get("currency", "eur"),
+        payment_type=payment_type,
+        stripe_session_id=stripe_session_id,
+        invoice_number=invoice_number,
+    )
+    db.add(log)
+    db.commit()
+
+    # Stuur factuur
+    try:
+        send_invoice_email(
+            employer_email=user.email,
+            employer_name=user.full_name or user.email,
+            invoice_number=invoice_number,
+            plan=plan,
+            interval=detected_interval,
+            amount_total=amount_total,
+            invoice_date=datetime.utcnow().strftime("%d-%m-%Y"),
+            language="nl",
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("[billing] Factuur versturen mislukt: %s", exc)
+
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """
@@ -203,12 +276,14 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
         if mode == "subscription" and plan in ("normaal", "premium"):
             user.plan = plan
-            user.trial_ends_at = None  # betaald plan actief
+            user.trial_ends_at = None
             db.commit()
+            _log_payment_and_invoice(db, user, data, plan=plan, interval=None, payment_type="subscription")
 
         elif mode == "payment" and ptype == "per_vacature":
             user.vacancy_credits = (user.vacancy_credits or 0) + 1
             db.commit()
+            _log_payment_and_invoice(db, user, data, plan="per_vacature", interval=None, payment_type="per_vacature")
 
     # ── customer.subscription.deleted ──────────────────────────────────────
     elif etype == "customer.subscription.deleted":

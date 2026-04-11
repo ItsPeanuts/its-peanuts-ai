@@ -49,7 +49,7 @@ export default function AdminPage() {
   const [token] = useState<string | null>(() => getToken());
   const [role] = useState<string | null>(() => getRole());
 
-  const [view, setView] = useState<"stats" | "users" | "vacancies" | "promotions">("stats");
+  const [view, setView] = useState<"stats" | "users" | "vacancies" | "promotions" | "analytics">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [vacancies, setVacancies] = useState<AdminVacancy[]>([]);
@@ -63,6 +63,20 @@ export default function AdminPage() {
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("We zijn de website en AI aan het verbeteren. We zijn zo weer volledig online!");
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+
+  // Analytics state
+  type DailyVisitor = { date: string; visitors: number };
+  type MonthlyPayment = { month: string; count: number; revenue: number; plans: Record<string, number> };
+  type RecentPayment = { id: number; invoice_number: string | null; user_email: string | null; plan: string | null; interval: string | null; amount_total: number | null; payment_type: string | null; created_at: string };
+  type MonthlySignup = { month: string; candidates: number; employers: number };
+
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [visitors, setVisitors] = useState<DailyVisitor[]>([]);
+  const [monthlyPayments, setMonthlyPayments] = useState<MonthlyPayment[]>([]);
+  const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [activeSubscriptions, setActiveSubscriptions] = useState(0);
+  const [monthlySignups, setMonthlySignups] = useState<MonthlySignup[]>([]);
 
   // Promotions state
   type AdminPromotion = {
@@ -98,6 +112,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (view === "promotions" && token) loadPromotions();
+    if (view === "analytics" && token) loadAnalytics();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, token]);
 
@@ -180,6 +195,25 @@ export default function AdminPage() {
 
   // ── Promotions handlers ────────────────────────────────────────────────────
 
+  async function loadAnalytics() {
+    if (!token) return;
+    setAnalyticsLoading(true);
+    try {
+      const [vis, pay, sig] = await Promise.all([
+        apiFetch(token, "/admin/analytics/visitors?days=30"),
+        apiFetch(token, "/admin/analytics/payments"),
+        apiFetch(token, "/admin/analytics/signups"),
+      ]);
+      setVisitors(vis);
+      setMonthlyPayments(pay.monthly || []);
+      setRecentPayments(pay.recent || []);
+      setTotalRevenue(pay.total_revenue || 0);
+      setActiveSubscriptions(pay.active_subscriptions || 0);
+      setMonthlySignups(sig);
+    } catch (e) { showErr(e); }
+    finally { setAnalyticsLoading(false); }
+  }
+
   async function loadPromotions() {
     if (!token) return;
     setPromotionsLoading(true);
@@ -243,10 +277,11 @@ export default function AdminPage() {
 
         <nav className="flex-1 p-3 space-y-1">
           {([
-            { id: "stats",     label: "Dashboard",        icon: "📊" },
-            { id: "users",     label: "Gebruikers",        icon: "👥" },
-            { id: "vacancies", label: "Vacatures",          icon: "📋" },
-            { id: "promotions", label: "Promoties",          icon: "📢" },
+            { id: "stats",      label: "Dashboard",   icon: "📊" },
+            { id: "analytics",  label: "Analytics",   icon: "📈" },
+            { id: "users",      label: "Gebruikers",  icon: "👥" },
+            { id: "vacancies",  label: "Vacatures",   icon: "📋" },
+            { id: "promotions", label: "Promoties",   icon: "📢" },
           ] as const).map((item) => (
             <button
               key={item.id}
@@ -541,6 +576,160 @@ export default function AdminPage() {
             )}
           </>
         )}
+        {/* ─── ANALYTICS ─── */}
+        {view === "analytics" && (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Analytics</h1>
+
+            {analyticsLoading ? (
+              <div className="text-gray-400 text-sm">Laden...</div>
+            ) : (
+              <>
+                {/* KPI kaarten */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: "Totale omzet", value: `€${totalRevenue.toLocaleString("nl-NL", { minimumFractionDigits: 2 })}`, color: "#059669" },
+                    { label: "Actieve abonnementen", value: activeSubscriptions, color: "#7c3aed" },
+                    { label: "Bezoekers (30d)", value: visitors.reduce((s, v) => s + v.visitors, 0), color: "#1d4ed8" },
+                    { label: "Betalingen totaal", value: recentPayments.length >= 20 ? "20+" : recentPayments.length, color: "#d97706" },
+                  ].map((k) => (
+                    <div key={k.label} className="bg-white rounded-xl border border-gray-100 p-4">
+                      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1 truncate">{k.label}</div>
+                      <div className="text-2xl font-bold" style={{ color: k.color }}>{k.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bezoekers grafiek */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Dagelijkse bezoekers (30 dagen)</h2>
+                  {visitors.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen bezoekersdata.</p>
+                  ) : (() => {
+                    const max = Math.max(...visitors.map(v => v.visitors), 1);
+                    return (
+                      <div className="flex items-end gap-1 h-28 overflow-x-auto pb-1">
+                        {visitors.map((v) => (
+                          <div key={v.date} className="flex flex-col items-center flex-shrink-0 gap-1" style={{ minWidth: 20 }}>
+                            <div
+                              className="rounded-t w-full transition-all"
+                              style={{ height: `${Math.max(2, Math.round((v.visitors / max) * 96))}px`, background: v.visitors > 0 ? "#7c3aed" : "#e5e7eb", minWidth: 12 }}
+                              title={`${v.date}: ${v.visitors}`}
+                            />
+                            {visitors.indexOf(v) % 7 === 0 && (
+                              <div className="text-[9px] text-gray-400 rotate-45 origin-left">{v.date.slice(5)}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Omzet per maand */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Omzet per maand</h2>
+                  {monthlyPayments.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen betalingen geregistreerd.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm min-w-[400px]">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Maand</th>
+                            <th className="text-right py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Betalingen</th>
+                            <th className="text-right py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Omzet</th>
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Plannen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {monthlyPayments.map((m) => (
+                            <tr key={m.month} className="border-b border-gray-50 hover:bg-gray-50">
+                              <td className="py-2.5 px-3 font-medium text-gray-800">{m.month}</td>
+                              <td className="py-2.5 px-3 text-right text-gray-600">{m.count}</td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-green-600">€{m.revenue.toLocaleString("nl-NL", { minimumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-3 text-xs text-gray-500">{Object.entries(m.plans).map(([p, n]) => `${p}×${n}`).join(", ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Registraties per maand */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Nieuwe registraties per maand</h2>
+                  {monthlySignups.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen registraties.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm min-w-[360px]">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Maand</th>
+                            <th className="text-right py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Kandidaten</th>
+                            <th className="text-right py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Werkgevers</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {monthlySignups.map((m) => (
+                            <tr key={m.month} className="border-b border-gray-50 hover:bg-gray-50">
+                              <td className="py-2.5 px-3 font-medium text-gray-800">{m.month}</td>
+                              <td className="py-2.5 px-3 text-right text-blue-600 font-semibold">{m.candidates}</td>
+                              <td className="py-2.5 px-3 text-right text-purple-600 font-semibold">{m.employers}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recente betalingen */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                  <h2 className="text-sm font-bold text-gray-700 mb-4">Recente betalingen</h2>
+                  {recentPayments.length === 0 ? (
+                    <p className="text-xs text-gray-400">Nog geen betalingen.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm min-w-[560px]">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Factuur</th>
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Klant</th>
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Plan</th>
+                            <th className="text-right py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Bedrag</th>
+                            <th className="text-left py-2 px-3 text-xs text-gray-400 font-semibold uppercase">Datum</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentPayments.map((p) => (
+                            <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                              <td className="py-2.5 px-3 font-mono text-xs text-gray-500">{p.invoice_number || "—"}</td>
+                              <td className="py-2.5 px-3 text-gray-700 truncate max-w-[160px]">{p.user_email || "—"}</td>
+                              <td className="py-2.5 px-3">
+                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{
+                                  background: p.plan === "premium" ? "#f5f3ff" : p.plan === "normaal" ? "#dbeafe" : "#f0fdf4",
+                                  color: p.plan === "premium" ? "#7c3aed" : p.plan === "normaal" ? "#1d4ed8" : "#15803d",
+                                }}>
+                                  {p.plan || "—"}{p.interval ? ` / ${p.interval}` : ""}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-green-600">€{(p.amount_total ?? 0).toFixed(2)}</td>
+                              <td className="py-2.5 px-3 text-xs text-gray-400">{p.created_at ? p.created_at.slice(0, 10) : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
       </main>
     </div>
   );

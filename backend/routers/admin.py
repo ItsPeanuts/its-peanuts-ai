@@ -6,12 +6,13 @@ Bootstrap eerste admin via:
 """
 
 import os
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, cast, Date
 
 from backend.db import get_db
 from backend import models
@@ -377,3 +378,116 @@ def patch_user_organisation(
     db.commit()
     db.refresh(user)
     return user
+
+
+# ── Analytics endpoints ────────────────────────────────────────────────────
+
+@router.get("/analytics/visitors")
+def get_visitor_analytics(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Dagelijkse unieke bezoekers voor de afgelopen N dagen."""
+    require_role(current_user, "admin")
+
+    since = date.today() - timedelta(days=days - 1)
+    rows = (
+        db.query(
+            models.VisitorLog.date,
+            func.count(models.VisitorLog.session_id).label("visitors"),
+        )
+        .filter(models.VisitorLog.date >= since)
+        .group_by(models.VisitorLog.date)
+        .order_by(models.VisitorLog.date.asc())
+        .all()
+    )
+
+    # Vul ontbrekende dagen aan met 0
+    data = {r.date: r.visitors for r in rows}
+    result = []
+    for i in range(days):
+        d = since + timedelta(days=i)
+        result.append({"date": str(d), "visitors": data.get(d, 0)})
+
+    return result
+
+
+@router.get("/analytics/payments")
+def get_payment_analytics(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Betalingen per maand + totalen per plan."""
+    require_role(current_user, "admin")
+
+    payments = (
+        db.query(models.PaymentLog)
+        .order_by(models.PaymentLog.created_at.desc())
+        .all()
+    )
+
+    # Groepeer per maand
+    monthly: dict = {}
+    for p in payments:
+        month = p.created_at.strftime("%Y-%m") if p.created_at else "unknown"
+        if month not in monthly:
+            monthly[month] = {"month": month, "count": 0, "revenue": 0.0, "plans": {}}
+        monthly[month]["count"] += 1
+        monthly[month]["revenue"] = round(monthly[month]["revenue"] + (p.amount_total or 0), 2)
+        plan_key = p.plan or "unknown"
+        monthly[month]["plans"][plan_key] = monthly[month]["plans"].get(plan_key, 0) + 1
+
+    # Laatste 12 maanden gesorteerd
+    sorted_months = sorted(monthly.values(), key=lambda x: x["month"], reverse=True)[:12]
+
+    total_revenue = sum(p.amount_total or 0 for p in payments)
+    active_subscriptions = db.query(models.User).filter(
+        models.User.plan.in_(["normaal", "premium"])
+    ).count()
+
+    return {
+        "monthly": sorted_months,
+        "total_revenue": round(total_revenue, 2),
+        "total_payments": len(payments),
+        "active_subscriptions": active_subscriptions,
+        "recent": [
+            {
+                "id": p.id,
+                "invoice_number": p.invoice_number,
+                "user_email": p.user_email,
+                "plan": p.plan,
+                "interval": p.interval,
+                "amount_total": p.amount_total,
+                "payment_type": p.payment_type,
+                "created_at": str(p.created_at),
+            }
+            for p in payments[:20]
+        ],
+    }
+
+
+@router.get("/analytics/signups")
+def get_signup_analytics(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Kandidaat- en werkgeverregistraties per maand (laatste 12 maanden)."""
+    require_role(current_user, "admin")
+
+    users = db.query(models.User).filter(models.User.role.in_(["candidate", "employer"])).all()
+
+    monthly: dict = {}
+    for u in users:
+        if not u.created_at:
+            continue
+        month = u.created_at.strftime("%Y-%m")
+        if month not in monthly:
+            monthly[month] = {"month": month, "candidates": 0, "employers": 0}
+        if u.role == "candidate":
+            monthly[month]["candidates"] += 1
+        else:
+            monthly[month]["employers"] += 1
+
+    sorted_months = sorted(monthly.values(), key=lambda x: x["month"], reverse=True)[:12]
+    return sorted_months

@@ -13,10 +13,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL     = os.getenv("FROM_EMAIL", "ItsPeanuts AI <noreply@itspeanuts.nl>")
-FRONTEND_URL   = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
-ADMIN_EMAIL    = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
+RESEND_API_KEY   = os.getenv("RESEND_API_KEY", "")
+FROM_EMAIL       = os.getenv("FROM_EMAIL", "ItsPeanuts AI <noreply@itspeanuts.nl>")
+FRONTEND_URL     = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
+BOOKKEEPER_EMAIL = os.getenv("BOOKKEEPER_EMAIL", "")
 
 # ── Vertalingen ───────────────────────────────────────────────────────────────
 
@@ -1158,3 +1159,156 @@ def send_promotion_notification(
         subject=f"🚀 Nieuwe promotie betaald: {vacancy_title} — €{total_price:.0f} voor {duration_days} dagen",
         html=html,
     )
+
+
+# ── Factuur / Invoice ─────────────────────────────────────────────────────────
+
+_PLAN_LABELS = {
+    "normaal": {"nl": "Normaal abonnement", "en": "Standard subscription", "de": "Standard-Abonnement", "fr": "Abonnement Standard", "es": "Suscripción Estándar"},
+    "premium": {"nl": "Premium abonnement", "en": "Premium subscription", "de": "Premium-Abonnement", "fr": "Abonnement Premium", "es": "Suscripción Premium"},
+    "per_vacature": {"nl": "Vacature plaatsing (pay-per-use)", "en": "Vacancy posting (pay-per-use)", "de": "Stellenausschreibung (pay-per-use)", "fr": "Publication d'offre (pay-per-use)", "es": "Publicación de vacante (pay-per-use)"},
+}
+
+_INTERVAL_LABELS = {
+    "month": {"nl": "maandelijks", "en": "monthly", "de": "monatlich", "fr": "mensuel", "es": "mensual"},
+    "year":  {"nl": "jaarlijks",   "en": "yearly",  "de": "jährlich",  "fr": "annuel",  "es": "anual"},
+}
+
+_INV_STRINGS = {
+    "invoice_subject": {
+        "nl": "Uw factuur #{invoice_number} — VorzaIQ",
+        "en": "Your invoice #{invoice_number} — VorzaIQ",
+        "de": "Ihre Rechnung #{invoice_number} — VorzaIQ",
+        "fr": "Votre facture #{invoice_number} — VorzaIQ",
+        "es": "Su factura #{invoice_number} — VorzaIQ",
+    },
+    "invoice_heading": {
+        "nl": "Factuur",
+        "en": "Invoice",
+        "de": "Rechnung",
+        "fr": "Facture",
+        "es": "Factura",
+    },
+    "invoice_thank_you": {
+        "nl": "Bedankt voor uw betaling! Hieronder vindt u uw factuur.",
+        "en": "Thank you for your payment! Please find your invoice below.",
+        "de": "Vielen Dank für Ihre Zahlung! Nachfolgend finden Sie Ihre Rechnung.",
+        "fr": "Merci pour votre paiement ! Vous trouverez votre facture ci-dessous.",
+        "es": "¡Gracias por su pago! A continuación encontrará su factura.",
+    },
+    "invoice_number_label": {
+        "nl": "Factuurnummer", "en": "Invoice number", "de": "Rechnungsnummer", "fr": "Numéro de facture", "es": "Número de factura",
+    },
+    "invoice_date_label": {
+        "nl": "Factuurdatum", "en": "Invoice date", "de": "Rechnungsdatum", "fr": "Date de facture", "es": "Fecha de factura",
+    },
+    "invoice_to_label": {
+        "nl": "Factuur aan", "en": "Bill to", "de": "Rechnung an", "fr": "Facturé à", "es": "Facturado a",
+    },
+    "invoice_description_label": {
+        "nl": "Omschrijving", "en": "Description", "de": "Beschreibung", "fr": "Description", "es": "Descripción",
+    },
+    "invoice_amount_label": {
+        "nl": "Bedrag (incl. BTW)", "en": "Amount (incl. VAT)", "de": "Betrag (inkl. MwSt.)", "fr": "Montant (TVA incl.)", "es": "Importe (IVA incl.)",
+    },
+    "invoice_footer": {
+        "nl": "VorzaIQ · KvK: [KvK-nummer] · BTW: NL[BTW-nummer] · vorzaiq.com",
+        "en": "VorzaIQ · CoC: [CoC-number] · VAT: NL[VAT-number] · vorzaiq.com",
+        "de": "VorzaIQ · Handelsregister: [Nummer] · USt.: NL[Nummer] · vorzaiq.com",
+        "fr": "VorzaIQ · RCS : [Numéro] · TVA : NL[Numéro] · vorzaiq.com",
+        "es": "VorzaIQ · Reg. Mercantil: [Número] · IVA: NL[Número] · vorzaiq.com",
+    },
+}
+
+
+def send_invoice_email(
+    employer_email: str,
+    employer_name: str,
+    invoice_number: str,
+    plan: str,
+    interval: str | None,
+    amount_total: float,
+    invoice_date: str,
+    language: str = "nl",
+) -> None:
+    """Stuur factuur naar werkgever (en optioneel boekhouder) na succesvolle betaling."""
+
+    def s(key: str) -> str:
+        return _INV_STRINGS.get(key, {}).get(language) or _INV_STRINGS.get(key, {}).get("nl", "")
+
+    plan_label = _PLAN_LABELS.get(plan, {}).get(language) or plan
+    if interval and interval in _INTERVAL_LABELS:
+        plan_label += f" ({_INTERVAL_LABELS[interval].get(language, interval)})"
+
+    subject = s("invoice_subject").replace("{invoice_number}", invoice_number)
+
+    html = f"""<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:580px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+
+    <!-- Header -->
+    <div style="background:#7c3aed;padding:32px 36px;">
+      <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:13px;color:#ddd6fe;margin-top:4px;">vorzaiq.com</div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:32px 36px;">
+      <h1 style="font-size:24px;font-weight:700;color:#111827;margin:0 0 8px;">{s("invoice_heading")} #{invoice_number}</h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 28px;">{s("invoice_thank_you")}</p>
+
+      <!-- Meta tabel -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr>
+          <td style="font-size:13px;color:#6b7280;padding:6px 0;width:40%;">{s("invoice_number_label")}</td>
+          <td style="font-size:13px;color:#111827;font-weight:600;">{invoice_number}</td>
+        </tr>
+        <tr>
+          <td style="font-size:13px;color:#6b7280;padding:6px 0;">{s("invoice_date_label")}</td>
+          <td style="font-size:13px;color:#111827;">{invoice_date}</td>
+        </tr>
+        <tr>
+          <td style="font-size:13px;color:#6b7280;padding:6px 0;">{s("invoice_to_label")}</td>
+          <td style="font-size:13px;color:#111827;">{employer_name}<br><span style="color:#6b7280;">{employer_email}</span></td>
+        </tr>
+      </table>
+
+      <!-- Factuurregels -->
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+        <thead>
+          <tr style="background:#f9fafb;">
+            <th style="text-align:left;padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{s("invoice_description_label")}</th>
+            <th style="text-align:right;padding:12px 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{s("invoice_amount_label")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:14px 16px;font-size:14px;color:#374151;border-top:1px solid #e5e7eb;">{plan_label}</td>
+            <td style="padding:14px 16px;font-size:14px;color:#374151;font-weight:700;text-align:right;border-top:1px solid #e5e7eb;">€{amount_total:.2f}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style="background:#7c3aed;">
+            <td style="padding:14px 16px;font-size:15px;font-weight:700;color:#ffffff;">Totaal</td>
+            <td style="padding:14px 16px;font-size:15px;font-weight:700;color:#ffffff;text-align:right;">€{amount_total:.2f}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 36px;text-align:center;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">{s("invoice_footer")}</p>
+    </div>
+
+  </div>
+</body>
+</html>"""
+
+    _send(to=employer_email, subject=subject, html=html)
+
+    if BOOKKEEPER_EMAIL and BOOKKEEPER_EMAIL != employer_email:
+        _send(to=BOOKKEEPER_EMAIL, subject=f"[Kopie boekhouder] {subject}", html=html)

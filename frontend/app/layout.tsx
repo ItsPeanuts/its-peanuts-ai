@@ -4,6 +4,7 @@ import NoHorizontalScroll from "@/components/NoHorizontalScroll";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import { LanguageProvider } from "@/lib/i18n";
 import HtmlLangSync from "@/components/HtmlLangSync";
+import VisitTracker from "@/components/VisitTracker";
 
 export const metadata: Metadata = {
   title: "VorzaIQ — The Smart Way to Hire",
@@ -22,6 +23,7 @@ export default function RootLayout({
         <div id="app-root">
           <LanguageProvider>
             <HtmlLangSync />
+            <VisitTracker />
             {children}
           </LanguageProvider>
         </div>
