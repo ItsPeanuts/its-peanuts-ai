@@ -90,90 +90,9 @@ def seed_test_data() -> None:
             db.commit()
             print("[seed] test werkgever bestaat al: werkgever@test.nl")
 
-        # ── Test vacatures (altijd upsert zodat filters testbaar zijn) ───
-        SEED_VACANCIES = [
-            {
-                "title": "Python Developer (Medior)",
-                "location": "Amsterdam",
-                "hours_per_week": "40",
-                "salary_range": "€4.000 - €5.500",
-                "employment_type": "fulltime",
-                "work_location": "hybride",
-                "description": (
-                    "Wij zoeken een gedreven Python Developer die ons platform naar het volgende niveau brengt. "
-                    "Je werkt aan de backend van ons AI-recruitmentsysteem en draagt bij aan nieuwe features.\n\n"
-                    "Vereisten: 3+ jaar Python/FastAPI, PostgreSQL, affiniteit met AI."
-                ),
-            },
-            {
-                "title": "UX Designer (Parttime)",
-                "location": "Rotterdam",
-                "hours_per_week": "24",
-                "salary_range": "€2.800 - €3.800",
-                "employment_type": "parttime",
-                "work_location": "hybride",
-                "description": (
-                    "Versterk ons designteam als UX Designer. "
-                    "Je werkt aan de gebruikerservaring van ons recruitmentplatform.\n\n"
-                    "Vereisten: Figma, gebruikersonderzoek, 2+ jaar ervaring."
-                ),
-            },
-            {
-                "title": "Frontend Developer (Freelance)",
-                "location": "Utrecht",
-                "hours_per_week": "32-40",
-                "salary_range": "€65 - €85 per uur",
-                "employment_type": "freelance",
-                "work_location": "remote",
-                "description": (
-                    "Freelance opdracht voor een ervaren React/Next.js developer. "
-                    "Bouw mee aan onze candidate-portal.\n\n"
-                    "Vereisten: React, TypeScript, Next.js, minimaal 4 jaar ervaring."
-                ),
-            },
-            {
-                "title": "Marketing Stage",
-                "location": "Den Haag",
-                "hours_per_week": "32",
-                "salary_range": "€500 stagevergoeding",
-                "employment_type": "stage",
-                "work_location": "op-locatie",
-                "description": (
-                    "Loopt je HBO of WO-studie richting marketing of communicatie? "
-                    "Dan zoeken wij jou als stagiair voor ons groeiteam.\n\n"
-                    "Vereisten: Studerend, creatief, social media ervaring is een pré."
-                ),
-            },
-        ]
-
-        for vd in SEED_VACANCIES:
-            existing = (
-                db.query(models.Vacancy)
-                .filter_by(employer_id=test_employer.id, title=vd["title"])
-                .first()
-            )
-            if not existing:
-                db.add(models.Vacancy(
-                    employer_id=test_employer.id,
-                    title=vd["title"],
-                    location=vd["location"],
-                    hours_per_week=vd["hours_per_week"],
-                    salary_range=vd["salary_range"],
-                    employment_type=vd["employment_type"],
-                    work_location=vd["work_location"],
-                    description=vd["description"],
-                    interview_type="both",
-                    status="actief",
-                ))
-                print(f"[seed] test vacature aangemaakt: {vd['title']}")
-            else:
-                # Zorg dat alle velden altijd correct zijn
-                existing.employment_type = vd["employment_type"]
-                existing.work_location = vd["work_location"]
-                existing.interview_type = "both"
-                existing.status = "actief"
-                print(f"[seed] test vacature bijgewerkt: {vd['title']}")
-        db.commit()
+        # ── Test vacatures: NIET meer seeden voor productie ─────────────
+        # Bestaande test vacatures worden ook niet verwijderd door de seed.
+        # Verwijder ze handmatig via het admin portaal voor go-live.
 
         # ── Test kandidaat ───────────────────────────────────────────────
         test_candidate = db.query(models.User).filter_by(email="kandidaat@test.nl").first()
