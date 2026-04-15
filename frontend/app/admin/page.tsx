@@ -16,7 +16,7 @@ type AdminStats = {
   total_vacancies: number; total_applications: number; total_interviews: number;
   avg_match_score: number | null;
 };
-type AdminUser = { id: number; email: string; full_name: string | null; role: string; plan: string | null; };
+type AdminUser = { id: number; email: string; full_name: string | null; role: string; plan: string | null; trial_ends_at: string | null; };
 type AdminVacancy = { id: number; title: string; location: string | null; employer_id: number; employer_email: string; application_count: number; };
 
 const ROLE_COLORS: Record<string, { color: string; bg: string }> = {
@@ -152,6 +152,24 @@ export default function AdminPage() {
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
       setMsg("Plan bijgewerkt"); setTimeout(() => setMsg(""), 3000);
+    } catch (e) { showErr(e); }
+  }
+
+  async function handleGiveFreeTrial(userId: number, email: string) {
+    if (!token || !confirm(`Geef ${email} 1 maand gratis Growth abonnement?`)) return;
+    try {
+      const updated = await apiFetch(token, `/admin/users/${userId}/free-trial`, { method: "POST" });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
+      setMsg(`Gratis Growth trial gegeven aan ${email}`); setTimeout(() => setMsg(""), 4000);
+    } catch (e) { showErr(e); }
+  }
+
+  async function handleRevokeFreeTrial(userId: number, email: string) {
+    if (!token || !confirm(`Trek de gratis trial in van ${email}?`)) return;
+    try {
+      const updated = await apiFetch(token, `/admin/users/${userId}/free-trial`, { method: "DELETE" });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
+      setMsg(`Trial ingetrokken van ${email}`); setTimeout(() => setMsg(""), 4000);
     } catch (e) { showErr(e); }
   }
 
@@ -428,19 +446,38 @@ export default function AdminPage() {
                           </select>
                         </td>
                         <td className="px-5 py-3">
-                          <select value={u.plan || "gratis"} onChange={(e) => handlePatchPlan(u.id, e.target.value)}
-                            className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300"
-                            style={{
-                              color: u.plan === "premium" ? "#7c3aed" : u.plan === "normaal" ? "#0A66C2" : "#6b7280",
-                              background: u.plan === "premium" ? "#ede9fe" : u.plan === "normaal" ? "#dbeafe" : "#f3f4f6",
-                            }}>
-                            <option value="gratis">gratis</option>
-                            <option value="normaal">normaal</option>
-                            <option value="premium">premium</option>
-                          </select>
+                          <div className="flex flex-col gap-1">
+                            <select value={u.plan || "gratis"} onChange={(e) => handlePatchPlan(u.id, e.target.value)}
+                              className="text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-300"
+                              style={{
+                                color: u.plan === "premium" ? "#7c3aed" : u.plan === "normaal" ? "#0A66C2" : "#6b7280",
+                                background: u.plan === "premium" ? "#ede9fe" : u.plan === "normaal" ? "#dbeafe" : "#f3f4f6",
+                              }}>
+                              <option value="gratis">gratis</option>
+                              <option value="normaal">normaal</option>
+                              <option value="premium">premium</option>
+                            </select>
+                            {u.trial_ends_at && (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
+                                Gratis t/m {new Date(u.trial_ends_at).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            {u.role === "employer" && !u.trial_ends_at && (
+                              <button onClick={() => handleGiveFreeTrial(u.id, u.email)}
+                                className="text-xs text-purple-500 hover:text-purple-700 font-medium px-2 py-1 rounded hover:bg-purple-50 transition-colors whitespace-nowrap">
+                                Gratis Growth
+                              </button>
+                            )}
+                            {u.trial_ends_at && (
+                              <button onClick={() => handleRevokeFreeTrial(u.id, u.email)}
+                                className="text-xs text-orange-400 hover:text-orange-600 font-medium px-2 py-1 rounded hover:bg-orange-50 transition-colors">
+                                Trial intrekken
+                              </button>
+                            )}
                             <button onClick={() => handleResetPassword(u.id, u.email)}
                               className="text-xs text-blue-400 hover:text-blue-600 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors">
                               Wachtwoord

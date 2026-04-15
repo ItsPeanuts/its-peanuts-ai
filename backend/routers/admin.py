@@ -6,7 +6,7 @@ Bootstrap eerste admin via:
 """
 
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -40,6 +40,7 @@ class UserAdminOut(BaseModel):
     role: str
     plan: Optional[str]
     org_id: Optional[int] = None
+    trial_ends_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -168,6 +169,44 @@ def patch_user(
         user.role = payload.role
     if payload.plan is not None:
         user.plan = payload.plan
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/users/{user_id}/free-trial", response_model=UserAdminOut)
+def give_free_trial(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Geef een werkgever 1 maand gratis Growth (premium) abonnement."""
+    require_role(current_user, "admin")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    if user.role != "employer":
+        raise HTTPException(status_code=400, detail="Alleen werkgevers kunnen een gratis trial krijgen")
+    user.plan = "premium"
+    user.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=30)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.delete("/users/{user_id}/free-trial", response_model=UserAdminOut)
+def revoke_free_trial(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Trek de gratis trial in en zet de werkgever terug op gratis plan."""
+    require_role(current_user, "admin")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
+    user.plan = "gratis"
+    user.trial_ends_at = None
     db.commit()
     db.refresh(user)
     return user

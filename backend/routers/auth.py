@@ -141,6 +141,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise credentials_exception
+
+    # Auto-downgrade verlopen premium trial
+    if (
+        user.plan == "premium"
+        and user.trial_ends_at is not None
+        and datetime.now(timezone.utc) > user.trial_ends_at
+    ):
+        user.plan = "gratis"
+        user.trial_ends_at = None
+        db.commit()
+        db.refresh(user)
+
     return user
 
 
