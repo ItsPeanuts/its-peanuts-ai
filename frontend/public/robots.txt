@@ -1,0 +1,15 @@
+User-agent: *
+# Publieke pagina's zijn indexeerbaar
+Allow: /
+Allow: /vacatures
+Allow: /vacatures/
+
+# Privé routes — niet indexeren
+Disallow: /candidate/
+Disallow: /employer/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /verify-email
+Disallow: /reset-password
+
+Sitemap: https://vorzaiq.com/sitemap.xml

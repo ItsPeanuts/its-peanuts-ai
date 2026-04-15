@@ -3,27 +3,32 @@ from __future__ import annotations
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from backend.db import get_db
 from backend import models, schemas
 from backend.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from backend.services.email import send_verification_email, send_password_reset_email
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-BOOTSTRAP_TOKEN = os.getenv("BOOTSTRAP_TOKEN", "Peanuts-Setup-2025!").strip()
+BOOTSTRAP_TOKEN = os.getenv("BOOTSTRAP_TOKEN", "").strip()
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=schemas.Token)
-def register_candidate(payload: schemas.CandidateRegister, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def register_candidate(request: Request, payload: schemas.CandidateRegister, db: Session = Depends(get_db)):
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
     if exists:
@@ -44,7 +49,8 @@ def register_candidate(payload: schemas.CandidateRegister, db: Session = Depends
 
 
 @router.post("/register-employer", response_model=schemas.UserOut)
-def register_employer(payload: schemas.EmployerRegister, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def register_employer(request: Request, payload: schemas.EmployerRegister, db: Session = Depends(get_db)):
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
     if exists:
@@ -97,7 +103,8 @@ def resend_verification(email_body: schemas.ResendVerification, db: Session = De
 
 
 @router.post("/login", response_model=schemas.Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # OAuth2PasswordRequestForm uses "username" field (we treat it as email)
     email = (form_data.username or "").lower().strip()
     user = db.query(models.User).filter(models.User.email == email).first()
@@ -181,7 +188,8 @@ def change_password(
 
 
 @router.post("/forgot-password")
-def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def forgot_password(request: Request, payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Stuur een wachtwoord-reset link. Geeft altijd ok=True terug (geen info over of e-mail bestaat)."""
     user = db.query(models.User).filter(models.User.email == payload.email.lower()).first()
     if user:

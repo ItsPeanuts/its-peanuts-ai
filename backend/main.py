@@ -1,8 +1,11 @@
 import os
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from backend.db import engine
 from backend.models import Base
@@ -32,11 +35,26 @@ from backend.routers import scraper_admin as scraper_admin_router
 from backend.routers import promotions as promotions_router
 from backend.routers import analytics as analytics_router
 
+# ── Rate limiter ──────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="ItsPeanuts AI", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── CORS — alleen eigen domeinen ──────────────────────────────────────────────
+ALLOWED_ORIGINS = [
+    "https://vorzaiq.com",
+    "https://www.vorzaiq.com",
+    "https://api.vorzaiq.com",
+    # Lokale ontwikkeling
+    "http://localhost:3000",
+    "http://localhost:8000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -88,19 +106,6 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
-
-@app.get("/debug/routes")
-async def debug_routes():
-    """Tijdelijk endpoint: geeft alle geregistreerde routes terug voor diagnose."""
-    from fastapi.routing import APIRoute, APIWebSocketRoute
-    routes = []
-    for r in app.router.routes:
-        if hasattr(r, "path"):
-            routes.append({
-                "path": r.path,
-                "type": "websocket" if isinstance(r, APIWebSocketRoute) else "http",
-            })
-    return {"count": len(routes), "routes": routes}
 
 
 @app.websocket("/live-chat/{app_id}")
