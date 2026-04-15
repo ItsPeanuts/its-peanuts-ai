@@ -1869,7 +1869,7 @@ export default function EmployerPage() {
               Geen creditcard nodig, geen verplichtingen.
             </p>
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-6 text-left space-y-2">
-              {["Onbeperkt vacatures plaatsen", "AI pre-screening van kandidaten", "Lisa AI recruiter chat", "Uitgebreide analytics", "Teamleden toevoegen"].map(f => (
+              {["5 actieve vacatures", "AI-matching & pre-screening", "Kandidaatoverzicht dashboard", "Chatbot Lisa (kandidaten)", "E-mail notificaties", "Prioriteit in zoekresultaten", "CRM integratie"].map(f => (
                 <div key={f} className="flex items-center gap-2 text-sm text-purple-800">
                   <span className="text-purple-500 font-bold">✓</span> {f}
                 </div>
