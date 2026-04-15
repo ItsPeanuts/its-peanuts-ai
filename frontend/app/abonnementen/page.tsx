@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "@/lib/session";
 import { createCheckoutSession, createVacancyCheckout } from "@/lib/api";
-import PublicNav from "@/components/PublicNav";
+import EmployerNav from "@/components/EmployerNav";
 import PublicFooter from "@/components/PublicFooter";
 import { useLanguage } from "@/lib/i18n";
 
@@ -118,19 +118,9 @@ function AbonnementenContent() {
 
   return (
     <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
-      <PublicNav />
+      <EmployerNav />
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 80px" }}>
-
-        {/* Al een account? — alleen voor niet-ingelogde bezoekers */}
-        {!token && (
-          <div style={{ textAlign: "right", marginBottom: 8 }}>
-            <span style={{ fontSize: 14, color: "#6b7280" }}>Al een account?{" "}</span>
-            <Link href="/employer/login" style={{ fontSize: 14, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}>
-              Inloggen →
-            </Link>
-          </div>
-        )}
 
         {/* Succes banner */}
         {success && (

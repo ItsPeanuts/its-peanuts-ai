@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, me } from "@/lib/api";
 import { setSession } from "@/lib/session";
@@ -10,9 +10,14 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://its-peanuts-backend.onrender.com";
 
-export default function EmployerLoginPage() {
+function EmployerLoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<"login" | "register">("login");
+
+  useEffect(() => {
+    if (searchParams?.get("tab") === "register") setTab("register");
+  }, [searchParams]);
 
   // Login
   const [loginEmail, setLoginEmail] = useState("");
@@ -246,5 +251,13 @@ export default function EmployerLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EmployerLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-400 text-sm">Laden...</div></div>}>
+      <EmployerLoginContent />
+    </Suspense>
   );
 }
