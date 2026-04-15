@@ -756,47 +756,23 @@ export default function EmployerPage() {
           const expired = daysLeft <= 0;
           if (!expired && daysLeft > 7) return null;
 
-          async function handleCancelTrial() {
-            if (!token) return;
-            try {
-              await fetch(`${process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://api.vorzaiq.com"}/billing/cancel-trial`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-              });
-              setUserPlan("gratis");
-              setUserTrialEndsAt(null);
-            } catch { /* stil falen */ }
-          }
-
           return (
             <div className={`rounded-xl px-4 py-3 text-sm mb-5 ${expired ? "bg-red-50 border border-red-200 text-red-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
-              <p className="font-semibold mb-2">
+              <p className="font-semibold mb-1">
                 {expired
                   ? "Je gratis Growth maand is voorbij."
                   : `Je gratis Growth maand verloopt over ${daysLeft} ${daysLeft !== 1 ? "dagen" : "dag"}.`}
               </p>
               <p className="mb-3 text-xs opacity-80">
-                {expired
-                  ? "Kies een abonnement om door te gaan met werven, of ga verder met het gratis plan."
-                  : "Kies nu een abonnement om te blijven profiteren van alle features."}
+                Kies een abonnement om door te blijven werven.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href="/employer/abonnementen"
-                  className="px-4 py-2 rounded-lg text-white text-xs font-semibold"
-                  style={{ background: "#7c3aed" }}
-                >
-                  Kies een abonnement
-                </a>
-                {expired && (
-                  <button
-                    onClick={handleCancelTrial}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold border border-current bg-white"
-                  >
-                    Ga door met gratis plan
-                  </button>
-                )}
-              </div>
+              <a
+                href="/employer/abonnementen"
+                className="inline-block px-4 py-2 rounded-lg text-white text-xs font-semibold"
+                style={{ background: "#7c3aed" }}
+              >
+                Kies een abonnement →
+              </a>
             </div>
           );
         })()}
