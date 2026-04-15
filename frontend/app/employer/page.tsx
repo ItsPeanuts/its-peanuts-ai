@@ -734,7 +734,7 @@ export default function EmployerPage() {
           <span className="font-bold text-gray-900 text-sm">{txt.employerPortal}</span>
         </div>
 
-        {/* Trial-expiry banner */}
+        {/* Trial-expiry banner — gratis plan (oud) */}
         {userPlan === "gratis" && userTrialEndsAt && (() => {
           const daysLeft = Math.ceil((new Date(userTrialEndsAt).getTime() - Date.now()) / 86400000);
           if (daysLeft > 7) return null;
@@ -746,6 +746,57 @@ export default function EmployerPage() {
                   : `${txt.trialExpiresIn} ${daysLeft} ${daysLeft !== 1 ? txt.trialDaysPlural : txt.trialDaysSingle}. ${txt.trialChoosePlan}`}
               </span>
               <a href="/employer/abonnementen" className="shrink-0 font-semibold underline">{txt.upgrade}</a>
+            </div>
+          );
+        })()}
+
+        {/* Trial-expiry banner — gratis Growth maand (premium trial) */}
+        {userPlan === "premium" && userTrialEndsAt && (() => {
+          const daysLeft = Math.ceil((new Date(userTrialEndsAt).getTime() - Date.now()) / 86400000);
+          const expired = daysLeft <= 0;
+          if (!expired && daysLeft > 7) return null;
+
+          async function handleCancelTrial() {
+            if (!token) return;
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://api.vorzaiq.com"}/billing/cancel-trial`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+              });
+              setUserPlan("gratis");
+              setUserTrialEndsAt(null);
+            } catch { /* stil falen */ }
+          }
+
+          return (
+            <div className={`rounded-xl px-4 py-3 text-sm mb-5 ${expired ? "bg-red-50 border border-red-200 text-red-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
+              <p className="font-semibold mb-2">
+                {expired
+                  ? "Je gratis Growth maand is voorbij."
+                  : `Je gratis Growth maand verloopt over ${daysLeft} ${daysLeft !== 1 ? "dagen" : "dag"}.`}
+              </p>
+              <p className="mb-3 text-xs opacity-80">
+                {expired
+                  ? "Kies een abonnement om door te gaan met werven, of ga verder met het gratis plan."
+                  : "Kies nu een abonnement om te blijven profiteren van alle features."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/employer/abonnementen"
+                  className="px-4 py-2 rounded-lg text-white text-xs font-semibold"
+                  style={{ background: "#7c3aed" }}
+                >
+                  Kies een abonnement
+                </a>
+                {expired && (
+                  <button
+                    onClick={handleCancelTrial}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold border border-current bg-white"
+                  >
+                    Ga door met gratis plan
+                  </button>
+                )}
+              </div>
             </div>
           );
         })()}

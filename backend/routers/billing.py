@@ -78,6 +78,21 @@ class CheckoutIn(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+@router.post("/cancel-trial")
+def cancel_trial(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Werkgever annuleert zijn gratis trial en stapt over naar het gratis plan."""
+    if current_user.trial_ends_at is None:
+        raise HTTPException(status_code=400, detail="Geen actieve trial gevonden")
+    current_user.plan = "gratis"
+    current_user.trial_ends_at = None
+    db.commit()
+    db.refresh(current_user)
+    return {"ok": True, "plan": "gratis"}
+
+
 @router.post("/checkout")
 def create_checkout_session(
     payload: CheckoutIn,
