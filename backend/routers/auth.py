@@ -60,7 +60,7 @@ def register_employer(request: Request, payload: schemas.EmployerRegister, db: S
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
         role="employer",
-        plan="gratis",
+        plan="normaal",
         trial_ends_at=datetime.now(timezone.utc) + timedelta(days=30),
         email_verified=False,
         email_verify_token=verify_token,

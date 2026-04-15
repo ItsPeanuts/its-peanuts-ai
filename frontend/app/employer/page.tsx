@@ -152,6 +152,9 @@ export default function EmployerPage() {
   const [deleteVacancyTitle, setDeleteVacancyTitle] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Welcome modal (eerste login)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
   // Overflow actiemenu per vacaturekaart
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
@@ -180,6 +183,12 @@ export default function EmployerPage() {
         setVacancies(vacs || []);
         const apps = await getEmployerApplications(token);
         setApplications(apps);
+        // Toon welkomst-popup bij eerste login
+        const welcomeKey = `welcome_shown_${u.email}`;
+        if (!localStorage.getItem(welcomeKey)) {
+          setShowWelcomeModal(true);
+          localStorage.setItem(welcomeKey, "1");
+        }
       } catch {
         clearSession();
         router.push("/employer/login");
@@ -1846,6 +1855,36 @@ export default function EmployerPage() {
           </>
         )}
       </main>
+
+      {/* ── Welkomst modal (eerste login) ── */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 text-3xl" style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)" }}>
+              🎉
+            </div>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Welkom bij VorzaIQ!</h2>
+            <p className="text-gray-500 text-sm mb-5 leading-relaxed">
+              Je eerste maand <strong className="text-purple-700">Growth</strong> is volledig gratis.<br />
+              Geen creditcard nodig, geen verplichtingen.
+            </p>
+            <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-6 text-left space-y-2">
+              {["Onbeperkt vacatures plaatsen", "AI pre-screening van kandidaten", "Lisa AI recruiter chat", "Uitgebreide analytics", "Teamleden toevoegen"].map(f => (
+                <div key={f} className="flex items-center gap-2 text-sm text-purple-800">
+                  <span className="text-purple-500 font-bold">✓</span> {f}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full py-3 rounded-xl text-white font-bold text-sm"
+              style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)" }}
+            >
+              Aan de slag →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Upgrade modal (gratis plan, 2e vacature) ── */}
       {showUpgradeModal && (
