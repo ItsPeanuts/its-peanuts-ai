@@ -75,8 +75,8 @@ function AbonnementenContent() {
 
   // Bouw plan-data met vertalingen
   const plans = [
-    { ...PLAN_BASES[0], name: "Starter", badge: token ? null : S.freeMonthBadge, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
-    { ...PLAN_BASES[1], name: "Growth",  badge: S.mostPopular,          features: S.growthFeatures.map((text, i) => ({ text, ok: GROWTH_OK[i] })) },
+    { ...PLAN_BASES[0], name: "Starter", badge: null as string | null, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
+    { ...PLAN_BASES[1], name: "Growth",  badge: token ? S.mostPopular : S.freeMonthBadge, features: S.growthFeatures.map((text, i) => ({ text, ok: GROWTH_OK[i] })) },
     { ...PLAN_BASES[2], name: "Scale",   badge: null as string | null, features: S.scaleFeatures.map((text, i) => ({ text, ok: SCALE_OK[i] })) },
   ];
 
