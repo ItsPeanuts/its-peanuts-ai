@@ -38,7 +38,13 @@ from backend.routers import analytics as analytics_router
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
 
-app = FastAPI(title="ItsPeanuts AI", version="1.0.0")
+app = FastAPI(
+    title="ItsPeanuts AI",
+    version="1.0.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -47,10 +53,11 @@ ALLOWED_ORIGINS = [
     "https://vorzaiq.com",
     "https://www.vorzaiq.com",
     "https://api.vorzaiq.com",
-    # Lokale ontwikkeling
-    "http://localhost:3000",
-    "http://localhost:8000",
 ]
+
+# Lokale ontwikkeling alleen toestaan als expliciet geconfigureerd
+if os.getenv("ALLOW_LOCAL_CORS", "false").lower() == "true":
+    ALLOWED_ORIGINS += ["http://localhost:3000", "http://localhost:8000"]
 
 app.add_middleware(
     CORSMiddleware,

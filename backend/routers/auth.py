@@ -103,7 +103,7 @@ def resend_verification(email_body: schemas.ResendVerification, db: Session = De
 
 
 @router.post("/login", response_model=schemas.Token)
-@limiter.limit("20/minute")
+@limiter.limit("5/minute")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # OAuth2PasswordRequestForm uses "username" field (we treat it as email)
     email = (form_data.username or "").lower().strip()
