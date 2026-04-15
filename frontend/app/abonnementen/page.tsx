@@ -75,7 +75,7 @@ function AbonnementenContent() {
 
   // Bouw plan-data met vertalingen
   const plans = [
-    { ...PLAN_BASES[0], name: "Starter", badge: null as string | null, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
+    { ...PLAN_BASES[0], name: "Starter", badge: S.freeMonthBadge, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
     { ...PLAN_BASES[1], name: "Growth",  badge: S.mostPopular,          features: S.growthFeatures.map((text, i) => ({ text, ok: GROWTH_OK[i] })) },
     { ...PLAN_BASES[2], name: "Scale",   badge: null as string | null, features: S.scaleFeatures.map((text, i) => ({ text, ok: SCALE_OK[i] })) },
   ];
@@ -213,7 +213,9 @@ function AbonnementenContent() {
                 {plan.badge && (
                   <div style={{
                     position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)",
-                    background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
+                    background: plan.highlight
+                      ? "linear-gradient(135deg, #7C3AED, #6D28D9)"
+                      : "linear-gradient(135deg, #059669, #047857)",
                     color: "#fff", padding: "4px 16px", borderRadius: 20,
                     fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
                   }}>

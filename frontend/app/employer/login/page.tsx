@@ -198,6 +198,10 @@ export default function EmployerLoginPage() {
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-800 text-sm font-medium">
+                <span className="text-green-600 font-bold text-base">✓</span>
+                Eerste maand gratis — geen creditcard nodig
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bedrijfsnaam / Naam</label>
                 <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)}

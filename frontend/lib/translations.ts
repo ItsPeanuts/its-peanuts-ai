@@ -74,6 +74,8 @@ export type TranslationSet = {
   subscription: {
     subscriptionActivated: string;
     subscriptionActivatedSub: string;
+    freeMonthBadge: string;
+    freeMonthRegNotice: string;
     trialTitle: string;
     trialSub: string;
     startFree: string;
@@ -248,6 +250,8 @@ const nl: TranslationSet = {
   subscription: {
     subscriptionActivated: "Abonnement geactiveerd!",
     subscriptionActivatedSub: "Je plan is bijgewerkt. Alle features zijn nu beschikbaar.",
+    freeMonthBadge: "1 maand gratis",
+    freeMonthRegNotice: "Eerste maand gratis — geen creditcard nodig",
     trialTitle: "Probeer gratis — 1 vacature, 30 dagen",
     trialSub: "Start vandaag en ontdek hoe AI jouw werving versnelt. Geen creditcard nodig.",
     startFree: "Gratis starten →",
@@ -476,6 +480,8 @@ const en: TranslationSet = {
   subscription: {
     subscriptionActivated: "Subscription activated!",
     subscriptionActivatedSub: "Your plan has been updated. All features are now available.",
+    freeMonthBadge: "1 month free",
+    freeMonthRegNotice: "First month free — no credit card required",
     trialTitle: "Try for free — 1 job, 30 days",
     trialSub: "Start today and discover how AI accelerates your recruitment. No credit card needed.",
     startFree: "Start for free →",
@@ -704,6 +710,8 @@ const de: TranslationSet = {
   subscription: {
     subscriptionActivated: "Abonnement aktiviert!",
     subscriptionActivatedSub: "Dein Plan wurde aktualisiert. Alle Funktionen sind jetzt verfügbar.",
+    freeMonthBadge: "1 Monat kostenlos",
+    freeMonthRegNotice: "Erster Monat kostenlos — keine Kreditkarte erforderlich",
     trialTitle: "Kostenlos testen — 1 Stelle, 30 Tage",
     trialSub: "Starte heute und entdecke, wie KI dein Recruiting beschleunigt. Keine Kreditkarte erforderlich.",
     startFree: "Kostenlos starten →",
@@ -932,6 +940,8 @@ const fr: TranslationSet = {
   subscription: {
     subscriptionActivated: "Abonnement activé !",
     subscriptionActivatedSub: "Votre plan a été mis à jour. Toutes les fonctionnalités sont maintenant disponibles.",
+    freeMonthBadge: "1 mois gratuit",
+    freeMonthRegNotice: "Premier mois gratuit — sans carte bancaire",
     trialTitle: "Essai gratuit — 1 offre, 30 jours",
     trialSub: "Commencez aujourd'hui et découvrez comment l'IA accélère votre recrutement. Sans carte bancaire.",
     startFree: "Commencer gratuitement →",
@@ -1160,6 +1170,8 @@ const es: TranslationSet = {
   subscription: {
     subscriptionActivated: "¡Suscripción activada!",
     subscriptionActivatedSub: "Tu plan ha sido actualizado. Todas las funciones están disponibles.",
+    freeMonthBadge: "1 mes gratis",
+    freeMonthRegNotice: "Primer mes gratis — sin tarjeta de crédito",
     trialTitle: "Prueba gratis — 1 empleo, 30 días",
     trialSub: "Empieza hoy y descubre cómo la IA acelera tu reclutamiento. Sin tarjeta de crédito.",
     startFree: "Empezar gratis →",
