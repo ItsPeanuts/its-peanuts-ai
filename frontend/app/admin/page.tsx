@@ -78,6 +78,10 @@ export default function AdminPage() {
   const [activeSubscriptions, setActiveSubscriptions] = useState(0);
   const [monthlySignups, setMonthlySignups] = useState<MonthlySignup[]>([]);
 
+  // Users tab + zoek
+  const [userTab, setUserTab] = useState<"employers" | "candidates">("employers");
+  const [employerSearch, setEmployerSearch] = useState("");
+
   // Promotions state
   type AdminPromotion = {
     id: number; vacancy_id: number; vacancy_title: string | null;
@@ -413,11 +417,47 @@ export default function AdminPage() {
         )}
 
         {/* ─── GEBRUIKERS ─── */}
-        {view === "users" && (
+        {view === "users" && (() => {
+          const employers  = users.filter((u) => u.role === "employer" || u.role === "admin");
+          const candidates = users.filter((u) => u.role === "candidate");
+          const filteredEmployers = employers.filter((u) =>
+            employerSearch === "" ||
+            u.email.toLowerCase().includes(employerSearch.toLowerCase()) ||
+            (u.full_name ?? "").toLowerCase().includes(employerSearch.toLowerCase())
+          );
+          const list = userTab === "employers" ? filteredEmployers : candidates;
+          return (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Gebruikers <span className="text-gray-400 text-lg font-normal">({users.length})</span></h1>
+            {/* Header + tabs */}
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Gebruikers</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setUserTab("employers")}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${userTab === "employers" ? "bg-purple-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Werkgevers <span className="ml-1 text-xs opacity-70">({employers.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setUserTab("candidates")}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 ${userTab === "candidates" ? "bg-purple-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Kandidaten <span className="ml-1 text-xs opacity-70">({candidates.length})</span>
+                  </button>
+                </div>
+                {userTab === "employers" && (
+                  <input
+                    type="text"
+                    value={employerSearch}
+                    onChange={(e) => setEmployerSearch(e.target.value)}
+                    placeholder="Zoek op naam of e-mail..."
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-purple-400 min-w-[220px]"
+                  />
+                )}
+              </div>
             </div>
+
             <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
               <table className="w-full text-sm min-w-[560px]">
                 <thead>
@@ -425,12 +465,15 @@ export default function AdminPage() {
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Naam</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
+                    {userTab === "employers" && <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>}
                     <th className="px-5 py-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => {
+                  {list.length === 0 && (
+                    <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400 text-sm">Geen resultaten</td></tr>
+                  )}
+                  {list.map((u) => {
                     const rc = ROLE_COLORS[u.role] ?? { color: "#374151", bg: "#f3f4f6" };
                     return (
                       <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -445,6 +488,7 @@ export default function AdminPage() {
                             <option value="admin">admin</option>
                           </select>
                         </td>
+                        {userTab === "employers" && (
                         <td className="px-5 py-3">
                           <div className="flex flex-col gap-1">
                             <select value={u.plan || "gratis"} onChange={(e) => handlePatchPlan(u.id, e.target.value)}
@@ -464,6 +508,7 @@ export default function AdminPage() {
                             )}
                           </div>
                         </td>
+                        )}
                         <td className="px-5 py-3 text-right">
                           <div className="flex items-center justify-end gap-1 flex-wrap">
                             {u.role === "employer" && !u.trial_ends_at && (
@@ -495,7 +540,8 @@ export default function AdminPage() {
               </table>
             </div>
           </>
-        )}
+          );
+        })()}
 
         {/* ─── VACATURES ─── */}
         {view === "vacancies" && (
