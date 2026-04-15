@@ -92,10 +92,11 @@ def resend_verification(email_body: schemas.ResendVerification, db: Session = De
     if not user or user.role != "employer" or user.email_verified:
         # Geen info weggeven of account bestaat
         return {"ok": True}
-    new_token = secrets.token_urlsafe(32)
-    user.email_verify_token = new_token
-    db.commit()
-    verify_url = f"{FRONTEND_URL}/verify-email?token={new_token}"
+    # Hergebruik bestaand token zodat eerder verstuurde mails ook nog werken
+    if not user.email_verify_token:
+        user.email_verify_token = secrets.token_urlsafe(32)
+        db.commit()
+    verify_url = f"{FRONTEND_URL}/verify-email?token={user.email_verify_token}"
     send_verification_email(user.email, user.full_name, verify_url)
     return {"ok": True}
 
