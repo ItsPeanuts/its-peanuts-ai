@@ -75,7 +75,7 @@ function AbonnementenContent() {
 
   // Bouw plan-data met vertalingen
   const plans = [
-    { ...PLAN_BASES[0], name: "Starter", badge: S.freeMonthBadge, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
+    { ...PLAN_BASES[0], name: "Starter", badge: token ? null : S.freeMonthBadge, features: S.starterFeatures.map((text, i) => ({ text, ok: STARTER_OK[i] })) },
     { ...PLAN_BASES[1], name: "Growth",  badge: S.mostPopular,          features: S.growthFeatures.map((text, i) => ({ text, ok: GROWTH_OK[i] })) },
     { ...PLAN_BASES[2], name: "Scale",   badge: null as string | null, features: S.scaleFeatures.map((text, i) => ({ text, ok: SCALE_OK[i] })) },
   ];
@@ -133,8 +133,8 @@ function AbonnementenContent() {
           </div>
         )}
 
-        {/* Trial banner */}
-        <div style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", borderRadius: 16, padding: "20px 28px", marginBottom: 52, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        {/* Trial banner — alleen voor niet-ingelogde bezoekers */}
+        {!token && <div style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", borderRadius: 16, padding: "20px 28px", marginBottom: 52, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ color: "#fff" }}>
             <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 4 }}>{S.trialTitle}</div>
             <div style={{ fontSize: 14, opacity: 0.85 }}>{S.trialSub}</div>
@@ -145,7 +145,7 @@ function AbonnementenContent() {
           >
             {S.startFree}
           </Link>
-        </div>
+        </div>}
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 48 }}>
