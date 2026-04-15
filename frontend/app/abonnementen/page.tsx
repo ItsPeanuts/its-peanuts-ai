@@ -122,6 +122,16 @@ function AbonnementenContent() {
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 80px" }}>
 
+        {/* Al een account? — alleen voor niet-ingelogde bezoekers */}
+        {!token && (
+          <div style={{ textAlign: "right", marginBottom: 8 }}>
+            <span style={{ fontSize: 14, color: "#6b7280" }}>Al een account?{" "}</span>
+            <Link href="/employer/login" style={{ fontSize: 14, fontWeight: 600, color: "#7C3AED", textDecoration: "none" }}>
+              Inloggen →
+            </Link>
+          </div>
+        )}
+
         {/* Succes banner */}
         {success && (
           <div style={{ background: "#d1fae5", border: "1px solid #6ee7b7", borderRadius: 12, padding: "16px 20px", marginBottom: 40, display: "flex", alignItems: "center", gap: 12 }}>
