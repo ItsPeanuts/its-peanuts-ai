@@ -5,6 +5,7 @@ import MaintenanceBanner from "@/components/MaintenanceBanner";
 import { LanguageProvider } from "@/lib/i18n";
 import HtmlLangSync from "@/components/HtmlLangSync";
 import VisitTracker from "@/components/VisitTracker";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: "VorzaIQ — The Smart Way to Hire",
@@ -25,6 +26,7 @@ export default function RootLayout({
             <HtmlLangSync />
             <VisitTracker />
             {children}
+            <CookieConsent />
           </LanguageProvider>
         </div>
         <NoHorizontalScroll />

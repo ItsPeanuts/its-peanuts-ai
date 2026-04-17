@@ -10,9 +10,14 @@ export default function PublicFooter() {
         </div>
         <div className="mt-4 pt-4 border-t border-gray-800 flex items-center justify-between flex-wrap gap-3">
           <span className="text-xs text-gray-600">Powered by It&apos;s Peanuts AI</span>
-          <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
-            Privacybeleid
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
+              Privacybeleid
+            </Link>
+            <Link href="/voorwaarden" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
+              Algemene Voorwaarden
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

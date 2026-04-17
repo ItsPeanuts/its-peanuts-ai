@@ -112,7 +112,15 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    from backend.db import SessionLocal
+    from sqlalchemy import text
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        return {"status": "ok", "db": "ok"}
+    except Exception as e:
+        return {"status": "degraded", "db": str(e)}
 
 
 @app.websocket("/live-chat/{app_id}")

@@ -20,6 +20,7 @@ SYSTEM_EMAIL = "system@itspeanuts.ai"
 ADMIN_EMAIL    = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "AdminPeanuts2025!")
 
+ENABLE_TEST_ACCOUNTS = os.getenv("ENABLE_TEST_ACCOUNTS", "false").lower() == "true"
 TEST_PASSWORD = "TestPeanuts2025!"
 
 
@@ -68,6 +69,11 @@ def seed_test_data() -> None:
             db.commit()
             print(f"[seed] systeem-werkgever bestaat al: {SYSTEM_EMAIL}")
 
+        # ── Test accounts: alleen als ENABLE_TEST_ACCOUNTS=true ────────
+        if not ENABLE_TEST_ACCOUNTS:
+            print("[seed] test accounts overgeslagen (ENABLE_TEST_ACCOUNTS != true)")
+            return
+
         # ── Test werkgever ───────────────────────────────────────────────
         test_employer = db.query(models.User).filter_by(email="werkgever@test.nl").first()
         if not test_employer:
@@ -84,15 +90,10 @@ def seed_test_data() -> None:
             db.refresh(test_employer)
             print("[seed] test werkgever aangemaakt: werkgever@test.nl")
         else:
-            # Zorg dat plan altijd normaal is (zodat vacature-limiet geen probleem is)
             test_employer.plan = "normaal"
             test_employer.email_verified = True
             db.commit()
             print("[seed] test werkgever bestaat al: werkgever@test.nl")
-
-        # ── Test vacatures: NIET meer seeden voor productie ─────────────
-        # Bestaande test vacatures worden ook niet verwijderd door de seed.
-        # Verwijder ze handmatig via het admin portaal voor go-live.
 
         # ── Test kandidaat ───────────────────────────────────────────────
         test_candidate = db.query(models.User).filter_by(email="kandidaat@test.nl").first()

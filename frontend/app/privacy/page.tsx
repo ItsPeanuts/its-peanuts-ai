@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           Privacybeleid
         </h1>
         <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 40 }}>
-          Laatste update: 27 maart 2026
+          Laatste update: 17 april 2026
         </p>
 
         <div className="privacy-card" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "32px", display: "flex", flexDirection: "column", gap: 32 }}>
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
               <Li>Het doorsturen van jouw sollicitatie aan werkgevers (grondslag: overeenkomst)</Li>
               <Li>E-mailnotificaties over de voortgang van jouw sollicitatie (grondslag: gerechtvaardigd belang)</Li>
               <Li>Verbetering van ons platform (grondslag: gerechtvaardigd belang)</Li>
-              <Li>Betaalverwerking voor werkgevers via LemonSqueezy (grondslag: overeenkomst)</Li>
+              <Li>Betaalverwerking voor werkgevers via Stripe (grondslag: overeenkomst)</Li>
             </ul>
           </Section>
 
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
               <Li><strong>Werkgevers</strong> — alleen de gegevens die je expliciet instuurt via een sollicitatie</Li>
               <Li><strong>OpenAI</strong> — voor AI-functies zoals matchscores en CV-herschrijving (anoniem verwerkt waar mogelijk)</Li>
               <Li><strong>Resend</strong> — voor het verzenden van e-mailnotificaties</Li>
-              <Li><strong>LemonSqueezy</strong> — voor betaalverwerking (alleen werkgeversdata)</Li>
+              <Li><strong>Stripe</strong> — voor betaalverwerking (alleen werkgeversdata)</Li>
               <Li><strong>Hetzner</strong> — serverhosting in Europa (GDPR-conform)</Li>
             </ul>
           </Section>
