@@ -37,6 +37,7 @@ async function apiFetch(token: string, path: string, opts?: RequestInit) {
       ...(opts?.headers || {}),
     },
   });
+  if (res.status === 204) return null;
   const data = await res.json();
   if (!res.ok) throw new Error(data?.detail || "API fout");
   return data;
