@@ -18,6 +18,7 @@ FROM_EMAIL       = os.getenv("FROM_EMAIL", "ItsPeanuts AI <noreply@itspeanuts.nl
 FRONTEND_URL     = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
 ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
 BOOKKEEPER_EMAIL = os.getenv("BOOKKEEPER_EMAIL", "")
+INVOICE_FROM_EMAIL = os.getenv("INVOICE_FROM_EMAIL", "VorzaIQ <info@vorzaiq.com>")
 
 # ── Vertalingen ───────────────────────────────────────────────────────────────
 
@@ -559,7 +560,7 @@ def get_string(key: str, lang: str) -> str:
     return STRINGS.get(key, {}).get(lang) or STRINGS.get(key, {}).get("nl", "")
 
 
-def _send(to: str, subject: str, html: str) -> None:
+def _send(to: str, subject: str, html: str, from_email: str | None = None) -> None:
     """Stuur één e-mail via Resend. Logt fouten maar gooit geen exceptions."""
     if not RESEND_API_KEY:
         logger.info("[email] RESEND_API_KEY niet ingesteld — mail overgeslagen: %s", subject)
@@ -568,7 +569,7 @@ def _send(to: str, subject: str, html: str) -> None:
         import resend  # type: ignore
         resend.api_key = RESEND_API_KEY
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email or FROM_EMAIL,
             "to": [to],
             "subject": subject,
             "html": html,
@@ -1308,7 +1309,7 @@ def send_invoice_email(
 </body>
 </html>"""
 
-    _send(to=employer_email, subject=subject, html=html)
+    _send(to=employer_email, subject=subject, html=html, from_email=INVOICE_FROM_EMAIL)
 
     if BOOKKEEPER_EMAIL and BOOKKEEPER_EMAIL != employer_email:
-        _send(to=BOOKKEEPER_EMAIL, subject=f"[Kopie boekhouder] {subject}", html=html)
+        _send(to=BOOKKEEPER_EMAIL, subject=f"[Kopie boekhouder] {subject}", html=html, from_email=INVOICE_FROM_EMAIL)
