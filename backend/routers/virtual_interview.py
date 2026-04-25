@@ -1025,7 +1025,7 @@ def create_anam_token(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Genereer een Anam AI session token voor avatar lip-sync (avatarOnly modus)."""
+    """Genereer een Anam AI session token voor avatar lip-sync (audio passthrough modus)."""
     app = db.query(models.Application).filter(models.Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
@@ -1045,7 +1045,7 @@ def create_anam_token(
             json={
                 "personaConfig": {
                     "avatarId": ANAM_AVATAR_ID,
-                    "avatarOnly": True,
+                    "enableAudioPassthrough": True,
                 },
             },
             timeout=10,

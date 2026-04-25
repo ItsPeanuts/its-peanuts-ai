@@ -174,6 +174,7 @@ export default function VideoInterviewPage() {
   const messagesRef = useRef<Message[]>([]); // sync ref voor WebSocket handlers
   const lisaTurnRef = useRef(0);
   const currentLisaTranscriptRef = useRef(""); // lopend Lisa-transcript per beurt
+  const lisaIsSpeakingRef = useRef(false); // sync ref — voorkomt phantom speech (mic gedempt terwijl Lisa praat)
 
   // Anam AI avatar refs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,6 +239,8 @@ export default function VideoInterviewPage() {
 
       processor.onaudioprocess = (e) => {
         if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+        // Demp mic terwijl Lisa praat — voorkomt phantom speech door speaker feedback
+        if (lisaIsSpeakingRef.current) return;
         const floatData = e.inputBuffer.getChannelData(0);
         const pcm16 = floatTo16BitPCM(floatData);
         wsRef.current.send(JSON.stringify({
@@ -288,6 +291,7 @@ export default function VideoInterviewPage() {
 
         case "response.created":
           setLisaIsSpeaking(true);
+          lisaIsSpeakingRef.current = true;
           currentLisaTranscriptRef.current = "";
           setLisaLiveText("");
           break;
@@ -319,6 +323,7 @@ export default function VideoInterviewPage() {
 
         case "response.done": {
           setLisaIsSpeaking(false);
+          lisaIsSpeakingRef.current = false;
           // Anam: meld einde spraak voor lip-sync stop
           try { anamAudioStreamRef.current?.endSequence(); } catch { /* negeer */ }
           const newCount = lisaTurnRef.current + 1;
