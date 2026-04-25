@@ -12,16 +12,15 @@
  *   2. OPENAI_API_KEY staat al in .env op de server
  *   3. Optioneel: LISA_V2_VOICE (shimmer|alloy|nova|echo|fable|onyx)
  *
- * Simli avatar (Lisa 2.1 — TODO):
- *   Installeer: npm install @simli/sdk
- *   Voeg NEXT_PUBLIC_SIMLI_API_KEY + NEXT_PUBLIC_SIMLI_FACE_ID toe aan .env
- *   Vervang de <video> tag in de JSX door de Simli WebRTC component
- *   Pipe OpenAI audio chunks naar simliClient.sendAudioData(pcm16Chunk)
+ * Anam AI Avatar (Lisa 2.1):
+ *   Avatar: Astrid desk (fotorealistisch, lip-sync via audio passthrough)
+ *   Audio flow: OpenAI Realtime (24kHz) → downsample 16kHz → Anam lip-sync
  */
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getToken } from "@/lib/session";
+import { createClient } from "@anam-ai/js-sdk";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -29,14 +28,10 @@ const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
   "https://api.vorzaiq.com";
 
-const AMBER_VIDEO_URL =
-  "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";
-
 const OPENAI_REALTIME_WS =
   "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
-// ── Zet op false zodra Lisa 2.0 live is (API keys in .env, 2 betalende klanten) ──
-const LISA_MAINTENANCE = true;
+const LISA_MAINTENANCE = false;
 
 // Interview eindigt automatisch na dit aantal Lisa-beurten
 const MAX_LISA_TURNS = 7;
@@ -101,6 +96,28 @@ function base64ToFloat32(base64: string): Float32Array {
   return float32;
 }
 
+/** Downsample Float32 van 24kHz naar 16kHz voor Anam AI */
+function downsample24to16(float32_24k: Float32Array): Float32Array {
+  const ratio = 24000 / 16000; // 1.5
+  const newLength = Math.floor(float32_24k.length / ratio);
+  const result = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    result[i] = float32_24k[Math.floor(i * ratio)];
+  }
+  return result;
+}
+
+/** Float32 → base64-encoded PCM16 (voor Anam sendAudioChunk) */
+function float32ToBase64PCM16(float32: Float32Array): string {
+  const pcm16 = floatTo16BitPCM(float32);
+  const bytes = new Uint8Array(pcm16);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 // ── Hoofdcomponent ────────────────────────────────────────────────────────────
 
 export default function VideoInterviewPage() {
@@ -158,6 +175,12 @@ export default function VideoInterviewPage() {
   const lisaTurnRef = useRef(0);
   const currentLisaTranscriptRef = useRef(""); // lopend Lisa-transcript per beurt
 
+  // Anam AI avatar refs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anamClientRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anamAudioStreamRef = useRef<any>(null);
+
   // ── Audio playback (PCM16 chunks van OpenAI) ─────────────────────────────────
 
   const enqueueAudio = (base64: string) => {
@@ -165,9 +188,14 @@ export default function VideoInterviewPage() {
     const ctx = audioCtxRef.current;
     const float32 = base64ToFloat32(base64);
 
-    // ── TODO Simli: stuur float32 ook naar Simli voor lip-sync ──────────────────
-    // simliClient.sendAudioData(float32ToInt16(float32))
-    // ────────────────────────────────────────────────────────────────────────────
+    // Anam AI: stuur gedownsamplede audio voor lip-sync
+    if (anamAudioStreamRef.current) {
+      try {
+        const downsampled = downsample24to16(float32);
+        const b64pcm16 = float32ToBase64PCM16(downsampled);
+        anamAudioStreamRef.current.sendAudioChunk(b64pcm16);
+      } catch { /* avatar audio fout negeren — interview gaat door */ }
+    }
 
     const buffer = ctx.createBuffer(1, float32.length, 24000);
     buffer.getChannelData(0).set(float32);
@@ -291,6 +319,8 @@ export default function VideoInterviewPage() {
 
         case "response.done": {
           setLisaIsSpeaking(false);
+          // Anam: meld einde spraak voor lip-sync stop
+          try { anamAudioStreamRef.current?.endSequence(); } catch { /* negeer */ }
           const newCount = lisaTurnRef.current + 1;
           lisaTurnRef.current = newCount;
           setLisaTurnCount(newCount);
@@ -325,6 +355,8 @@ export default function VideoInterviewPage() {
           setCandidateLiveText("");
           // Onderbreek lopende audio (Lisa wordt onderbroken)
           nextPlayTimeRef.current = audioCtxRef.current?.currentTime || 0;
+          // Anam: onderbreek avatar lip-sync
+          try { anamClientRef.current?.interruptPersona(); } catch { /* negeer */ }
           break;
 
         case "input_audio_buffer.speech_stopped":
@@ -380,15 +412,41 @@ export default function VideoInterviewPage() {
 
     try {
       const token = getToken();
-      const res = await fetch(`${BASE}/virtual-interview/session/${appId}/realtime-token`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `HTTP ${res.status}`);
+
+      // Haal OpenAI + Anam tokens parallel op
+      const [realtimeRes, anamRes] = await Promise.all([
+        fetch(`${BASE}/virtual-interview/session/${appId}/realtime-token`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${BASE}/virtual-interview/session/${appId}/anam-token`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null), // Anam is optioneel — interview werkt ook zonder avatar
+      ]);
+
+      if (!realtimeRes.ok) {
+        const err = await realtimeRes.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${realtimeRes.status}`);
       }
-      const { client_secret } = await res.json();
+      const { client_secret } = await realtimeRes.json();
+
+      // Anam avatar initialiseren (als token beschikbaar)
+      if (anamRes?.ok) {
+        try {
+          const { session_token } = await anamRes.json();
+          const anamClient = createClient(session_token, { disableInputAudio: true });
+          anamClientRef.current = anamClient;
+          await anamClient.streamToVideoElement("lisa-avatar-video");
+          anamAudioStreamRef.current = anamClient.createAgentAudioInputStream({
+            encoding: "pcm_s16le",
+            sampleRate: 16000,
+            channels: 1,
+          });
+        } catch (e) {
+          console.warn("[Anam] Avatar init mislukt, interview gaat door zonder avatar:", e);
+        }
+      }
 
       await startMicrophone();
       connectWebSocket(client_secret);
@@ -435,9 +493,13 @@ export default function VideoInterviewPage() {
     processorRef.current?.disconnect();
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     audioCtxRef.current?.close();
+    // Anam avatar stoppen
+    try { anamClientRef.current?.stopStreaming(); } catch { /* negeer */ }
     processorRef.current = null;
     micStreamRef.current = null;
     audioCtxRef.current = null;
+    anamClientRef.current = null;
+    anamAudioStreamRef.current = null;
   };
 
   useEffect(() => () => cleanup(), []);
@@ -512,19 +574,10 @@ export default function VideoInterviewPage() {
         {/* Lisa avatar */}
         <div style={{ position: "relative", background: "#111827", borderRadius: 16, overflow: "hidden", minHeight: 360, display: "flex", alignItems: "center", justifyContent: "center" }}>
 
-          {/* ── Amber video (placeholder) ───────────────────────────────────────
-              TODO Simli (Lisa 2.1): vervang dit <video> element door Simli WebRTC component.
-              Stappen:
-                1. npm install @simli/sdk
-                2. import { SimliClient } from "@simli/sdk"
-                3. const simli = new SimliClient({ apiKey: SIMLI_API_KEY, faceId: SIMLI_FACE_ID })
-                4. Pipe OpenAI audio chunks: simli.sendAudioData(pcm16Chunk)
-                5. Render: <video ref={simliVideoRef} autoPlay />
-              ────────────────────────────────────────────────────────────────── */}
+          {/* Anam AI Avatar — lip-synced via audio passthrough */}
           <video
-            src={AMBER_VIDEO_URL}
+            id="lisa-avatar-video"
             autoPlay
-            loop
             muted
             playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isActive ? 1 : 0.4 }}

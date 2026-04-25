@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anam-ai/js-sdk": "^4.13.0",
     "@csstools/postcss-cascade-layers": "^4.0.0",
     "@tailwindcss/postcss": "^4.2.1",
     "autoprefixer": "^10.4.27",

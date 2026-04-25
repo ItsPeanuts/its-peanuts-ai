@@ -81,6 +81,11 @@ _ai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 DID_BASE = "https://api.d-id.com"
 
+# ── Anam AI Avatar ───────────────────────────────────────────────────────────
+ANAM_API_KEY = os.getenv("ANAM_API_KEY", "")
+ANAM_AVATAR_ID = os.getenv("ANAM_AVATAR_ID", "bdaaedfa-00f2-417a-8239-8bb89adec682")  # Astrid desk
+LISA_MONTHLY_LIMIT = int(os.getenv("LISA_MONTHLY_LIMIT", "75"))
+
 
 def _did_headers() -> dict:
     """Basic auth header voor D-ID API (api_key:)."""
@@ -885,10 +890,33 @@ def create_realtime_token(
     if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
-    # Premium check
+    # Scale plan check
     employer = db.query(models.User).filter(models.User.id == app.employer_id).first()
     if not employer or (employer.plan or "gratis") != "premium":
-        raise HTTPException(status_code=403, detail="Virtueel interview vereist Premium abonnement")
+        raise HTTPException(status_code=403, detail="Virtueel interview vereist Scale abonnement")
+
+    # Maandelijks interview limiet
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    employer_vacancy_ids = [
+        row[0] for row in
+        db.query(models.Vacancy.id).filter(models.Vacancy.employer_id == employer.id).all()
+    ]
+    interview_count = 0
+    if employer_vacancy_ids:
+        interview_count = db.query(models.VirtualInterviewSession).filter(
+            models.VirtualInterviewSession.application_id.in_(
+                db.query(models.Application.id).filter(
+                    models.Application.vacancy_id.in_(employer_vacancy_ids)
+                )
+            ),
+            models.VirtualInterviewSession.created_at >= month_start,
+            models.VirtualInterviewSession.status == "completed",
+        ).count()
+    if interview_count >= LISA_MONTHLY_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Maandelijks interview limiet bereikt ({LISA_MONTHLY_LIMIT}). Neem contact op voor extra interviews.",
+        )
 
     if not OPENAI_API_KEY:
         raise HTTPException(status_code=503, detail="OPENAI_API_KEY niet geconfigureerd")
@@ -986,6 +1014,50 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
         "model": "gpt-4o-realtime-preview",
         "voice": LISA_V2_VOICE,
     }
+
+
+@router.post("/session/{app_id}/anam-token")
+def create_anam_token(
+    app_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Genereer een Anam AI session token voor avatar lip-sync (avatarOnly modus)."""
+    app = db.query(models.Application).filter(models.Application.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
+    if app.candidate_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    if not ANAM_API_KEY:
+        raise HTTPException(status_code=503, detail="ANAM_API_KEY niet geconfigureerd")
+
+    try:
+        resp = http.post(
+            "https://api.anam.ai/v1/auth/session-token",
+            headers={
+                "Authorization": f"Bearer {ANAM_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "personaConfig": {
+                    "avatarId": ANAM_AVATAR_ID,
+                    "avatarOnly": True,
+                },
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Anam AI verbinding mislukt: {str(e)}")
+
+    if not resp.ok:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Anam AI sessie mislukt ({resp.status_code}): {resp.text[:200]}",
+        )
+
+    data = resp.json()
+    return {"session_token": data.get("sessionToken", "")}
 
 
 @router.post("/session/{app_id}/v2-complete", response_model=CompleteOut)
