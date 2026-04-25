@@ -290,6 +290,11 @@ export type ApplicationWithDetails = {
   created_at: string;
   match_score: number | null;
   ai_summary: string | null;
+  // Verplichte stappen tracking
+  chat_completed: boolean;
+  interview_required: boolean;
+  interview_completed: boolean;
+  employer_plan: string;
 };
 
 export type AIResult = {

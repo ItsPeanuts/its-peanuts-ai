@@ -289,26 +289,35 @@ export default function CandidateDashboard() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {applications.slice(0, 5).map((app) => (
-                  <Link
-                    key={app.application_id}
-                    href={`/candidate/sollicitaties/${app.application_id}`}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "#f9fafb", borderRadius: 10, border: "1px solid transparent", textDecoration: "none" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#ccfbf1"; (e.currentTarget as HTMLElement).style.background = "#f0fdfa"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "transparent"; (e.currentTarget as HTMLElement).style.background = "#f9fafb"; }}
-                  >
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{app.vacancy_title}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
-                        {app.vacancy_location || txt.locationUnknown} · {new Date(app.created_at).toLocaleDateString(lang === "nl" ? "nl-NL" : lang === "de" ? "de-DE" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-GB")}
+                {applications.slice(0, 5).map((app) => {
+                  const isTerminal = app.status === "rejected" || app.status === "auto_rejected" || app.status === "hired";
+                  const incomplete = !isTerminal && (!app.chat_completed || (app.interview_required && !app.interview_completed));
+                  return (
+                    <Link
+                      key={app.application_id}
+                      href={`/candidate/sollicitaties/${app.application_id}`}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: incomplete ? "#fffbeb" : "#f9fafb", borderRadius: 10, border: incomplete ? "1px solid #fcd34d" : "1px solid transparent", textDecoration: "none" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = incomplete ? "#f59e0b" : "#ccfbf1"; (e.currentTarget as HTMLElement).style.background = incomplete ? "#fef3c7" : "#f0fdfa"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = incomplete ? "#fcd34d" : "transparent"; (e.currentTarget as HTMLElement).style.background = incomplete ? "#fffbeb" : "#f9fafb"; }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{app.vacancy_title}</div>
+                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                          {app.vacancy_location || txt.locationUnknown} · {new Date(app.created_at).toLocaleDateString(lang === "nl" ? "nl-NL" : lang === "de" ? "de-DE" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-GB")}
+                        </div>
+                        {incomplete && (
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "#d97706", marginTop: 4 }}>
+                            {{ nl: "Actie vereist", en: "Action required", de: "Aktion erforderlich", fr: "Action requise", es: "Acción requerida" }[lang] ?? "Actie vereist"} — {!app.chat_completed ? "chat met Lisa" : "video-interview"}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      <ScoreBadge score={app.match_score} />
-                      <StatusBadge status={app.status} />
-                    </div>
-                  </Link>
-                ))}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <ScoreBadge score={app.match_score} />
+                        <StatusBadge status={app.status} />
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

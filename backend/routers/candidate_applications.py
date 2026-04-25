@@ -2,10 +2,12 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sqlfunc
 
 from backend.db import get_db
 from backend import models, schemas
 from backend.routers.auth import get_current_user, require_role
+from backend.routers.recruiter_chat import MAX_QUESTIONS
 
 router = APIRouter(prefix="/candidate", tags=["candidate-applications"])
 
@@ -83,6 +85,35 @@ def my_applications_with_details(
             .order_by(models.AIResult.id.desc())
             .first()
         )
+
+        # Chat completed: recruiter heeft sluitingsbericht gestuurd (> MAX_QUESTIONS = closing msg sent)
+        recruiter_msg_count = (
+            db.query(sqlfunc.count(models.RecruiterChatMessage.id))
+            .filter(
+                models.RecruiterChatMessage.application_id == app.id,
+                models.RecruiterChatMessage.role == "recruiter",
+            )
+            .scalar()
+        ) or 0
+        chat_completed = recruiter_msg_count > MAX_QUESTIONS  # > 3 = closing msg sent
+
+        # Employer plan check voor interview verplichting
+        employer = db.query(models.User).filter(models.User.id == app.vacancy.employer_id).first()
+        employer_plan = (employer.plan if employer else "gratis") or "gratis"
+        interview_required = employer_plan == "premium"
+
+        # Interview completed: VirtualInterviewSession met status "completed"
+        interview_completed = False
+        if interview_required:
+            interview_completed = (
+                db.query(models.VirtualInterviewSession)
+                .filter(
+                    models.VirtualInterviewSession.application_id == app.id,
+                    models.VirtualInterviewSession.status == "completed",
+                )
+                .first()
+            ) is not None
+
         result.append(
             schemas.ApplicationWithDetails(
                 application_id=app.id,
@@ -93,6 +124,10 @@ def my_applications_with_details(
                 created_at=app.created_at,
                 match_score=latest_ai.match_score if latest_ai else None,
                 ai_summary=latest_ai.summary if latest_ai else None,
+                chat_completed=chat_completed,
+                interview_required=interview_required,
+                interview_completed=interview_completed,
+                employer_plan=employer_plan,
             )
         )
     return result

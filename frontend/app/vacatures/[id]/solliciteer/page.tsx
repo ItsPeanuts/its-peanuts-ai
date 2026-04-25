@@ -10,6 +10,75 @@ import { getToken, getRole } from "@/lib/session";
 
 interface Answer { question_id: number; answer: string; }
 
+// ── Resultaat + auto-redirect naar Lisa chat ─────────────────────
+function ResultRedirect({
+  result,
+  scoreColor,
+  vacancy,
+}: {
+  result: { match_score: number; explanation: string; application_id: number };
+  scoreColor: string;
+  vacancy: PublicVacancyDetail | null;
+}) {
+  const [countdown, setCountdown] = useState(4);
+  const chatUrl = `/candidate/sollicitaties/${result.application_id}/chat`;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(timer);
+          window.location.href = chatUrl;
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [chatUrl]);
+
+  const ePlan = vacancy?.employer_plan ?? "gratis";
+  const isScale = ePlan === "premium";
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      {/* Score */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ width: 100, height: 100, borderRadius: "50%", border: `6px solid ${scoreColor}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28, fontWeight: 800, color: scoreColor }}>
+          {result.match_score}%
+        </div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>
+          {result.match_score >= 70 ? "Sterke match!" : result.match_score >= 40 ? "Redelijke match" : "Sollicitatie ingediend"}
+        </h2>
+        <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
+          {result.explanation}
+        </p>
+      </div>
+
+      {/* Verplichte volgende stap */}
+      <div style={{ background: "#faf5ff", border: "2px solid #7C3AED", borderRadius: 12, padding: "20px 24px", marginBottom: 20, textAlign: "left" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#7C3AED", marginBottom: 8 }}>
+          Verplichte volgende stap
+        </div>
+        <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 6px" }}>
+          Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter.
+          {isScale && " Daarna volgt er ook een kort video-interview."}
+        </p>
+        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          Je wordt automatisch doorgestuurd in {countdown} seconde{countdown !== 1 ? "n" : ""}...
+        </p>
+      </div>
+
+      <Link
+        href={chatUrl}
+        style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
+      >
+        Chat nu met Lisa
+      </Link>
+    </div>
+  );
+}
+
 // ── Stap-indicator ──────────────────────────────────────────────
 function StepIndicator({ steps, current }: { steps: string[]; current: number }) {
   return (
@@ -317,84 +386,13 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
               </div>
             )}
 
-            {/* ── STAP: Resultaat ── */}
+            {/* ── STAP: Resultaat — redirect naar verplichte Lisa chat ── */}
             {step === steps.length && result && (
-              <div style={{ textAlign: "center" }}>
-                {/* Score */}
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ width: 100, height: 100, borderRadius: "50%", border: `6px solid ${scoreColor}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28, fontWeight: 800, color: scoreColor }}>
-                    {result.match_score}%
-                  </div>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>
-                    {result.match_score >= 70 ? "Sterke match!" : result.match_score >= 40 ? "Redelijke match" : "Sollicitatie ingediend"}
-                  </h2>
-                  <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
-                    {result.explanation}
-                  </p>
-                </div>
-
-                {/* Bevestiging */}
-                <div style={{ background: "#f0fdfa", border: "1px solid #ccfbf1", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#134e4a", marginBottom: 20, textAlign: "left" }}>
-                  Je sollicitatie (#{result.application_id}) is ingediend. De werkgever neemt contact op als je bent geselecteerd.
-                </div>
-
-                {/* Interview opties */}
-                {(() => {
-                  const iType = vacancy?.interview_type ?? "both";
-                  const ePlan = vacancy?.employer_plan ?? "gratis";
-                  const showVirtual = (iType === "virtual" || iType === "both") && ePlan === "premium";
-                  // Chat is beschikbaar tenzij werkgever expliciet voor "virtual" koos én dat ook getoond wordt
-                  const showChat = iType !== "virtual" || !showVirtual;
-                  return (
-                    <div style={{ marginBottom: 24 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12, textAlign: "left" }}>
-                        Volgende stap — start je gesprek met Lisa:
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {showChat && (
-                          <Link
-                            href={`/candidate/sollicitaties/${result.application_id}/chat`}
-                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
-                          >
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🗨️</div>
-                            <div style={{ textAlign: "left" }}>
-                              <div>Chat met Lisa</div>
-                              <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.85 }}>AI-recruiter stelt je 3 vragen</div>
-                            </div>
-                          </Link>
-                        )}
-                        {showVirtual && (
-                          <Link
-                            href={`/candidate/interview/${result.application_id}`}
-                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
-                          >
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎥</div>
-                            <div style={{ textAlign: "left" }}>
-                              <div>Video interview met Lisa</div>
-                              <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.85 }}>AI avatar stelt je 4 vragen live</div>
-                            </div>
-                          </Link>
-                        )}
-                        {!showChat && !showVirtual && (
-                          <div style={{ padding: "14px 20px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, fontSize: 13, color: "#6b7280" }}>
-                            De werkgever neemt contact met je op voor een gesprek.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Secundaire acties */}
-                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <Link href="/vacatures" style={{ padding: "10px 20px", borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 13, fontWeight: 500, color: "#374151", background: "#fff", textDecoration: "none" }}>
-                    Meer vacatures
-                  </Link>
-                  <Link href="/candidate" style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#7C3AED", background: "#f0fdfa", textDecoration: "none" }}>
-                    Mijn portaal
-                  </Link>
-                </div>
-              </div>
+              <ResultRedirect
+                result={result}
+                scoreColor={scoreColor}
+                vacancy={vacancy}
+              />
             )}
 
             {/* ── Navigatieknoppen ── */}

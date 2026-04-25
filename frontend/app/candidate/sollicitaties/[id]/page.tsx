@@ -6,11 +6,12 @@ import { getMyApplications, getApplicationAIResult, getApplicationAnswers, getVa
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  applied:     { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
-  shortlisted: { label: "Geselecteerd",   color: "#1d4ed8", bg: "#dbeafe" },
-  interview:   { label: "Interview",      color: "#d97706", bg: "#fef3c7" },
-  hired:       { label: "Aangenomen",     color: "#059669", bg: "#d1fae5" },
-  rejected:    { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
+  applied:       { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
+  shortlisted:   { label: "Geselecteerd",   color: "#1d4ed8", bg: "#dbeafe" },
+  interview:     { label: "Interview",      color: "#d97706", bg: "#fef3c7" },
+  hired:         { label: "Aangenomen",     color: "#059669", bg: "#d1fae5" },
+  rejected:      { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
+  auto_rejected: { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
 };
 
 const NAV_ITEMS = [
@@ -194,106 +195,117 @@ export default function SollicitatieDetailPage() {
               </div>
             </div>
 
-            {/* Chat met Lisa CTA */}
-            <div style={{
-              background: "linear-gradient(135deg, #7C3AED18, #0891b218)",
-              border: "1px solid #7C3AED50",
-              borderRadius: 16,
-              padding: "20px 24px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-              marginBottom: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ position: "relative", flexShrink: 0 }}>
-                  <video
-                    src="https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4"
-                    autoPlay loop muted playsInline
-                    style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block" }}
-                  />
-                  <div style={{
-                    position: "absolute",
-                    bottom: -2,
-                    right: -2,
-                    width: 12,
-                    height: 12,
-                    background: "#4ade80",
-                    borderRadius: "50%",
-                    border: "2px solid #fff",
-                  }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
-                    Lisa · AI HR-Recruiter
-                  </div>
-                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-                    Doe een kort gesprek met Lisa om je sollicitatie te versterken.
-                  </div>
-                </div>
-              </div>
-              <a
-                href={`/candidate/sollicitaties/${appId}/chat`}
-                style={{
-                  background: "linear-gradient(135deg, #7C3AED, #0891b2)",
-                  color: "#fff",
-                  padding: "10px 20px",
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                  display: "inline-block",
-                }}
-              >
-                Chat met Lisa →
-              </a>
-            </div>
+            {/* Verplichte stappen (niet tonen voor afgewezen/aangenomen) */}
+            {(() => {
+              const isTerminal = app.status === "rejected" || app.status === "auto_rejected" || app.status === "hired";
+              if (isTerminal) return null;
 
-            {/* Video Interview CTA (premium) */}
-            <div style={{
-              background: "linear-gradient(135deg, #7c3aed18, #6d28d918)",
-              border: "1px solid #7c3aed40",
-              borderRadius: 16,
-              padding: "20px 24px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-              marginBottom: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <video
-                  src="https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4"
-                  autoPlay loop muted playsInline
-                  style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", display: "block", flexShrink: 0 }}
-                />
-                <div>
-                  <div style={{ fontWeight: 700, color: "#111827", fontSize: 15, marginBottom: 2 }}>
-                    Video Interview met Lisa
+              const chatDone = app.chat_completed;
+              const interviewReq = app.interview_required;
+              const interviewDone = app.interview_completed;
+              const allDone = chatDone && (!interviewReq || interviewDone);
+
+              return (
+                <div style={{
+                  background: "#fff",
+                  borderRadius: 16,
+                  padding: "24px 28px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  marginBottom: 20,
+                  border: allDone ? "2px solid #059669" : "2px solid #f59e0b",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <span style={{ fontSize: 20 }}>{allDone ? "\u2705" : "\u26a0\ufe0f"}</span>
+                    <h2 style={{ fontSize: 16, fontWeight: 800, color: allDone ? "#059669" : "#d97706", margin: 0 }}>
+                      {allDone ? "Sollicitatie afgerond" : "Sollicitatie nog niet afgerond"}
+                    </h2>
                   </div>
-                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-                    Doe een gesproken video-interview met Lisa, HR-recruiter van VorzaIQ.
+
+                  {!allDone && (
+                    <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px", lineHeight: 1.6 }}>
+                      Rond de verplichte stappen af om je sollicitatie compleet te maken.
+                    </p>
+                  )}
+
+                  {/* Stap 1: Chat met Lisa */}
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                    padding: "14px 18px", borderRadius: 12, marginBottom: interviewReq ? 10 : 0,
+                    background: chatDone ? "#f0fdf4" : "#faf5ff",
+                    border: chatDone ? "1px solid #bbf7d0" : "1px solid #7C3AED50",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                        background: chatDone ? "#059669" : "#7C3AED",
+                        color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 14, fontWeight: 700,
+                      }}>
+                        {chatDone ? "\u2713" : "1"}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "#111827", fontSize: 14 }}>Chat met Lisa</div>
+                        <div style={{ fontSize: 12, color: "#6b7280" }}>
+                          {chatDone ? "Afgerond" : "Verplicht \u2014 AI-recruiter stelt je 3 vragen"}
+                        </div>
+                      </div>
+                    </div>
+                    {!chatDone && (
+                      <a
+                        href={`/candidate/sollicitaties/${appId}/chat`}
+                        style={{
+                          background: "#7C3AED", color: "#fff", padding: "8px 18px",
+                          borderRadius: 10, fontWeight: 700, fontSize: 13,
+                          textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0,
+                        }}
+                      >
+                        Start chat
+                      </a>
+                    )}
                   </div>
+
+                  {/* Stap 2: Video Interview (alleen Scale) */}
+                  {interviewReq && (
+                    <div style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                      padding: "14px 18px", borderRadius: 12,
+                      background: interviewDone ? "#f0fdf4" : chatDone ? "#faf5ff" : "#f9fafb",
+                      border: interviewDone ? "1px solid #bbf7d0" : chatDone ? "1px solid #7C3AED50" : "1px solid #e5e7eb",
+                      opacity: chatDone ? 1 : 0.6,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                          background: interviewDone ? "#059669" : chatDone ? "#7C3AED" : "#9ca3af",
+                          color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 14, fontWeight: 700,
+                        }}>
+                          {interviewDone ? "\u2713" : "2"}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, color: "#111827", fontSize: 14 }}>Video interview met Lisa</div>
+                          <div style={{ fontSize: 12, color: "#6b7280" }}>
+                            {interviewDone ? "Afgerond" : !chatDone ? "Eerst chat afronden" : "Verplicht \u2014 AI avatar stelt je vragen live"}
+                          </div>
+                        </div>
+                      </div>
+                      {chatDone && !interviewDone && (
+                        <a
+                          href={`/candidate/interview/${appId}`}
+                          style={{
+                            background: "linear-gradient(135deg, #7c3aed, #6d28d9)", color: "#fff",
+                            padding: "8px 18px", borderRadius: 10, fontWeight: 700, fontSize: 13,
+                            textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0,
+                          }}
+                        >
+                          Start interview
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <a
-                href={`/candidate/interview/${appId}`}
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  color: "#fff", padding: "10px 20px",
-                  borderRadius: 12, fontWeight: 700, fontSize: 14,
-                  textDecoration: "none", whiteSpace: "nowrap",
-                  flexShrink: 0, display: "inline-block",
-                }}
-              >
-                Video interview →
-              </a>
-            </div>
+              );
+            })()}
 
             {/* AI Analyse */}
             {aiResult ? (

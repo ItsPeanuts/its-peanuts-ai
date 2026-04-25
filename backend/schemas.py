@@ -251,6 +251,11 @@ class ApplicationWithDetails(BaseModel):
     created_at: datetime
     match_score: Optional[int] = None
     ai_summary: Optional[str] = None
+    # Verplichte stappen tracking
+    chat_completed: bool = False
+    interview_required: bool = False   # True als werkgever Scale plan heeft
+    interview_completed: bool = False
+    employer_plan: str = "gratis"
 
 
 class CandidateCVOut(BaseModel):

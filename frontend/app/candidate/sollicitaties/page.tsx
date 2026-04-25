@@ -7,11 +7,12 @@ import { getMyApplications, ApplicationWithDetails } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  applied:     { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
-  shortlisted: { label: "Geselecteerd",   color: "#1d4ed8", bg: "#dbeafe" },
-  interview:   { label: "Interview",      color: "#d97706", bg: "#fef3c7" },
-  hired:       { label: "Aangenomen",     color: "#059669", bg: "#d1fae5" },
-  rejected:    { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
+  applied:       { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
+  shortlisted:   { label: "Geselecteerd",   color: "#1d4ed8", bg: "#dbeafe" },
+  interview:     { label: "Interview",      color: "#d97706", bg: "#fef3c7" },
+  hired:         { label: "Aangenomen",     color: "#059669", bg: "#d1fae5" },
+  rejected:      { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
+  auto_rejected: { label: "Afgewezen",      color: "#dc2626", bg: "#fee2e2" },
 };
 
 function StatusBadge({ status }: { status: string }) {

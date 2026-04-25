@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "@/lib/session";
+import { getMyApplications, ApplicationWithDetails } from "@/lib/api";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
@@ -37,6 +38,16 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
   const [chatEnded, setChatEnded] = useState(false);
   const [connected, setConnected] = useState(false);
   const [waking, setWaking] = useState(true);
+  const [appData, setAppData] = useState<ApplicationWithDetails | null>(null);
+
+  // Haal applicatie data op voor interview_required check
+  useEffect(() => {
+    if (!token) return;
+    getMyApplications(token).then((apps) => {
+      const found = apps.find((a) => a.application_id === appId);
+      if (found) setAppData(found);
+    }).catch(() => {});
+  }, [token, appId]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -313,7 +324,9 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
             {chatEnded && !sending && (
               <div className="text-center py-4">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 text-xs font-medium">
-                  ✓ Het gesprek met Lisa is afgerond. De werkgever ontvangt de samenvatting.
+                  {appData?.interview_required && !appData?.interview_completed
+                    ? "Chat afgerond! Nu door naar het video-interview met Lisa."
+                    : "Het gesprek met Lisa is afgerond. Je sollicitatie is compleet!"}
                 </div>
               </div>
             )}
@@ -332,14 +345,28 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
         <div className="max-w-3xl mx-auto">
           {chatEnded ? (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">Het gesprek is afgerond.</p>
-              <Link
-                href={`/candidate/sollicitaties/${appId}`}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90"
-                style={{ background: "#7C3AED" }}
-              >
-                Naar sollicitatie →
-              </Link>
+              <p className="text-sm text-gray-500">
+                {appData?.interview_required && !appData?.interview_completed
+                  ? "Chat afgerond! Ga door naar het video-interview."
+                  : "Je sollicitatie is compleet."}
+              </p>
+              {appData?.interview_required && !appData?.interview_completed ? (
+                <Link
+                  href={`/candidate/interview/${appId}`}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
+                >
+                  Start video-interview
+                </Link>
+              ) : (
+                <Link
+                  href={`/candidate/sollicitaties/${appId}`}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white no-underline hover:opacity-90"
+                  style={{ background: "#7C3AED" }}
+                >
+                  Naar sollicitatie
+                </Link>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSend} className="flex gap-3">
