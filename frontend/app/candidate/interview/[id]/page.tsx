@@ -185,18 +185,22 @@ export default function VideoInterviewPage() {
   // ── Audio playback (PCM16 chunks van OpenAI) ─────────────────────────────────
 
   const enqueueAudio = (base64: string) => {
-    if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
     const float32 = base64ToFloat32(base64);
 
-    // Anam AI: stuur gedownsamplede audio voor lip-sync
+    // Anam AI actief: stuur audio naar Anam voor lip-sync + audio output via <video>
+    // Anam synchroniseert lip-bewegingen met audio-uitvoer — geen apart AudioContext nodig
     if (anamAudioStreamRef.current) {
       try {
         const downsampled = downsample24to16(float32);
         const b64pcm16 = float32ToBase64PCM16(downsampled);
         anamAudioStreamRef.current.sendAudioChunk(b64pcm16);
       } catch { /* avatar audio fout negeren — interview gaat door */ }
+      return; // Anam handelt audio af via video element (niet muted)
     }
+
+    // Fallback: geen Anam → speel audio af via AudioContext
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
 
     const buffer = ctx.createBuffer(1, float32.length, 24000);
     buffer.getChannelData(0).set(float32);
@@ -205,7 +209,6 @@ export default function VideoInterviewPage() {
     source.buffer = buffer;
     source.connect(ctx.destination);
 
-    // Naadloos aaneenrijgen: start precies na het vorige chunk
     const startAt = Math.max(ctx.currentTime, nextPlayTimeRef.current);
     source.start(startAt);
     nextPlayTimeRef.current = startAt + buffer.duration;
@@ -583,7 +586,6 @@ export default function VideoInterviewPage() {
           <video
             id="lisa-avatar-video"
             autoPlay
-            muted
             playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isActive ? 1 : 0.4 }}
           />
