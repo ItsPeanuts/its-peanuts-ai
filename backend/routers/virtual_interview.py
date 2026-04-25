@@ -890,17 +890,20 @@ def create_realtime_token(
     if app.candidate_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Geen toegang")
 
-    # Scale plan check
-    employer = db.query(models.User).filter(models.User.id == app.employer_id).first()
-    if not employer or (employer.plan or "gratis") != "premium":
-        raise HTTPException(status_code=403, detail="Virtueel interview vereist Scale abonnement")
+    # Scale plan check (admins mogen altijd testen)
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+    employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first() if vacancy else None
+    if current_user.role != "admin":
+        if not employer or (employer.plan or "gratis") != "premium":
+            raise HTTPException(status_code=403, detail="Virtueel interview vereist Scale abonnement")
 
-    # Maandelijks interview limiet
+    # Maandelijks interview limiet (admins niet gelimiteerd)
+    employer_id = employer.id if employer else (vacancy.employer_id if vacancy else None)
     month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     employer_vacancy_ids = [
         row[0] for row in
-        db.query(models.Vacancy.id).filter(models.Vacancy.employer_id == employer.id).all()
-    ]
+        db.query(models.Vacancy.id).filter(models.Vacancy.employer_id == employer_id).all()
+    ] if employer_id else []
     interview_count = 0
     if employer_vacancy_ids:
         interview_count = db.query(models.VirtualInterviewSession).filter(

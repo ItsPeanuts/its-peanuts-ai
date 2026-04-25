@@ -68,7 +68,8 @@ def my_applications_with_details(
     current_user: models.User = Depends(get_current_user),
 ):
     """Verrijkte lijst van sollicitaties met vacatureinfo en laatste AI-score."""
-    require_role(current_user, "candidate")
+    if current_user.role not in ("candidate", "admin"):
+        raise HTTPException(status_code=403, detail="Alleen kandidaten en admins")
 
     rows = (
         db.query(models.Application)
@@ -76,6 +77,8 @@ def my_applications_with_details(
         .order_by(models.Application.id.desc())
         .all()
     )
+
+    is_admin = current_user.role == "admin"
 
     result = []
     for app in rows:
@@ -98,9 +101,10 @@ def my_applications_with_details(
         chat_completed = recruiter_msg_count > MAX_QUESTIONS  # > 3 = closing msg sent
 
         # Employer plan check voor interview verplichting
+        # Admins zien altijd het video-interview (voor test doeleinden)
         employer = db.query(models.User).filter(models.User.id == app.vacancy.employer_id).first()
         employer_plan = (employer.plan if employer else "gratis") or "gratis"
-        interview_required = employer_plan == "premium"
+        interview_required = employer_plan == "premium" or is_admin
 
         # Interview completed: VirtualInterviewSession met status "completed"
         interview_completed = False
