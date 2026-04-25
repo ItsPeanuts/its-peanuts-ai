@@ -96,13 +96,18 @@ function base64ToFloat32(base64: string): Float32Array {
   return float32;
 }
 
-/** Downsample Float32 van 24kHz naar 16kHz voor Anam AI */
+/** Downsample Float32 van 24kHz naar 16kHz voor Anam AI (lineaire interpolatie) */
 function downsample24to16(float32_24k: Float32Array): Float32Array {
   const ratio = 24000 / 16000; // 1.5
   const newLength = Math.floor(float32_24k.length / ratio);
   const result = new Float32Array(newLength);
   for (let i = 0; i < newLength; i++) {
-    result[i] = float32_24k[Math.floor(i * ratio)];
+    const pos = i * ratio;
+    const idx = Math.floor(pos);
+    const frac = pos - idx;
+    const a = float32_24k[idx];
+    const b = idx + 1 < float32_24k.length ? float32_24k[idx + 1] : a;
+    result[i] = a + frac * (b - a);
   }
   return result;
 }
@@ -325,10 +330,22 @@ export default function VideoInterviewPage() {
         }
 
         case "response.done": {
-          setLisaIsSpeaking(false);
-          lisaIsSpeakingRef.current = false;
           // Anam: meld einde spraak voor lip-sync stop
           try { anamAudioStreamRef.current?.endSequence(); } catch { /* negeer */ }
+
+          // Anam buffert audio intern — mic pas open NA buffer is afgespeeld,
+          // anders pikt VAD de laatste Anam-audio op als "user speech" en
+          // roept interruptPersona() aan → Lisa stopt midden in haar zin.
+          if (anamAudioStreamRef.current) {
+            setTimeout(() => {
+              setLisaIsSpeaking(false);
+              lisaIsSpeakingRef.current = false;
+            }, 2000);
+          } else {
+            setLisaIsSpeaking(false);
+            lisaIsSpeakingRef.current = false;
+          }
+
           const newCount = lisaTurnRef.current + 1;
           lisaTurnRef.current = newCount;
           setLisaTurnCount(newCount);

@@ -858,7 +858,7 @@ def text_to_speech(
 #   V2: Kandidaat audio → OpenAI Realtime → audio out  (alles in één, ~300ms latency)
 # ══════════════════════════════════════════════════════════════════════════════
 
-LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "shimmer")  # shimmer | alloy | echo | nova | fable | onyx
+LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "nova")  # nova | shimmer | alloy | echo | fable | onyx
 
 
 class V2CompleteIn(BaseModel):
@@ -983,9 +983,9 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
                 "instructions": system_prompt,
                 "turn_detection": {
                     "type": "server_vad",
-                    "threshold": 0.5,
+                    "threshold": 0.7,
                     "prefix_padding_ms": 300,
-                    "silence_duration_ms": 800,
+                    "silence_duration_ms": 1200,
                 },
                 "input_audio_transcription": {"model": "whisper-1"},
                 "temperature": 0.8,
