@@ -26,10 +26,13 @@ function ResultRedirect({
   const isScale = ePlan === "premium";
   const chatRequired = iType === "chat" || iType === "both";
   const interviewRequired = isScale && (iType === "virtual" || iType === "both");
-  // Redirect naar de eerste vereiste stap
+  const hasNextStep = chatRequired || interviewRequired;
+  // Redirect naar de eerste vereiste stap, of naar dashboard als niks nodig
   const nextUrl = chatRequired
     ? `/candidate/sollicitaties/${result.application_id}/chat`
-    : `/candidate/interview/${result.application_id}`;
+    : interviewRequired
+    ? `/candidate/interview/${result.application_id}`
+    : `/candidate/sollicitaties`;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,28 +64,46 @@ function ResultRedirect({
       </div>
 
       {/* Verplichte volgende stap */}
-      <div style={{ background: "#faf5ff", border: "2px solid #7C3AED", borderRadius: 12, padding: "20px 24px", marginBottom: 20, textAlign: "left" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "#7C3AED", marginBottom: 8 }}>
-          Verplichte volgende stap
-        </div>
-        <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 6px" }}>
-          {chatRequired && interviewRequired
-            ? "Om je sollicitatie af te ronden, moet je een kort chatgesprek voeren met Lisa, onze AI-recruiter. Daarna volgt er ook een kort video-interview."
-            : chatRequired
-            ? "Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter."
-            : "Om je sollicitatie af te ronden, moet je een kort video-interview doen met Lisa, onze AI-recruiter."}
-        </p>
-        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-          Je wordt automatisch doorgestuurd in {countdown} seconde{countdown !== 1 ? "n" : ""}...
-        </p>
-      </div>
-
-      <Link
-        href={nextUrl}
-        style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
-      >
-        {chatRequired ? "Chat nu met Lisa" : "Start video-interview"}
-      </Link>
+      {hasNextStep ? (
+        <>
+          <div style={{ background: "#faf5ff", border: "2px solid #7C3AED", borderRadius: 12, padding: "20px 24px", marginBottom: 20, textAlign: "left" }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#7C3AED", marginBottom: 8 }}>
+              Verplichte volgende stap
+            </div>
+            <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 6px" }}>
+              {chatRequired && interviewRequired
+                ? "Om je sollicitatie af te ronden, moet je een kort chatgesprek voeren met Lisa, onze AI-recruiter. Daarna volgt er ook een kort video-interview."
+                : chatRequired
+                ? "Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter."
+                : "Om je sollicitatie af te ronden, moet je een kort video-interview doen met Lisa, onze AI-recruiter."}
+            </p>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+              Je wordt automatisch doorgestuurd in {countdown} seconde{countdown !== 1 ? "n" : ""}...
+            </p>
+          </div>
+          <Link
+            href={nextUrl}
+            style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
+          >
+            {chatRequired ? "Chat nu met Lisa" : "Start video-interview"}
+          </Link>
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 14, color: "#059669", fontWeight: 600, margin: "0 0 16px" }}>
+            Je sollicitatie is compleet ingediend! De werkgever neemt binnenkort contact met je op.
+          </p>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px" }}>
+            Je wordt doorgestuurd in {countdown} seconde{countdown !== 1 ? "n" : ""}...
+          </p>
+          <Link
+            href={nextUrl}
+            style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
+          >
+            Naar mijn sollicitaties
+          </Link>
+        </>
+      )}
     </div>
   );
 }
