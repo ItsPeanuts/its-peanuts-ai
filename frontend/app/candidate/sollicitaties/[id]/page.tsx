@@ -200,10 +200,11 @@ export default function SollicitatieDetailPage() {
               const isTerminal = app.status === "rejected" || app.status === "auto_rejected" || app.status === "hired";
               if (isTerminal) return null;
 
+              const chatReq = app.chat_required;
               const chatDone = app.chat_completed;
               const interviewReq = app.interview_required;
               const interviewDone = app.interview_completed;
-              const allDone = chatDone && (!interviewReq || interviewDone);
+              const allDone = (!chatReq || chatDone) && (!interviewReq || interviewDone);
 
               return (
                 <div style={{
@@ -227,8 +228,8 @@ export default function SollicitatieDetailPage() {
                     </p>
                   )}
 
-                  {/* Stap 1: Chat met Lisa */}
-                  <div style={{
+                  {/* Stap 1: Chat met Lisa (alleen als chat vereist is) */}
+                  {chatReq && <div style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
                     padding: "14px 18px", borderRadius: 12, marginBottom: interviewReq ? 10 : 0,
                     background: chatDone ? "#f0fdf4" : "#faf5ff",
@@ -262,34 +263,37 @@ export default function SollicitatieDetailPage() {
                         Start chat
                       </a>
                     )}
-                  </div>
+                  </div>}
 
-                  {/* Stap 2: Video Interview (alleen Scale) */}
-                  {interviewReq && (
+                  {/* Stap 2: Video Interview (alleen als interview vereist) */}
+                  {interviewReq && (() => {
+                    const canStartInterview = !chatReq || chatDone;
+                    const stepNum = chatReq ? 2 : 1;
+                    return (
                     <div style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
                       padding: "14px 18px", borderRadius: 12,
-                      background: interviewDone ? "#f0fdf4" : chatDone ? "#faf5ff" : "#f9fafb",
-                      border: interviewDone ? "1px solid #bbf7d0" : chatDone ? "1px solid #7C3AED50" : "1px solid #e5e7eb",
-                      opacity: chatDone ? 1 : 0.6,
+                      background: interviewDone ? "#f0fdf4" : canStartInterview ? "#faf5ff" : "#f9fafb",
+                      border: interviewDone ? "1px solid #bbf7d0" : canStartInterview ? "1px solid #7C3AED50" : "1px solid #e5e7eb",
+                      opacity: canStartInterview ? 1 : 0.6,
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{
                           width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-                          background: interviewDone ? "#059669" : chatDone ? "#7C3AED" : "#9ca3af",
+                          background: interviewDone ? "#059669" : canStartInterview ? "#7C3AED" : "#9ca3af",
                           color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
                           fontSize: 14, fontWeight: 700,
                         }}>
-                          {interviewDone ? "\u2713" : "2"}
+                          {interviewDone ? "\u2713" : String(stepNum)}
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: "#111827", fontSize: 14 }}>Video interview met Lisa</div>
                           <div style={{ fontSize: 12, color: "#6b7280" }}>
-                            {interviewDone ? "Afgerond" : !chatDone ? "Eerst chat afronden" : "Verplicht \u2014 AI avatar stelt je vragen live"}
+                            {interviewDone ? "Afgerond" : !canStartInterview ? "Eerst chat afronden" : "Verplicht \u2014 AI avatar stelt je vragen live"}
                           </div>
                         </div>
                       </div>
-                      {chatDone && !interviewDone && (
+                      {canStartInterview && !interviewDone && (
                         <a
                           href={`/candidate/interview/${appId}`}
                           style={{
@@ -302,7 +306,8 @@ export default function SollicitatieDetailPage() {
                         </a>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })()}

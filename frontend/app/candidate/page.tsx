@@ -291,7 +291,7 @@ export default function CandidateDashboard() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {applications.slice(0, 5).map((app) => {
                   const isTerminal = app.status === "rejected" || app.status === "auto_rejected" || app.status === "hired";
-                  const incomplete = !isTerminal && (!app.chat_completed || (app.interview_required && !app.interview_completed));
+                  const incomplete = !isTerminal && ((app.chat_required && !app.chat_completed) || (app.interview_required && !app.interview_completed));
                   return (
                     <Link
                       key={app.application_id}
@@ -307,7 +307,7 @@ export default function CandidateDashboard() {
                         </div>
                         {incomplete && (
                           <div style={{ fontSize: 11, fontWeight: 600, color: "#d97706", marginTop: 4 }}>
-                            {{ nl: "Actie vereist", en: "Action required", de: "Aktion erforderlich", fr: "Action requise", es: "Acción requerida" }[lang] ?? "Actie vereist"} — {!app.chat_completed ? "chat met Lisa" : "video-interview"}
+                            {{ nl: "Actie vereist", en: "Action required", de: "Aktion erforderlich", fr: "Action requise", es: "Acción requerida" }[lang] ?? "Actie vereist"} — {app.chat_required && !app.chat_completed ? "chat met Lisa" : "video-interview"}
                           </div>
                         )}
                       </div>

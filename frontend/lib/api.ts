@@ -291,6 +291,8 @@ export type ApplicationWithDetails = {
   match_score: number | null;
   ai_summary: string | null;
   // Verplichte stappen tracking
+  interview_type: string;    // "chat" | "virtual" | "both"
+  chat_required: boolean;
   chat_completed: boolean;
   interview_required: boolean;
   interview_completed: boolean;

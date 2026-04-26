@@ -252,8 +252,10 @@ class ApplicationWithDetails(BaseModel):
     match_score: Optional[int] = None
     ai_summary: Optional[str] = None
     # Verplichte stappen tracking
+    interview_type: str = "both"       # "chat" | "virtual" | "both" — van vacature
+    chat_required: bool = True         # False als interview_type == "virtual"
     chat_completed: bool = False
-    interview_required: bool = False   # True als werkgever Scale plan heeft
+    interview_required: bool = False   # True als werkgever Scale plan + interview_type != "chat"
     interview_completed: bool = False
     employer_plan: str = "gratis"
 

@@ -89,22 +89,33 @@ def my_applications_with_details(
             .first()
         )
 
+        # Vacature interview_type bepaalt welke stappen vereist zijn
+        interview_type = app.vacancy.interview_type or "both"
+        chat_required = interview_type in ("chat", "both")
+
         # Chat completed: recruiter heeft sluitingsbericht gestuurd (> MAX_QUESTIONS = closing msg sent)
-        recruiter_msg_count = (
-            db.query(sqlfunc.count(models.RecruiterChatMessage.id))
-            .filter(
-                models.RecruiterChatMessage.application_id == app.id,
-                models.RecruiterChatMessage.role == "recruiter",
-            )
-            .scalar()
-        ) or 0
-        chat_completed = recruiter_msg_count > MAX_QUESTIONS  # > 3 = closing msg sent
+        chat_completed = False
+        if chat_required:
+            recruiter_msg_count = (
+                db.query(sqlfunc.count(models.RecruiterChatMessage.id))
+                .filter(
+                    models.RecruiterChatMessage.application_id == app.id,
+                    models.RecruiterChatMessage.role == "recruiter",
+                )
+                .scalar()
+            ) or 0
+            chat_completed = recruiter_msg_count > MAX_QUESTIONS
+        else:
+            chat_completed = True  # niet vereist = automatisch afgerond
 
         # Employer plan check voor interview verplichting
         # Admins zien altijd het video-interview (voor test doeleinden)
         employer = db.query(models.User).filter(models.User.id == app.vacancy.employer_id).first()
         employer_plan = (employer.plan if employer else "gratis") or "gratis"
-        interview_required = employer_plan == "premium" or is_admin
+        interview_required = (
+            (employer_plan == "premium" or is_admin)
+            and interview_type in ("virtual", "both")
+        )
 
         # Interview completed: VirtualInterviewSession met status "completed"
         interview_completed = False
@@ -128,6 +139,8 @@ def my_applications_with_details(
                 created_at=app.created_at,
                 match_score=latest_ai.match_score if latest_ai else None,
                 ai_summary=latest_ai.summary if latest_ai else None,
+                interview_type=interview_type,
+                chat_required=chat_required,
                 chat_completed=chat_completed,
                 interview_required=interview_required,
                 interview_completed=interview_completed,

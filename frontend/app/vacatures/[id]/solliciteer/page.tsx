@@ -21,24 +21,29 @@ function ResultRedirect({
   vacancy: PublicVacancyDetail | null;
 }) {
   const [countdown, setCountdown] = useState(4);
-  const chatUrl = `/candidate/sollicitaties/${result.application_id}/chat`;
+  const iType = vacancy?.interview_type ?? "both";
+  const ePlan = vacancy?.employer_plan ?? "gratis";
+  const isScale = ePlan === "premium";
+  const chatRequired = iType === "chat" || iType === "both";
+  const interviewRequired = isScale && (iType === "virtual" || iType === "both");
+  // Redirect naar de eerste vereiste stap
+  const nextUrl = chatRequired
+    ? `/candidate/sollicitaties/${result.application_id}/chat`
+    : `/candidate/interview/${result.application_id}`;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
           clearInterval(timer);
-          window.location.href = chatUrl;
+          window.location.href = nextUrl;
           return 0;
         }
         return c - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [chatUrl]);
-
-  const ePlan = vacancy?.employer_plan ?? "gratis";
-  const isScale = ePlan === "premium";
+  }, [nextUrl]);
 
   return (
     <div style={{ textAlign: "center" }}>
@@ -61,8 +66,11 @@ function ResultRedirect({
           Verplichte volgende stap
         </div>
         <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 6px" }}>
-          Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter.
-          {isScale && " Daarna volgt er ook een kort video-interview."}
+          {chatRequired && interviewRequired
+            ? "Om je sollicitatie af te ronden, moet je een kort chatgesprek voeren met Lisa, onze AI-recruiter. Daarna volgt er ook een kort video-interview."
+            : chatRequired
+            ? "Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter."
+            : "Om je sollicitatie af te ronden, moet je een kort video-interview doen met Lisa, onze AI-recruiter."}
         </p>
         <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
           Je wordt automatisch doorgestuurd in {countdown} seconde{countdown !== 1 ? "n" : ""}...
