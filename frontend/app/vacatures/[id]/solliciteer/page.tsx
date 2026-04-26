@@ -25,14 +25,14 @@ function ResultRedirect({
   const ePlan = vacancy?.employer_plan ?? "gratis";
   const isScale = ePlan === "premium";
   const chatRequired = iType === "chat" || iType === "both";
-  const interviewRequired = isScale && (iType === "virtual" || iType === "both");
-  const hasNextStep = chatRequired || interviewRequired;
-  // Redirect naar de eerste vereiste stap, of naar dashboard als niks nodig
+  const interviewAvailable = iType === "virtual" || iType === "both";
+  // Redirect: chat eerst als vereist, anders interview als beschikbaar
   const nextUrl = chatRequired
     ? `/candidate/sollicitaties/${result.application_id}/chat`
-    : interviewRequired
+    : interviewAvailable
     ? `/candidate/interview/${result.application_id}`
     : `/candidate/sollicitaties`;
+  const hasNextStep = chatRequired || interviewAvailable;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -71,7 +71,7 @@ function ResultRedirect({
               Verplichte volgende stap
             </div>
             <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 6px" }}>
-              {chatRequired && interviewRequired
+              {chatRequired && interviewAvailable
                 ? "Om je sollicitatie af te ronden, moet je een kort chatgesprek voeren met Lisa, onze AI-recruiter. Daarna volgt er ook een kort video-interview."
                 : chatRequired
                 ? "Om je sollicitatie af te ronden, moet je een kort gesprek voeren met Lisa, onze AI-recruiter."
