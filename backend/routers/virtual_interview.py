@@ -858,7 +858,7 @@ def text_to_speech(
 #   V2: Kandidaat audio → OpenAI Realtime → audio out  (alles in één, ~300ms latency)
 # ══════════════════════════════════════════════════════════════════════════════
 
-LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "nova")  # nova | shimmer | alloy | echo | fable | onyx
+LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "coral")  # Realtime API voices: alloy | ash | ballad | coral | echo | sage | shimmer | verse | marin | cedar
 
 
 class V2CompleteIn(BaseModel):
