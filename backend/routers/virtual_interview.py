@@ -858,7 +858,7 @@ def text_to_speech(
 #   V2: Kandidaat audio → OpenAI Realtime → audio out  (alles in één, ~300ms latency)
 # ══════════════════════════════════════════════════════════════════════════════
 
-LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "coral")  # Realtime API voices: alloy | ash | ballad | coral | echo | sage | shimmer | verse | marin | cedar
+LISA_V2_VOICE = os.getenv("LISA_V2_VOICE", "sage")  # Realtime API voices: sage | ballad | coral | shimmer | alloy | ash | echo | verse | marin | cedar
 
 
 class V2CompleteIn(BaseModel):
@@ -989,7 +989,7 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
                 },
                 "input_audio_transcription": {"model": "whisper-1"},
                 "temperature": 0.8,
-                "max_response_output_tokens": 150,
+                "max_response_output_tokens": 300,
             },
             timeout=15,
         )

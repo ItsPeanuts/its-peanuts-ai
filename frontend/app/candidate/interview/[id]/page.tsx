@@ -180,6 +180,7 @@ export default function VideoInterviewPage() {
   const lisaTurnRef = useRef(0);
   const currentLisaTranscriptRef = useRef(""); // lopend Lisa-transcript per beurt
   const lisaIsSpeakingRef = useRef(false); // sync ref — voorkomt phantom speech (mic gedempt terwijl Lisa praat)
+  const responseDoneTimeRef = useRef(0); // timestamp van laatste response.done — beschermt Anam tegen phantom interrupts
 
   // Anam AI avatar refs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -332,6 +333,13 @@ export default function VideoInterviewPage() {
         case "response.done": {
           // Anam: meld einde spraak voor lip-sync stop
           try { anamAudioStreamRef.current?.endSequence(); } catch { /* negeer */ }
+          responseDoneTimeRef.current = Date.now();
+
+          // Wis OpenAI's audio input buffer — voorkomt dat resterende Anam-audio
+          // door VAD als "user speech" wordt herkend
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+          }
 
           // Anam buffert audio intern — mic pas open NA buffer is afgespeeld,
           // anders pikt VAD de laatste Anam-audio op als "user speech" en
@@ -340,7 +348,7 @@ export default function VideoInterviewPage() {
             setTimeout(() => {
               setLisaIsSpeaking(false);
               lisaIsSpeakingRef.current = false;
-            }, 2000);
+            }, 4000);
           } else {
             setLisaIsSpeaking(false);
             lisaIsSpeakingRef.current = false;
@@ -375,14 +383,22 @@ export default function VideoInterviewPage() {
           break;
         }
 
-        case "input_audio_buffer.speech_started":
+        case "input_audio_buffer.speech_started": {
           setCandidateIsSpeaking(true);
           setCandidateLiveText("");
-          // Onderbreek lopende audio (Lisa wordt onderbroken)
+
+          // Guard: als Anam nog gebufferde audio afspeelt na response.done,
+          // is dit phantom speech (speaker feedback) — NIET interrupten.
+          const msSinceResponseDone = Date.now() - responseDoneTimeRef.current;
+          if (msSinceResponseDone < 5000 && anamAudioStreamRef.current) {
+            break; // phantom speech, negeren
+          }
+
+          // Echte barge-in: onderbreek lopende audio
           nextPlayTimeRef.current = audioCtxRef.current?.currentTime || 0;
-          // Anam: onderbreek avatar lip-sync
           try { anamClientRef.current?.interruptPersona(); } catch { /* negeer */ }
           break;
+        }
 
         case "input_audio_buffer.speech_stopped":
           setCandidateIsSpeaking(false);
