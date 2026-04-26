@@ -356,10 +356,11 @@ export default function VideoInterviewPage() {
 
           const newCount = lisaTurnRef.current + 1;
           lisaTurnRef.current = newCount;
-          setLisaTurnCount(newCount);
+          // Intro (beurt 1) niet meetellen in de voortgangsbalk
+          setLisaTurnCount(Math.max(0, newCount - 1));
 
-          // Na MAX_LISA_TURNS: geef Lisa een seintje om af te sluiten
-          if (newCount === MAX_LISA_TURNS - 1) {
+          // Na MAX_LISA_TURNS beurten: geef Lisa een seintje om af te sluiten
+          if (newCount === MAX_LISA_TURNS) {
             setStage("wrapping");
             ws.send(JSON.stringify({
               type: "conversation.item.create",
@@ -376,9 +377,9 @@ export default function VideoInterviewPage() {
               type: "response.create",
               response: { modalities: ["text", "audio"] },
             }));
-          } else if (newCount >= MAX_LISA_TURNS) {
-            // Auto-einde
-            endInterview();
+          } else if (newCount > MAX_LISA_TURNS) {
+            // Lisa's afsluitbericht is klaar — wacht tot Anam klaar is met afspelen
+            setTimeout(() => endInterview(), 5000);
           }
           break;
         }
