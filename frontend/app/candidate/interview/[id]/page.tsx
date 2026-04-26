@@ -356,11 +356,12 @@ export default function VideoInterviewPage() {
 
           const newCount = lisaTurnRef.current + 1;
           lisaTurnRef.current = newCount;
-          // Intro (beurt 1) niet meetellen in de voortgangsbalk
-          setLisaTurnCount(Math.max(0, newCount - 1));
+          // Intro (beurt 1) niet meetellen in de voortgangsbalk, cap op MAX_LISA_TURNS
+          setLisaTurnCount(Math.min(Math.max(0, newCount - 1), MAX_LISA_TURNS));
 
-          // Na MAX_LISA_TURNS beurten: geef Lisa een seintje om af te sluiten
-          if (newCount === MAX_LISA_TURNS) {
+          // Na MAX_LISA_TURNS+1 beurten: Lisa heeft haar laatste vraag gesteld
+          // EN de kandidaat heeft geantwoord → nu pas afsluiten
+          if (newCount === MAX_LISA_TURNS + 1) {
             setStage("wrapping");
             ws.send(JSON.stringify({
               type: "conversation.item.create",
@@ -377,7 +378,7 @@ export default function VideoInterviewPage() {
               type: "response.create",
               response: { modalities: ["text", "audio"] },
             }));
-          } else if (newCount > MAX_LISA_TURNS) {
+          } else if (newCount > MAX_LISA_TURNS + 1) {
             // Lisa's afsluitbericht is klaar — sluit mic/ws maar laat Anam uitpraten
             // OpenAI genereert audio sneller dan realtime, dus Anam heeft
             // een groot buffer dat nog afgespeeld moet worden.

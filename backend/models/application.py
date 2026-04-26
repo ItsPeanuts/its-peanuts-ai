@@ -23,6 +23,11 @@ class Application(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Wanneer alle stappen (chat + interview) zijn voltooid → werkgever genotificeerd
+    interview_completed_at = Column(DateTime(timezone=True), nullable=True)
+    # Aantal herinnerings-e-mails dat al verstuurd is aan de werkgever
+    employer_reminder_count = Column(Integer, nullable=False, default=0)
+
     candidate = relationship("User", lazy="joined")
     vacancy = relationship("Vacancy", lazy="joined")
     intake_answers = relationship("IntakeAnswer", back_populates="application", cascade="all, delete-orphan")

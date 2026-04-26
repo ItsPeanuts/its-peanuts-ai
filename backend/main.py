@@ -1,4 +1,9 @@
+import asyncio
+import logging
 import os
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,7 +12,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from backend.db import engine
+from backend.db import engine, SessionLocal
 from backend.models import Base
 
 Base.metadata.create_all(bind=engine)
@@ -34,6 +39,94 @@ from backend.routers import billing as billing_router
 from backend.routers import scraper_admin as scraper_admin_router
 from backend.routers import promotions as promotions_router
 from backend.routers import analytics as analytics_router
+from backend.services.email import send_employer_review_reminder
+
+logger = logging.getLogger(__name__)
+
+
+# ── Dagelijkse herinnerings-taak ──────────────────────────────────────────────
+
+def _send_pending_review_reminders() -> int:
+    """
+    Vind sollicitaties waar het interview 5+ dagen geleden is afgerond en de
+    werkgever nog niet heeft gereageerd (status nog steeds 'applied').
+    Stuur maximaal 3 herinneringen per sollicitatie (dag 5, 6, 7).
+    Retourneert het aantal verzonden herinneringen.
+    """
+    from backend import models
+
+    db = SessionLocal()
+    sent = 0
+    try:
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=5)
+
+        # Sollicitaties met afgerond interview, status ongewijzigd, minder dan 3 reminders
+        pending = (
+            db.query(models.Application)
+            .filter(
+                models.Application.interview_completed_at.isnot(None),
+                models.Application.interview_completed_at <= cutoff,
+                models.Application.status == "applied",
+                models.Application.employer_reminder_count < 3,
+            )
+            .all()
+        )
+
+        for app in pending:
+            vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+            if not vacancy:
+                continue
+            employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first()
+            candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
+            if not employer or not candidate:
+                continue
+
+            days_waiting = (now - app.interview_completed_at).days
+            try:
+                send_employer_review_reminder(
+                    employer_email=employer.email,
+                    candidate_name=candidate.full_name or "Kandidaat",
+                    vacancy_title=vacancy.title or "Vacature",
+                    days_waiting=days_waiting,
+                )
+                app.employer_reminder_count += 1
+                db.commit()
+                sent += 1
+            except Exception as exc:
+                logger.warning("[reminder] Fout bij herinnering app=%s: %s", app.id, exc)
+    finally:
+        db.close()
+    return sent
+
+
+async def _daily_reminder_loop() -> None:
+    """Achtergrondtaak die elke 24 uur herinneringen verstuurt."""
+    while True:
+        await asyncio.sleep(60 * 60 * 24)  # 24 uur
+        try:
+            sent = _send_pending_review_reminders()
+            if sent:
+                logger.info("[reminder] %d herinneringen verstuurd", sent)
+        except Exception as exc:
+            logger.error("[reminder] Dagelijkse taak mislukt: %s", exc)
+
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    # Startup: plan dagelijkse herinneringen
+    task = asyncio.create_task(_daily_reminder_loop())
+    # Stuur ook meteen bij opstarten (voor gemiste reminders)
+    try:
+        sent = _send_pending_review_reminders()
+        if sent:
+            logger.info("[reminder] Startup: %d herinneringen verstuurd", sent)
+    except Exception as exc:
+        logger.error("[reminder] Startup check mislukt: %s", exc)
+    yield
+    # Shutdown
+    task.cancel()
+
 
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
@@ -44,6 +137,7 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

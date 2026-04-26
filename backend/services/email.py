@@ -552,6 +552,106 @@ STRINGS: dict[str, dict[str, str]] = {
         "fr": "Si vous n'avez pas demandé de réinitialisation de mot de passe, vous pouvez ignorer cet e-mail en toute sécurité. Votre mot de passe restera inchangé.",
         "es": "Si no solicitaste un restablecimiento de contraseña, puedes ignorar este correo de forma segura. Tu contraseña permanecerá sin cambios.",
     },
+    # send_interview_completed_notification — werkgever
+    "interview_done_subject": {
+        "nl": "Interview afgerond: {candidate_name} voor {vacancy_title}",
+        "en": "Interview completed: {candidate_name} for {vacancy_title}",
+        "de": "Interview abgeschlossen: {candidate_name} für {vacancy_title}",
+        "fr": "Entretien terminé : {candidate_name} pour {vacancy_title}",
+        "es": "Entrevista completada: {candidate_name} para {vacancy_title}",
+    },
+    "interview_done_header_sub": {
+        "nl": "Interview afgerond — beoordeel de kandidaat",
+        "en": "Interview completed — review the candidate",
+        "de": "Interview abgeschlossen — Kandidat bewerten",
+        "fr": "Entretien terminé — évaluez le candidat",
+        "es": "Entrevista completada — evalúa al candidato",
+    },
+    "interview_done_heading": {
+        "nl": "{candidate_name} heeft het interview afgerond!",
+        "en": "{candidate_name} has completed the interview!",
+        "de": "{candidate_name} hat das Interview abgeschlossen!",
+        "fr": "{candidate_name} a terminé l'entretien !",
+        "es": "¡{candidate_name} ha completado la entrevista!",
+    },
+    "interview_done_intro": {
+        "nl": "De kandidaat heeft het AI-interview voor <strong style=\"color:#0f766e;\">{vacancy_title}</strong> afgerond. Bekijk de resultaten en geef binnen een week een reactie.",
+        "en": "The candidate has completed the AI interview for <strong style=\"color:#0f766e;\">{vacancy_title}</strong>. Review the results and respond within one week.",
+        "de": "Der Kandidat hat das KI-Interview für <strong style=\"color:#0f766e;\">{vacancy_title}</strong> abgeschlossen. Überprüfen Sie die Ergebnisse und antworten Sie innerhalb einer Woche.",
+        "fr": "Le candidat a terminé l'entretien IA pour <strong style=\"color:#0f766e;\">{vacancy_title}</strong>. Consultez les résultats et répondez dans la semaine.",
+        "es": "El candidato ha completado la entrevista IA para <strong style=\"color:#0f766e;\">{vacancy_title}</strong>. Revisa los resultados y responde dentro de una semana.",
+    },
+    "interview_done_score_label": {
+        "nl": "Interview score",
+        "en": "Interview score",
+        "de": "Interview-Punktzahl",
+        "fr": "Score d'entretien",
+        "es": "Puntuación de entrevista",
+    },
+    "interview_done_deadline": {
+        "nl": "Reageer voor <strong>{deadline}</strong> — de kandidaat verwacht binnen een week een reactie.",
+        "en": "Respond by <strong>{deadline}</strong> — the candidate expects a response within one week.",
+        "de": "Antworten Sie bis <strong>{deadline}</strong> — der Kandidat erwartet innerhalb einer Woche eine Antwort.",
+        "fr": "Répondez avant le <strong>{deadline}</strong> — le candidat attend une réponse dans la semaine.",
+        "es": "Responde antes del <strong>{deadline}</strong> — el candidato espera una respuesta dentro de una semana.",
+    },
+    "interview_done_cta": {
+        "nl": "Bekijk in dashboard",
+        "en": "View in dashboard",
+        "de": "Im Dashboard ansehen",
+        "fr": "Voir dans le tableau de bord",
+        "es": "Ver en el panel",
+    },
+    "interview_done_footer": {
+        "nl": "Je ontvangt deze melding omdat een kandidaat een interview heeft afgerond op een van jouw vacatures.",
+        "en": "You receive this notification because a candidate completed an interview for one of your vacancies.",
+        "de": "Sie erhalten diese Benachrichtigung, weil ein Kandidat ein Interview für eine Ihrer Stellen abgeschlossen hat.",
+        "fr": "Vous recevez cette notification car un candidat a terminé un entretien pour l'une de vos offres.",
+        "es": "Recibes esta notificación porque un candidato completó una entrevista para una de tus vacantes.",
+    },
+    # send_employer_review_reminder
+    "reminder_subject": {
+        "nl": "Herinnering: {candidate_name} wacht op je reactie ({vacancy_title})",
+        "en": "Reminder: {candidate_name} is waiting for your response ({vacancy_title})",
+        "de": "Erinnerung: {candidate_name} wartet auf Ihre Antwort ({vacancy_title})",
+        "fr": "Rappel : {candidate_name} attend votre réponse ({vacancy_title})",
+        "es": "Recordatorio: {candidate_name} espera tu respuesta ({vacancy_title})",
+    },
+    "reminder_header_sub": {
+        "nl": "Herinnering: kandidaat wacht op reactie",
+        "en": "Reminder: candidate awaiting response",
+        "de": "Erinnerung: Kandidat wartet auf Antwort",
+        "fr": "Rappel : candidat en attente de réponse",
+        "es": "Recordatorio: candidato esperando respuesta",
+    },
+    "reminder_heading": {
+        "nl": "{candidate_name} wacht al {days} dagen op je reactie",
+        "en": "{candidate_name} has been waiting {days} days for your response",
+        "de": "{candidate_name} wartet seit {days} Tagen auf Ihre Antwort",
+        "fr": "{candidate_name} attend votre réponse depuis {days} jours",
+        "es": "{candidate_name} lleva {days} días esperando tu respuesta",
+    },
+    "reminder_intro": {
+        "nl": "De kandidaat heeft het interview afgerond voor <strong style=\"color:#0f766e;\">{vacancy_title}</strong> en wacht nog op een reactie. Kandidaten verwachten binnen een week antwoord.",
+        "en": "The candidate completed the interview for <strong style=\"color:#0f766e;\">{vacancy_title}</strong> and is still waiting for a response. Candidates expect a reply within one week.",
+        "de": "Der Kandidat hat das Interview für <strong style=\"color:#0f766e;\">{vacancy_title}</strong> abgeschlossen und wartet noch auf eine Antwort. Kandidaten erwarten eine Antwort innerhalb einer Woche.",
+        "fr": "Le candidat a terminé l'entretien pour <strong style=\"color:#0f766e;\">{vacancy_title}</strong> et attend toujours une réponse. Les candidats attendent une réponse dans la semaine.",
+        "es": "El candidato completó la entrevista para <strong style=\"color:#0f766e;\">{vacancy_title}</strong> y aún espera una respuesta. Los candidatos esperan una respuesta dentro de una semana.",
+    },
+    "reminder_cta": {
+        "nl": "Bekijk en reageer nu",
+        "en": "Review and respond now",
+        "de": "Jetzt ansehen und antworten",
+        "fr": "Consulter et répondre maintenant",
+        "es": "Revisar y responder ahora",
+    },
+    "reminder_footer": {
+        "nl": "Je ontvangt deze herinnering omdat een kandidaat wacht op jouw reactie. Snel reageren verbetert je werkgeversmerk.",
+        "en": "You receive this reminder because a candidate is waiting for your response. Responding quickly improves your employer brand.",
+        "de": "Sie erhalten diese Erinnerung, weil ein Kandidat auf Ihre Antwort wartet. Schnelles Reagieren verbessert Ihre Arbeitgebermarke.",
+        "fr": "Vous recevez ce rappel car un candidat attend votre réponse. Répondre rapidement améliore votre marque employeur.",
+        "es": "Recibes este recordatorio porque un candidato espera tu respuesta. Responder rápido mejora tu marca empleadora.",
+    },
 }
 
 
@@ -1313,3 +1413,128 @@ def send_invoice_email(
 
     if BOOKKEEPER_EMAIL and BOOKKEEPER_EMAIL != employer_email:
         _send(to=BOOKKEEPER_EMAIL, subject=f"[Kopie boekhouder] {subject}", html=html, from_email=INVOICE_FROM_EMAIL)
+
+
+# ── Werkgever: interview afgerond → beoordeel kandidaat ────────────────────
+
+def send_interview_completed_notification(
+    employer_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    interview_score: int,
+    deadline_str: str,
+    language: str = "nl",
+) -> None:
+    """Stuur werkgever een melding dat een kandidaat het interview heeft afgerond."""
+    score_color = "#059669" if interview_score >= 70 else "#d97706" if interview_score >= 40 else "#dc2626"
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#0f766e;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">{get_string("interview_done_header_sub", language)}</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        {get_string("interview_done_heading", language).format(candidate_name=candidate_name)}
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        {get_string("interview_done_intro", language).format(vacancy_title=vacancy_title)}
+      </p>
+
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:{score_color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;">
+          {interview_score}%
+        </div>
+        <div>
+          <div style="font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{get_string("interview_done_score_label", language)}</div>
+          <div style="font-size:18px;font-weight:700;color:#111827;">{candidate_name}</div>
+        </div>
+      </div>
+
+      <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+        <p style="font-size:14px;color:#92400e;margin:0;line-height:1.5;">
+          {get_string("interview_done_deadline", language).format(deadline=deadline_str)}
+        </p>
+      </div>
+
+      <a href="{FRONTEND_URL}/employer"
+         style="display:inline-block;padding:13px 28px;background:#0f766e;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        {get_string("interview_done_cta", language)}
+      </a>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {get_string("interview_done_footer", language)}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=employer_email,
+        subject=get_string("interview_done_subject", language).format(
+            candidate_name=candidate_name, vacancy_title=vacancy_title,
+        ),
+        html=html,
+    )
+
+
+# ── Werkgever: herinnering om te reageren ──────────────────────────────────
+
+def send_employer_review_reminder(
+    employer_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    days_waiting: int,
+    language: str = "nl",
+) -> None:
+    """Stuur werkgever een herinnering dat een kandidaat wacht op reactie."""
+    html = f"""
+<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#d97706;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#fef3c7;margin-top:4px;">{get_string("reminder_header_sub", language)}</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        {get_string("reminder_heading", language).format(candidate_name=candidate_name, days=days_waiting)}
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        {get_string("reminder_intro", language).format(vacancy_title=vacancy_title)}
+      </p>
+
+      <a href="{FRONTEND_URL}/employer"
+         style="display:inline-block;padding:13px 28px;background:#d97706;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        {get_string("reminder_cta", language)}
+      </a>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {get_string("reminder_footer", language)}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=employer_email,
+        subject=get_string("reminder_subject", language).format(
+            candidate_name=candidate_name, vacancy_title=vacancy_title,
+        ),
+        html=html,
+    )

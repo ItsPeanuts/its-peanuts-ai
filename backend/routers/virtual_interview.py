@@ -56,6 +56,7 @@ from backend.routers.interview_scheduler import (
     _send_calendar_invite,
     MS_ORGANIZER_EMAIL,
 )
+from backend.services.email import send_interview_completed_notification
 
 router = APIRouter(prefix="/virtual-interview", tags=["virtual-interview"])
 
@@ -715,6 +716,26 @@ def complete_interview(
         db.add(ai_result)
     db.commit()
 
+    # Markeer interview als afgerond + stuur werkgever notificatie
+    now = datetime.now(timezone.utc)
+    app.interview_completed_at = now
+    db.commit()
+
+    deadline = now + timedelta(days=7)
+    deadline_str = deadline.strftime("%d-%m-%Y")
+    employer = db.query(models.User).filter(models.User.id == ctx["employer_id"]).first()
+    if employer:
+        try:
+            send_interview_completed_notification(
+                employer_email=employer.email,
+                candidate_name=ctx["candidate_name"],
+                vacancy_title=ctx["vacancy_title"],
+                interview_score=score,
+                deadline_str=deadline_str,
+            )
+        except Exception:
+            pass  # E-mail niet-fataal
+
     # D-ID stream sluiten
     if vi_session.did_stream_id:
         _did_close_stream(vi_session.did_stream_id, vi_session.did_session_id or "")
@@ -1115,6 +1136,26 @@ def complete_v2_interview(
         db.add(ai_result)
     db.commit()
 
+    # Markeer interview als afgerond + stuur werkgever notificatie
+    now = datetime.now(timezone.utc)
+    app.interview_completed_at = now
+    db.commit()
+
+    deadline = now + timedelta(days=7)
+    deadline_str = deadline.strftime("%d-%m-%Y")
+    employer = db.query(models.User).filter(models.User.id == ctx["employer_id"]).first()
+    if employer:
+        try:
+            send_interview_completed_notification(
+                employer_email=employer.email,
+                candidate_name=ctx["candidate_name"],
+                vacancy_title=ctx["vacancy_title"],
+                interview_score=score,
+                deadline_str=deadline_str,
+            )
+        except Exception:
+            pass  # E-mail niet-fataal
+
     # Auto-plan vervolgafspraak als score hoog genoeg + MS Graph geconfigureerd
     followup_scheduled = False
     teams_join_url = None
@@ -1122,7 +1163,8 @@ def complete_v2_interview(
 
     if score >= SCORE_THRESHOLD and MS_ORGANIZER_EMAIL:
         try:
-            employer = db.query(models.User).filter(models.User.id == ctx["employer_id"]).first()
+            if not employer:
+                employer = db.query(models.User).filter(models.User.id == ctx["employer_id"]).first()
             now = datetime.now(timezone.utc)
             followup_dt = (now + timedelta(days=3)).replace(hour=9, minute=0, second=0, microsecond=0)
             end_dt = followup_dt + timedelta(minutes=45)
