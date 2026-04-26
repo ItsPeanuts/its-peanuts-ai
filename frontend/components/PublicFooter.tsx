@@ -9,7 +9,6 @@ export default function PublicFooter() {
           <p className="text-sm">&copy; 2026 VorzaIQ. Find smarter. Hire faster.</p>
         </div>
         <div className="mt-4 pt-4 border-t border-gray-800 flex items-center justify-between flex-wrap gap-3">
-          <span className="text-xs text-gray-600">Powered by It&apos;s Peanuts AI</span>
           <div className="flex gap-4">
             <Link href="/privacy" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
               Privacybeleid
