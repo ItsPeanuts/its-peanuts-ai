@@ -78,10 +78,10 @@ function ResultRedirect({
       </div>
 
       <Link
-        href={chatUrl}
+        href={nextUrl}
         style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px", background: "#7C3AED", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none" }}
       >
-        Chat nu met Lisa
+        {chatRequired ? "Chat nu met Lisa" : "Start video-interview"}
       </Link>
     </div>
   );
