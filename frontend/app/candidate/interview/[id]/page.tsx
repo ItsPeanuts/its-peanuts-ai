@@ -378,8 +378,17 @@ export default function VideoInterviewPage() {
               response: { modalities: ["text", "audio"] },
             }));
           } else if (newCount > MAX_LISA_TURNS) {
-            // Lisa's afsluitbericht is klaar — wacht tot Anam klaar is met afspelen
-            setTimeout(() => endInterview(), 5000);
+            // Lisa's afsluitbericht is klaar — sluit mic/ws maar laat Anam uitpraten
+            // OpenAI genereert audio sneller dan realtime, dus Anam heeft
+            // een groot buffer dat nog afgespeeld moet worden.
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.close(1000, "Interview beëindigd");
+            }
+            processorRef.current?.disconnect();
+            micStreamRef.current?.getTracks().forEach((t) => t.stop());
+
+            // Wacht ruim tot Anam klaar is met afspelen, dan pas scoren
+            setTimeout(() => endInterview(), 15000);
           }
           break;
         }
