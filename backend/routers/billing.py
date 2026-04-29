@@ -127,6 +127,7 @@ def create_checkout_session(
             mode="subscription",
             line_items=[{"price": price_id, "quantity": 1}],
             customer_email=current_user.email,
+            allow_promotion_codes=True,
             # Metadata op de Session zelf (voor checkout.session.completed)
             metadata={"user_id": str(current_user.id), "plan": payload.plan},
             # Metadata op het Subscription object (voor subscription.deleted/updated)
@@ -280,12 +281,18 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         try:
             user_id = int(meta.get("user_id", 0) or 0)
         except (ValueError, TypeError):
-            return {"status": "ok"}
+            user_id = 0
 
-        if not user_id:
-            return {"status": "ok"}
+        user = None
+        if user_id:
+            user = db.query(models.User).filter(models.User.id == user_id).first()
 
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        # Launch links hebben geen user_id — zoek op customer_email
+        if not user:
+            customer_email = data.get("customer_email") or data.get("customer_details", {}).get("email")
+            if customer_email:
+                user = db.query(models.User).filter(models.User.email == customer_email).first()
+
         if not user:
             return {"status": "ok"}
 
@@ -293,6 +300,18 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             user.plan = plan
             user.trial_ends_at = None
             db.commit()
+
+            # Zorg dat subscription metadata de user_id bevat (voor launch links
+            # waar die initieel ontbrak) — nodig voor subscription.deleted/updated
+            sub_id = data.get("subscription")
+            if sub_id and not meta.get("user_id"):
+                try:
+                    stripe.Subscription.modify(sub_id, metadata={
+                        "user_id": str(user.id), "plan": plan,
+                    })
+                except Exception:
+                    pass  # niet-fataal
+
             _log_payment_and_invoice(db, user, data, plan=plan, interval=None, payment_type="subscription")
 
         elif mode == "payment" and ptype == "per_vacature":
@@ -342,3 +361,52 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 db.commit()
 
     return {"status": "ok"}
+
+
+# ── Admin: genereer launch checkout link ─────────────────────────────────────
+
+LAUNCH_COUPON_ID = os.getenv("STRIPE_LAUNCH_COUPON", "7bzV8eqk")
+
+
+class LaunchLinkIn(BaseModel):
+    email: str | None = None  # optioneel: pre-fill email in checkout
+
+
+@router.post("/generate-launch-link")
+def generate_launch_link(
+    payload: LaunchLinkIn,
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Admin-only: genereer een directe Stripe Checkout link voor Scale met
+    de launch coupon (6 maanden gratis) al toegepast.
+    Stuur deze link naar een bedrijf — zij klikken, vullen gegevens in, klaar.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Stripe niet geconfigureerd")
+
+    price_id = PRICE_IDS.get(("premium", "month"))
+    if not price_id:
+        raise HTTPException(status_code=503, detail="Scale maandprijs niet ingesteld")
+
+    try:
+        params: dict = {
+            "mode": "subscription",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "discounts": [{"coupon": LAUNCH_COUPON_ID}],
+            "metadata": {"plan": "premium", "launch": "true"},
+            "subscription_data": {"metadata": {"plan": "premium", "launch": "true"}},
+            "success_url": f"{FRONTEND_URL}/employer?welcome=1",
+            "cancel_url": f"{FRONTEND_URL}/abonnementen",
+        }
+        if payload.email:
+            params["customer_email"] = payload.email
+
+        session = stripe.checkout.Session.create(**params)
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=502, detail=f"Stripe fout: {getattr(e, 'user_message', str(e))}")
+
+    return {"checkout_url": session.url}
