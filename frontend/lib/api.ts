@@ -647,11 +647,14 @@ export async function createCheckoutSession(
   token: string,
   plan: string,
   interval: "month" | "year",
+  coupon?: string,
 ): Promise<{ checkout_url: string }> {
+  const body: Record<string, string> = { plan, interval };
+  if (coupon) body.coupon = coupon;
   const res = await fetch(`${BASE}/billing/checkout`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
-    body: JSON.stringify({ plan, interval }),
+    body: JSON.stringify(body),
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Checkout aanmaken mislukt");

@@ -74,6 +74,7 @@ STRIPE_PRICE_PER_VACATURE = os.getenv("STRIPE_PRICE_PER_VACATURE", "")
 class CheckoutIn(BaseModel):
     plan: str      # "normaal" | "premium"
     interval: str  # "month" | "year"
+    coupon: str | None = None  # optioneel: coupon code (bijv. launch promo)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -123,18 +124,24 @@ def create_checkout_session(
         )
 
     try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[{"price": price_id, "quantity": 1}],
-            customer_email=current_user.email,
-            allow_promotion_codes=True,
-            # Metadata op de Session zelf (voor checkout.session.completed)
-            metadata={"user_id": str(current_user.id), "plan": payload.plan},
-            # Metadata op het Subscription object (voor subscription.deleted/updated)
-            subscription_data={"metadata": {"user_id": str(current_user.id), "plan": payload.plan}},
-            success_url=f"{FRONTEND_URL}/abonnementen?success=1",
-            cancel_url=f"{FRONTEND_URL}/abonnementen?cancelled=1",
-        )
+        checkout_params: dict = {
+            "mode": "subscription",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "customer_email": current_user.email,
+            "metadata": {"user_id": str(current_user.id), "plan": payload.plan},
+            "subscription_data": {"metadata": {"user_id": str(current_user.id), "plan": payload.plan}},
+            "success_url": f"{FRONTEND_URL}/employer?welcome=1" if payload.coupon else f"{FRONTEND_URL}/abonnementen?success=1",
+            "cancel_url": f"{FRONTEND_URL}/abonnementen?cancelled=1",
+        }
+
+        if payload.coupon:
+            # Coupon direct toepassen (bijv. launch promo) — geen handmatige invoer nodig
+            checkout_params["discounts"] = [{"coupon": payload.coupon}]
+        else:
+            # Laat gebruiker zelf een promo code invoeren
+            checkout_params["allow_promotion_codes"] = True
+
+        session = stripe.checkout.Session.create(**checkout_params)
     except stripe.StripeError as e:
         raise HTTPException(status_code=502, detail=f"Stripe fout: {getattr(e, 'user_message', str(e))}")
 

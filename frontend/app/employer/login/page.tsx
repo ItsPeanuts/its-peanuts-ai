@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { login, me } from "@/lib/api";
+import { login, me, createCheckoutSession } from "@/lib/api";
 import { setSession } from "@/lib/session";
 
 const BASE =
@@ -15,8 +15,21 @@ function EmployerLoginContent() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"login" | "register">("login");
 
+  const [launchRedirecting, setLaunchRedirecting] = useState(false);
+  const [isLaunch, setIsLaunch] = useState(false);
+
   useEffect(() => {
     if (searchParams?.get("tab") === "register") setTab("register");
+
+    // Launch promo: ?launch=VORZAIQ-LAUNCH → sla coupon op, switch naar register
+    const launchCode = searchParams?.get("launch");
+    if (launchCode) {
+      localStorage.setItem("vorzaiq_launch_coupon", "7bzV8eqk");
+      setTab("register");
+      setIsLaunch(true);
+    } else if (typeof window !== "undefined" && localStorage.getItem("vorzaiq_launch_coupon")) {
+      setIsLaunch(true);
+    }
   }, [searchParams]);
 
   // Login
@@ -45,6 +58,22 @@ function EmployerLoginContent() {
         return;
       }
       setSession({ token: access_token, role, email: user.email });
+
+      // Launch promo: als coupon in localStorage staat, redirect naar Stripe checkout
+      const launchCoupon = localStorage.getItem("vorzaiq_launch_coupon");
+      if (launchCoupon && role === "employer") {
+        try {
+          setLaunchRedirecting(true);
+          const { checkout_url } = await createCheckoutSession(access_token, "premium", "month", launchCoupon);
+          localStorage.removeItem("vorzaiq_launch_coupon");
+          window.location.href = checkout_url;
+          return;
+        } catch {
+          // Checkout mislukt — verwijder coupon, ga gewoon door naar dashboard
+          localStorage.removeItem("vorzaiq_launch_coupon");
+        }
+      }
+
       if (role === "admin") router.push("/admin");
       else router.push("/employer");
     } catch (err: unknown) {
@@ -93,6 +122,20 @@ function EmployerLoginContent() {
     });
   }
 
+  if (launchRedirecting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+            <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Even geduld...</h1>
+            <p className="text-sm text-gray-500">Je wordt doorgestuurd naar de betaalpagina om je Scale abonnement te activeren.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (checkEmail) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
@@ -115,7 +158,10 @@ function EmployerLoginContent() {
             <h1 className="text-xl font-bold text-gray-900 mb-2">Check je e-mail</h1>
             <p className="text-sm text-gray-500 mb-1">We hebben een verificatielink gestuurd naar:</p>
             <p className="text-sm font-semibold text-gray-800 mb-6">{checkEmail}</p>
-            <p className="text-sm text-gray-400 mb-6">Klik op de link in de e-mail om je account te activeren. Daarna kun je inloggen.</p>
+            <p className="text-sm text-gray-400 mb-6">
+              Klik op de link in de e-mail om je account te activeren.
+              {isLaunch ? " Daarna log je in en word je doorgestuurd om je gratis Scale abonnement te activeren." : " Daarna kun je inloggen."}
+            </p>
             <button
               onClick={handleResend}
               className="text-sm text-purple-600 font-semibold hover:text-purple-700 underline"
@@ -203,10 +249,17 @@ function EmployerLoginContent() {
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-800 text-sm font-medium">
-                <span className="text-green-600 font-bold text-base">✓</span>
-                Eerste maand gratis — geen creditcard nodig
-              </div>
+              {isLaunch ? (
+                <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-purple-800 text-sm font-medium">
+                  <span className="text-purple-600 font-bold text-base">★</span>
+                  Scale abonnement — 6 maanden gratis
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-800 text-sm font-medium">
+                  <span className="text-green-600 font-bold text-base">✓</span>
+                  Eerste maand gratis — geen creditcard nodig
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Bedrijfsnaam / Naam</label>
                 <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)}
