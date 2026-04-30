@@ -759,7 +759,34 @@ export default function EmployerPage() {
           );
         })()}
 
-        {/* Trial-expiry banner — gratis Growth maand (premium trial) */}
+        {/* Trial-expiry banner — Growth trial */}
+        {userPlan === "normaal" && userTrialEndsAt && (() => {
+          const daysLeft = Math.ceil((new Date(userTrialEndsAt).getTime() - Date.now()) / 86400000);
+          const expired = daysLeft <= 0;
+          if (!expired && daysLeft > 7) return null;
+
+          return (
+            <div className={`rounded-xl px-4 py-3 text-sm mb-5 ${expired ? "bg-red-50 border border-red-200 text-red-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
+              <p className="font-semibold mb-1">
+                {expired
+                  ? "Je gratis Growth proefperiode is voorbij."
+                  : `Je gratis Growth proefperiode verloopt over ${daysLeft} ${daysLeft !== 1 ? "dagen" : "dag"}.`}
+              </p>
+              <p className="mb-3 text-xs opacity-80">
+                Kies een abonnement om door te blijven werven.
+              </p>
+              <a
+                href="/abonnementen"
+                className="inline-block px-4 py-2 rounded-lg text-white text-xs font-bold no-underline"
+                style={{ background: "#7C3AED" }}
+              >
+                Bekijk abonnementen
+              </a>
+            </div>
+          );
+        })()}
+
+        {/* Trial-expiry banner — Scale trial */}
         {userPlan === "premium" && userTrialEndsAt && (() => {
           const daysLeft = Math.ceil((new Date(userTrialEndsAt).getTime() - Date.now()) / 86400000);
           const expired = daysLeft <= 0;
@@ -769,8 +796,8 @@ export default function EmployerPage() {
             <div className={`rounded-xl px-4 py-3 text-sm mb-5 ${expired ? "bg-red-50 border border-red-200 text-red-800" : "bg-amber-50 border border-amber-200 text-amber-800"}`}>
               <p className="font-semibold mb-1">
                 {expired
-                  ? "Je gratis Growth maand is voorbij."
-                  : `Je gratis Growth maand verloopt over ${daysLeft} ${daysLeft !== 1 ? "dagen" : "dag"}.`}
+                  ? "Je gratis Scale proefperiode is voorbij."
+                  : `Je gratis Scale proefperiode verloopt over ${daysLeft} ${daysLeft !== 1 ? "dagen" : "dag"}.`}
               </p>
               <p className="mb-3 text-xs opacity-80">
                 Kies een abonnement om door te blijven werven.
@@ -1865,11 +1892,17 @@ export default function EmployerPage() {
             </div>
             <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Welkom bij VorzaIQ!</h2>
             <p className="text-gray-500 text-sm mb-5 leading-relaxed">
-              Je eerste maand <strong className="text-purple-700">Growth</strong> is volledig gratis.<br />
-              Geen creditcard nodig, geen verplichtingen.
+              {userPlan === "premium" ? (
+                <>Je <strong className="text-purple-700">Scale</strong> abonnement is geactiveerd.<br />Alle features zijn beschikbaar.</>
+              ) : (
+                <>Je eerste maand <strong className="text-purple-700">Growth</strong> is volledig gratis.<br />Geen creditcard nodig, geen verplichtingen.</>
+              )}
             </p>
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-6 text-left space-y-2">
-              {["5 actieve vacatures", "AI-matching & pre-screening", "Kandidaatoverzicht dashboard", "Chatbot Lisa (kandidaten)", "E-mail notificaties", "Prioriteit in zoekresultaten", "CRM integratie"].map(f => (
+              {(userPlan === "premium"
+                ? ["Onbeperkte vacatures", "AI-matching & pre-screening", "Kandidaatoverzicht dashboard", "Virtueel interview (Lisa)", "Chatbot Lisa (kandidaten)", "E-mail notificaties", "Prioriteit in zoekresultaten", "CRM integratie", "Dedicated support"]
+                : ["5 actieve vacatures", "AI-matching & pre-screening", "Kandidaatoverzicht dashboard", "Chatbot Lisa (kandidaten)", "E-mail notificaties", "Prioriteit in zoekresultaten", "CRM integratie"]
+              ).map(f => (
                 <div key={f} className="flex items-center gap-2 text-sm text-purple-800">
                   <span className="text-purple-500 font-bold">✓</span> {f}
                 </div>

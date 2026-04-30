@@ -161,11 +161,11 @@ export default function AdminPage() {
   }
 
   async function handleGiveFreeTrial(userId: number, email: string) {
-    if (!token || !confirm(`Geef ${email} 1 maand gratis Growth abonnement?`)) return;
+    if (!token || !confirm(`Geef ${email} 1 maand gratis trial?`)) return;
     try {
       const updated = await apiFetch(token, `/admin/users/${userId}/free-trial`, { method: "POST" });
       setUsers((prev) => prev.map((u) => (u.id === userId ? updated : u)));
-      setMsg(`Gratis Growth trial gegeven aan ${email}`); setTimeout(() => setMsg(""), 4000);
+      setMsg(`Gratis trial gegeven aan ${email}`); setTimeout(() => setMsg(""), 4000);
     } catch (e) { showErr(e); }
   }
 
@@ -499,8 +499,8 @@ export default function AdminPage() {
                                 background: u.plan === "premium" ? "#ede9fe" : u.plan === "normaal" ? "#dbeafe" : "#f3f4f6",
                               }}>
                               <option value="gratis">gratis</option>
-                              <option value="normaal">normaal</option>
-                              <option value="premium">premium</option>
+                              <option value="normaal">Growth</option>
+                              <option value="premium">Scale</option>
                             </select>
                             {u.trial_ends_at && (
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#fef3c7", color: "#92400e" }}>
@@ -515,7 +515,7 @@ export default function AdminPage() {
                             {u.role === "employer" && !u.trial_ends_at && (
                               <button onClick={() => handleGiveFreeTrial(u.id, u.email)}
                                 className="text-xs text-purple-500 hover:text-purple-700 font-medium px-2 py-1 rounded hover:bg-purple-50 transition-colors whitespace-nowrap">
-                                Gratis Growth
+                                Gratis trial
                               </button>
                             )}
                             {u.trial_ends_at && (
