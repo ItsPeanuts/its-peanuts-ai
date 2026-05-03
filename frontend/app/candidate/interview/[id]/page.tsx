@@ -130,32 +130,6 @@ export default function VideoInterviewPage() {
   const params = useParams();
   const appId = Number(params?.id);
 
-  // ── Maintenance mode — zet LISA_MAINTENANCE = false om te activeren ──────────
-  if (LISA_MAINTENANCE) {
-    return (
-      <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ background: "#fff", borderRadius: 20, padding: "48px 40px", maxWidth: 480, width: "100%", textAlign: "center" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>🚀</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: "0 0 12px" }}>
-            Lisa wordt geüpgraded
-          </h1>
-          <p style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.7, marginBottom: 28 }}>
-            We upgraden het virtuele interview naar een volledig nieuwe versie met realtime stemherkenning en een veel natuurlijker gesprek. Lisa 2.0 is snel beschikbaar.
-          </p>
-          <div style={{ background: "#f3f4f6", borderRadius: 12, padding: "14px 18px", marginBottom: 32, fontSize: 13, color: "#6b7280" }}>
-            In de tussentijd kun je de tekst-chat met Lisa gewoon gebruiken via je sollicitatie.
-          </div>
-          <button
-            onClick={() => router.back()}
-            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
-          >
-            Terug
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── State ─────────────────────────────────────────────────────────────────────
 
   const [stage, setStage] = useState<Stage>("idle");
@@ -181,12 +155,42 @@ export default function VideoInterviewPage() {
   const currentLisaTranscriptRef = useRef(""); // lopend Lisa-transcript per beurt
   const lisaIsSpeakingRef = useRef(false); // sync ref — voorkomt phantom speech (mic gedempt terwijl Lisa praat)
   const responseDoneTimeRef = useRef(0); // timestamp van laatste response.done — beschermt Anam tegen phantom interrupts
+  const stageRef = useRef<Stage>("idle"); // sync ref voor ws.onclose
 
   // Anam AI avatar refs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anamClientRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anamAudioStreamRef = useRef<any>(null);
+
+  // Sync stageRef met stage state
+  useEffect(() => { stageRef.current = stage; }, [stage]);
+
+  // ── Maintenance mode ──────────────────────────────────────────────────────────
+  if (LISA_MAINTENANCE) {
+    return (
+      <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: "48px 40px", maxWidth: 480, width: "100%", textAlign: "center" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>🚀</div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: "0 0 12px" }}>
+            Lisa wordt geüpgraded
+          </h1>
+          <p style={{ fontSize: 15, color: "#4b5563", lineHeight: 1.7, marginBottom: 28 }}>
+            We upgraden het virtuele interview naar een volledig nieuwe versie met realtime stemherkenning en een veel natuurlijker gesprek. Lisa 2.0 is snel beschikbaar.
+          </p>
+          <div style={{ background: "#f3f4f6", borderRadius: 12, padding: "14px 18px", marginBottom: 32, fontSize: 13, color: "#6b7280" }}>
+            In de tussentijd kun je de tekst-chat met Lisa gewoon gebruiken via je sollicitatie.
+          </div>
+          <button
+            onClick={() => router.back()}
+            style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+          >
+            Terug
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Audio playback (PCM16 chunks van OpenAI) ─────────────────────────────────
 
@@ -445,7 +449,7 @@ export default function VideoInterviewPage() {
     };
 
     ws.onclose = (e) => {
-      if (stage !== "completed" && e.code !== 1000) {
+      if (stageRef.current !== "completed" && e.code !== 1000) {
         setErrorMsg("Verbinding verbroken. Probeer opnieuw.");
         setStage("error");
       }

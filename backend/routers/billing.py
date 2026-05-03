@@ -208,15 +208,20 @@ def _log_payment_and_invoice(
     ).count()
     invoice_number = f"INV-{year}-{count + 1:04d}"
 
-    # Detecteer interval uit price ID (optioneel, valt terug op None)
+    # Detecteer interval uit price ID via PRICE_IDS mapping
     detected_interval = interval
     if not detected_interval and payment_type == "subscription":
-        price_id = ""
+        # Haal price ID uit Stripe session line_items
         line_items = session_data.get("line_items") or {}
-        # Probeer interval te bepalen via PRICE_IDS mapping
+        items_data = line_items.get("data") if isinstance(line_items, dict) else []
+        session_price_id = ""
+        if items_data and len(items_data) > 0:
+            session_price_id = items_data[0].get("price", {}).get("id", "") if isinstance(items_data[0].get("price"), dict) else items_data[0].get("price", "")
+        # Match tegen onze PRICE_IDS
         for (p, iv), pid in PRICE_IDS.items():
-            if p == plan and pid:
-                detected_interval = detected_interval  # blijft None als we het niet weten
+            if pid and pid == session_price_id:
+                detected_interval = iv
+                break
 
     log = models.PaymentLog(
         user_id=user.id,
@@ -334,11 +339,24 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         except (ValueError, TypeError):
             user_id = 0
 
+        user = None
         if user_id:
             user = db.query(models.User).filter(models.User.id == user_id).first()
-            if user:
-                user.plan = "gratis"
-                db.commit()
+
+        # Fallback: zoek op Stripe customer email
+        if not user:
+            customer_id = data.get("customer")
+            if customer_id:
+                try:
+                    cust = stripe.Customer.retrieve(customer_id)
+                    if cust.email:
+                        user = db.query(models.User).filter(models.User.email == cust.email).first()
+                except Exception:
+                    pass
+
+        if user:
+            user.plan = "gratis"
+            db.commit()
 
     # ── customer.subscription.updated ──────────────────────────────────────
     elif etype == "customer.subscription.updated":
@@ -350,10 +368,21 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         except (ValueError, TypeError):
             user_id = 0
 
-        if not user_id:
-            return {"status": "ok"}
+        user = None
+        if user_id:
+            user = db.query(models.User).filter(models.User.id == user_id).first()
 
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        # Fallback: zoek op Stripe customer email
+        if not user:
+            customer_id = data.get("customer")
+            if customer_id:
+                try:
+                    cust = stripe.Customer.retrieve(customer_id)
+                    if cust.email:
+                        user = db.query(models.User).filter(models.User.email == cust.email).first()
+                except Exception:
+                    pass
+
         if not user:
             return {"status": "ok"}
 

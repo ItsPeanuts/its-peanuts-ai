@@ -59,9 +59,9 @@ function EmployerLoginContent() {
       }
       setSession({ token: access_token, role, email: user.email });
 
-      // Launch promo: als coupon in localStorage staat, redirect naar Stripe checkout
+      // Launch promo: als coupon in localStorage staat en user nog niet op premium, redirect naar Stripe checkout
       const launchCoupon = localStorage.getItem("vorzaiq_launch_coupon");
-      if (launchCoupon && role === "employer") {
+      if (launchCoupon && role === "employer" && user.plan !== "premium") {
         try {
           setLaunchRedirecting(true);
           const { checkout_url } = await createCheckoutSession(access_token, "premium", "month", launchCoupon);
