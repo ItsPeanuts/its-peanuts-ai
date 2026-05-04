@@ -156,6 +156,7 @@ export default function VideoInterviewPage() {
   const lisaIsSpeakingRef = useRef(false); // sync ref — voorkomt phantom speech (mic gedempt terwijl Lisa praat)
   const responseDoneTimeRef = useRef(0); // timestamp van laatste response.done — beschermt Anam tegen phantom interrupts
   const stageRef = useRef<Stage>("idle"); // sync ref voor ws.onclose
+  const awaitingLastAnswerRef = useRef(false); // wacht op antwoord na laatste vraag
 
   // Anam AI avatar refs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -364,8 +365,13 @@ export default function VideoInterviewPage() {
           setLisaTurnCount(Math.min(Math.max(0, newCount - 1), MAX_LISA_TURNS));
 
           // Na MAX_LISA_TURNS+1 beurten: Lisa heeft haar laatste vraag gesteld
-          // EN de kandidaat heeft geantwoord → nu pas afsluiten
+          // Wacht op antwoord van kandidaat voordat we afsluiten
           if (newCount === MAX_LISA_TURNS + 1) {
+            awaitingLastAnswerRef.current = true;
+            // Stuur NIET meteen de sluiting — wacht tot kandidaat antwoordt
+          } else if (newCount === MAX_LISA_TURNS + 2) {
+            // Kandidaat heeft geantwoord op de laatste vraag, Lisa heeft gereageerd
+            // Nu sluiten we af
             setStage("wrapping");
             ws.send(JSON.stringify({
               type: "conversation.item.create",
@@ -374,7 +380,7 @@ export default function VideoInterviewPage() {
                 role: "user",
                 content: [{
                   type: "input_text",
-                  text: "[SYSTEEM: Sluit het interview nu vriendelijk af. Bedank de kandidaat en vertel wat de volgende stap is.]",
+                  text: "[SYSTEEM: Sluit het interview nu vriendelijk af. Bedank de kandidaat en vertel wat de volgende stap is. Stel geen nieuwe vragen meer.]",
                 }],
               },
             }));
@@ -382,7 +388,7 @@ export default function VideoInterviewPage() {
               type: "response.create",
               response: { modalities: ["text", "audio"] },
             }));
-          } else if (newCount > MAX_LISA_TURNS + 1) {
+          } else if (newCount > MAX_LISA_TURNS + 2) {
             // Lisa's afsluitbericht is klaar — sluit mic/ws maar laat Anam uitpraten
             // OpenAI genereert audio sneller dan realtime, dus Anam heeft
             // een groot buffer dat nog afgespeeld moet worden.
@@ -563,38 +569,35 @@ export default function VideoInterviewPage() {
   // ── Resultaatscherm ───────────────────────────────────────────────────────────
 
   if (stage === "completed" && result) {
-    const scoreColor = result.score >= 70 ? "#059669" : result.score >= 50 ? "#d97706" : "#dc2626";
-    const scoreBg = result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2";
     return (
       <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ background: "#fff", borderRadius: 20, padding: "40px 36px", maxWidth: 520, width: "100%", textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>
-            {result.score >= 70 ? "🎉" : result.score >= 50 ? "👍" : "📋"}
+            ✅
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
             Interview afgerond
           </h1>
-          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 28 }}>
-            Bedankt voor je tijd. Je resultaat:
+          <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20, lineHeight: 1.6 }}>
+            Bedankt voor je tijd! Je interview is succesvol afgerond.
           </p>
-          <div style={{ width: 90, height: 90, borderRadius: "50%", background: scoreBg, border: `4px solid ${scoreColor}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 26, fontWeight: 900, color: scoreColor }}>
-            {result.score}
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "16px 20px", marginBottom: 24 }}>
+            <p style={{ fontSize: 14, color: "#059669", fontWeight: 600, margin: 0 }}>
+              De werkgever ontvangt je resultaten en neemt zo snel mogelijk contact met je op.
+            </p>
           </div>
-          <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, background: "#f8fafc", borderRadius: 12, padding: "14px 16px", marginBottom: 24, textAlign: "left" }}>
-            {result.summary}
-          </p>
           {result.followup_scheduled && result.teams_join_url && (
             <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, padding: "14px 16px", marginBottom: 24, textAlign: "left" }}>
               <p style={{ fontSize: 13, fontWeight: 600, color: "#1e40af", margin: "0 0 6px" }}>
-                ✅ Vervolgafspraak ingepland
+                Vervolgafspraak ingepland
               </p>
               <a href={result.teams_join_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "#2563eb", textDecoration: "underline" }}>
-                Teams meeting openen →
+                Teams meeting openen
               </a>
             </div>
           )}
-          <button onClick={() => router.back()} style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-            Terug naar sollicitatie
+          <button onClick={() => router.push("/candidate/sollicitaties")} style={{ background: "#7C3AED", color: "#fff", border: "none", borderRadius: 12, padding: "12px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+            Naar mijn sollicitaties
           </button>
         </div>
       </div>
