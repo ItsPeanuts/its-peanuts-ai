@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend import models
 from backend.routers.auth import get_current_user, require_role
+from backend.services.email import send_interview_scheduled_candidate, send_interview_scheduled_employer
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
@@ -294,6 +295,38 @@ def schedule_interview(
             )
         except HTTPException:
             pass  # Teams niet geconfigureerd — interview is wel opgeslagen
+
+    # ── E-mail notificaties sturen ───────────────────────────────────────────
+    candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
+    scheduled_str = scheduled_dt.strftime("%d-%m-%Y om %H:%M")
+
+    if candidate:
+        try:
+            send_interview_scheduled_candidate(
+                candidate_email=candidate.email,
+                candidate_name=candidate.full_name or "Kandidaat",
+                vacancy_title=vacancy.title or "Vacature",
+                scheduled_at=scheduled_str,
+                duration_minutes=payload.duration_minutes,
+                interview_type=payload.interview_type,
+                notes=payload.notes,
+            )
+        except Exception:
+            pass  # niet-fataal
+
+    try:
+        send_interview_scheduled_employer(
+            employer_email=current_user.email,
+            employer_name=current_user.full_name or "",
+            candidate_name=candidate.full_name if candidate else "Kandidaat",
+            vacancy_title=vacancy.title or "Vacature",
+            scheduled_at=scheduled_str,
+            duration_minutes=payload.duration_minutes,
+            interview_type=payload.interview_type,
+            notes=payload.notes,
+        )
+    except Exception:
+        pass  # niet-fataal
 
     return _enrich_session(session, db)
 

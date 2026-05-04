@@ -652,6 +652,122 @@ STRINGS: dict[str, dict[str, str]] = {
         "fr": "Vous recevez ce rappel car un candidat attend votre réponse. Répondre rapidement améliore votre marque employeur.",
         "es": "Recibes este recordatorio porque un candidato espera tu respuesta. Responder rápido mejora tu marca empleadora.",
     },
+
+    # send_interview_scheduled_candidate
+    "sched_candidate_subject": {
+        "nl": "Gesprek ingepland: {vacancy_title}",
+        "en": "Interview scheduled: {vacancy_title}",
+        "de": "Gespräch geplant: {vacancy_title}",
+        "fr": "Entretien planifié : {vacancy_title}",
+        "es": "Entrevista programada: {vacancy_title}",
+    },
+    "sched_candidate_heading": {
+        "nl": "Je gesprek is ingepland!",
+        "en": "Your interview is scheduled!",
+        "de": "Ihr Gespräch ist geplant!",
+        "fr": "Votre entretien est planifié !",
+        "es": "¡Tu entrevista está programada!",
+    },
+    "sched_candidate_intro": {
+        "nl": "Hi {candidate_name}, er is een gesprek ingepland voor je sollicitatie.",
+        "en": "Hi {candidate_name}, an interview has been scheduled for your application.",
+        "de": "Hallo {candidate_name}, ein Gespräch wurde für Ihre Bewerbung geplant.",
+        "fr": "Bonjour {candidate_name}, un entretien a été planifié pour votre candidature.",
+        "es": "Hola {candidate_name}, se ha programado una entrevista para tu solicitud.",
+    },
+    "sched_date_label": {
+        "nl": "Datum & tijd",
+        "en": "Date & time",
+        "de": "Datum & Uhrzeit",
+        "fr": "Date & heure",
+        "es": "Fecha y hora",
+    },
+    "sched_duration_label": {
+        "nl": "Duur",
+        "en": "Duration",
+        "de": "Dauer",
+        "fr": "Durée",
+        "es": "Duración",
+    },
+    "sched_type_label": {
+        "nl": "Type",
+        "en": "Type",
+        "de": "Art",
+        "fr": "Type",
+        "es": "Tipo",
+    },
+    "sched_type_teams": {
+        "nl": "Online via Teams",
+        "en": "Online via Teams",
+        "de": "Online über Teams",
+        "fr": "En ligne via Teams",
+        "es": "En línea vía Teams",
+    },
+    "sched_type_phone": {
+        "nl": "Telefonisch",
+        "en": "Phone call",
+        "de": "Telefonisch",
+        "fr": "Par téléphone",
+        "es": "Llamada telefónica",
+    },
+    "sched_type_in_person": {
+        "nl": "Op locatie",
+        "en": "On-site",
+        "de": "Vor Ort",
+        "fr": "Sur place",
+        "es": "Presencial",
+    },
+    "sched_minutes": {
+        "nl": "{n} minuten",
+        "en": "{n} minutes",
+        "de": "{n} Minuten",
+        "fr": "{n} minutes",
+        "es": "{n} minutos",
+    },
+    "sched_notes_label": {
+        "nl": "Notities",
+        "en": "Notes",
+        "de": "Notizen",
+        "fr": "Notes",
+        "es": "Notas",
+    },
+    "sched_candidate_footer": {
+        "nl": "Veel succes met je gesprek! Log in op VorzaIQ om je sollicitatie te bekijken.",
+        "en": "Good luck with your interview! Log in to VorzaIQ to view your application.",
+        "de": "Viel Erfolg bei Ihrem Gespräch! Melden Sie sich bei VorzaIQ an, um Ihre Bewerbung einzusehen.",
+        "fr": "Bonne chance pour votre entretien ! Connectez-vous à VorzaIQ pour consulter votre candidature.",
+        "es": "¡Buena suerte en tu entrevista! Inicia sesión en VorzaIQ para ver tu solicitud.",
+    },
+
+    # send_interview_scheduled_employer
+    "sched_employer_subject": {
+        "nl": "Bevestiging: gesprek ingepland met {candidate_name}",
+        "en": "Confirmation: interview scheduled with {candidate_name}",
+        "de": "Bestätigung: Gespräch geplant mit {candidate_name}",
+        "fr": "Confirmation : entretien planifié avec {candidate_name}",
+        "es": "Confirmación: entrevista programada con {candidate_name}",
+    },
+    "sched_employer_heading": {
+        "nl": "Gesprek ingepland",
+        "en": "Interview scheduled",
+        "de": "Gespräch geplant",
+        "fr": "Entretien planifié",
+        "es": "Entrevista programada",
+    },
+    "sched_employer_intro": {
+        "nl": "Je hebt een gesprek ingepland met {candidate_name} voor de functie {vacancy_title}.",
+        "en": "You have scheduled an interview with {candidate_name} for the position {vacancy_title}.",
+        "de": "Sie haben ein Gespräch mit {candidate_name} für die Stelle {vacancy_title} geplant.",
+        "fr": "Vous avez planifié un entretien avec {candidate_name} pour le poste {vacancy_title}.",
+        "es": "Has programado una entrevista con {candidate_name} para el puesto {vacancy_title}.",
+    },
+    "sched_employer_footer": {
+        "nl": "De kandidaat heeft een e-mailbevestiging ontvangen.",
+        "en": "The candidate has received an email confirmation.",
+        "de": "Der Kandidat hat eine E-Mail-Bestätigung erhalten.",
+        "fr": "Le candidat a reçu une confirmation par e-mail.",
+        "es": "El candidato ha recibido una confirmación por correo electrónico.",
+    },
 }
 
 
@@ -1536,5 +1652,178 @@ def send_employer_review_reminder(
         subject=get_string("reminder_subject", language).format(
             candidate_name=candidate_name, vacancy_title=vacancy_title,
         ),
+        html=html,
+    )
+
+
+# ── Kandidaat: gesprek ingepland ──────────────────────────────────────────
+
+def send_interview_scheduled_candidate(
+    candidate_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    scheduled_at: str,
+    duration_minutes: int,
+    interview_type: str,
+    notes: str | None = None,
+    language: str = "nl",
+) -> None:
+    """Stuur kandidaat een bevestiging dat er een gesprek is ingepland."""
+    type_key = f"sched_type_{interview_type}"
+    type_label = get_string(type_key, language) or interview_type
+
+    notes_html = ""
+    if notes:
+        notes_html = f"""
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+        <div style="font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_notes_label", language)}</div>
+        <div style="font-size:14px;color:#374151;">{notes}</div>
+      </div>"""
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">{get_string("sched_candidate_heading", language)}</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        {get_string("sched_candidate_heading", language)}
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        {get_string("sched_candidate_intro", language).format(candidate_name=candidate_name)}
+      </p>
+
+      <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("application_position_label", language)}</div>
+          <div style="font-size:16px;font-weight:700;color:#111827;">{vacancy_title}</div>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_date_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{scheduled_at}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_duration_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{get_string("sched_minutes", language).format(n=duration_minutes)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_type_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{type_label}</div>
+          </div>
+        </div>
+      </div>
+
+      {notes_html}
+
+      <a href="{FRONTEND_URL}/candidate/sollicitaties"
+         style="display:inline-block;padding:13px 28px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        Bekijk sollicitatie
+      </a>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {get_string("sched_candidate_footer", language)}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=candidate_email,
+        subject=get_string("sched_candidate_subject", language).format(vacancy_title=vacancy_title),
+        html=html,
+    )
+
+
+# ── Werkgever: bevestiging gesprek ingepland ──────────────────────────────
+
+def send_interview_scheduled_employer(
+    employer_email: str,
+    employer_name: str,
+    candidate_name: str,
+    vacancy_title: str,
+    scheduled_at: str,
+    duration_minutes: int,
+    interview_type: str,
+    notes: str | None = None,
+    language: str = "nl",
+) -> None:
+    """Stuur werkgever een bevestiging van het ingeplande gesprek."""
+    type_key = f"sched_type_{interview_type}"
+    type_label = get_string(type_key, language) or interview_type
+
+    notes_html = ""
+    if notes:
+        notes_html = f"""
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+        <div style="font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_notes_label", language)}</div>
+        <div style="font-size:14px;color:#374151;">{notes}</div>
+      </div>"""
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">{get_string("sched_employer_heading", language)}</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        {get_string("sched_employer_heading", language)}
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        {get_string("sched_employer_intro", language).format(candidate_name=candidate_name, vacancy_title=vacancy_title)}
+      </p>
+
+      <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_date_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{scheduled_at}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_duration_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{get_string("sched_minutes", language).format(n=duration_minutes)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#7c3aed;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_type_label", language)}</div>
+            <div style="font-size:15px;font-weight:600;color:#111827;">{type_label}</div>
+          </div>
+        </div>
+      </div>
+
+      {notes_html}
+
+      <a href="{FRONTEND_URL}/employer"
+         style="display:inline-block;padding:13px 28px;background:#7C3AED;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;">
+        Naar dashboard
+      </a>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {get_string("sched_employer_footer", language)}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=employer_email,
+        subject=get_string("sched_employer_subject", language).format(candidate_name=candidate_name),
         html=html,
     )
