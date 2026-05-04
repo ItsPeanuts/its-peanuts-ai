@@ -51,7 +51,7 @@ class ScheduleInterviewIn(BaseModel):
     application_id: int
     scheduled_at: str = ""     # ISO 8601: "2026-03-15T14:00:00+01:00"
     duration_minutes: int = 30
-    interview_type: str = "teams"   # "teams" | "phone" | "in_person"
+    interview_type: str = "teams"   # "teams" | "phone" | "in_person" | "whatsapp"
     notes: Optional[str] = None
     proposed_dates: Optional[List[str]] = None  # Voor in_person: 3 datumvoorstellen
 

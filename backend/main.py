@@ -132,7 +132,7 @@ async def lifespan(app_instance: FastAPI):
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="ItsPeanuts AI",
+    title="VorzaIQ",
     version="1.0.0",
     docs_url=None,
     redoc_url=None,
@@ -202,7 +202,7 @@ async def root():
     index_path = os.path.join(frontend_path, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"message": "Welcome to ItsPeanuts AI"}
+    return {"message": "Welcome to VorzaIQ"}
 
 @app.get("/health")
 async def health():

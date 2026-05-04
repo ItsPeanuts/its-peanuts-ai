@@ -3,7 +3,7 @@ Email notificaties via Resend.
 
 Vereiste env vars:
   RESEND_API_KEY  — API key van resend.com
-  FROM_EMAIL      — bijv. noreply@itspeanuts.nl (moet geverifieerd domein zijn in Resend)
+  FROM_EMAIL      — bijv. noreply@vorzaiq.com (moet geverifieerd domein zijn in Resend)
 
 Als RESEND_API_KEY niet is ingesteld worden e-mails overgeslagen zonder fout.
 """
@@ -14,9 +14,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 RESEND_API_KEY   = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL       = os.getenv("FROM_EMAIL", "ItsPeanuts AI <noreply@itspeanuts.nl>")
+FROM_EMAIL       = os.getenv("FROM_EMAIL", "VorzaIQ <noreply@vorzaiq.com>")
 FRONTEND_URL     = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
-ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "admin@itspeanuts.ai")
+ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "admin@vorzaiq.com")
 BOOKKEEPER_EMAIL = os.getenv("BOOKKEEPER_EMAIL", "")
 INVOICE_FROM_EMAIL = os.getenv("INVOICE_FROM_EMAIL", "VorzaIQ <info@vorzaiq.com>")
 
@@ -181,11 +181,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "¡Buenas noticias para {company_name}!",
     },
     "claim_intro": {
-        "nl": "Er heeft iemand gesolliciteerd op uw vacature <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via ItsPeanuts AI.",
-        "en": "Someone applied to your vacancy <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via ItsPeanuts AI.",
-        "de": "Jemand hat sich auf Ihre Stelle <strong style=\"color:#0f766e;\">{vacancy_title}</strong> über ItsPeanuts AI beworben.",
-        "fr": "Quelqu'un a postulé à votre offre <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via ItsPeanuts AI.",
-        "es": "Alguien solicitó tu vacante <strong style=\"color:#0f766e;\">{vacancy_title}</strong> a través de ItsPeanuts AI.",
+        "nl": "Er heeft iemand gesolliciteerd op uw vacature <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via VorzaIQ.",
+        "en": "Someone applied to your vacancy <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via VorzaIQ.",
+        "de": "Jemand hat sich auf Ihre Stelle <strong style=\"color:#0f766e;\">{vacancy_title}</strong> über VorzaIQ beworben.",
+        "fr": "Quelqu'un a postulé à votre offre <strong style=\"color:#0f766e;\">{vacancy_title}</strong> via VorzaIQ.",
+        "es": "Alguien solicitó tu vacante <strong style=\"color:#0f766e;\">{vacancy_title}</strong> a través de VorzaIQ.",
     },
     "claim_free_label": {
         "nl": "Uw eerste vacature is gratis!",
@@ -195,11 +195,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "¡Tu primera vacante es gratuita!",
     },
     "claim_free_body": {
-        "nl": "ItsPeanuts AI heeft uw vacature gevonden en op ons platform gepubliceerd. Activeer uw gratis account om de sollicitant te bekijken en te reageren. U kunt direct aan de slag — geen creditcard vereist.",
-        "en": "ItsPeanuts AI found your vacancy and published it on our platform. Activate your free account to view the applicant and respond. You can get started right away — no credit card required.",
-        "de": "ItsPeanuts AI hat Ihre Stelle gefunden und auf unserer Plattform veröffentlicht. Aktivieren Sie Ihr kostenloses Konto, um den Bewerber anzusehen und zu antworten. Sie können sofort loslegen — keine Kreditkarte erforderlich.",
-        "fr": "ItsPeanuts AI a trouvé votre offre et l'a publiée sur notre plateforme. Activez votre compte gratuit pour voir le candidat et répondre. Vous pouvez commencer immédiatement — sans carte de crédit.",
-        "es": "ItsPeanuts AI encontró tu vacante y la publicó en nuestra plataforma. Activa tu cuenta gratuita para ver al solicitante y responder. Puedes empezar de inmediato — sin tarjeta de crédito.",
+        "nl": "VorzaIQ heeft uw vacature gevonden en op ons platform gepubliceerd. Activeer uw gratis account om de sollicitant te bekijken en te reageren. U kunt direct aan de slag — geen creditcard vereist.",
+        "en": "VorzaIQ found your vacancy and published it on our platform. Activate your free account to view the applicant and respond. You can get started right away — no credit card required.",
+        "de": "VorzaIQ hat Ihre Stelle gefunden und auf unserer Plattform veröffentlicht. Aktivieren Sie Ihr kostenloses Konto, um den Bewerber anzusehen und zu antworten. Sie können sofort loslegen — keine Kreditkarte erforderlich.",
+        "fr": "VorzaIQ a trouvé votre offre et l'a publiée sur notre plateforme. Activez votre compte gratuit pour voir le candidat et répondre. Vous pouvez commencer immédiatement — sans carte de crédit.",
+        "es": "VorzaIQ encontró tu vacante y la publicó en nuestra plataforma. Activa tu cuenta gratuita para ver al solicitante y responder. Puedes empezar de inmediato — sin tarjeta de crédito.",
     },
     "claim_cta": {
         "nl": "Activeer gratis account en bekijk sollicitant →",
@@ -209,11 +209,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "Activar cuenta gratuita y ver al solicitante →",
     },
     "claim_footer": {
-        "nl": "U ontvangt deze mail omdat iemand heeft gesolliciteerd op een vacature die door ItsPeanuts AI is gevonden op internet. Wilt u liever niet dat uw vacatures op ons platform staan? Stuur een reactie op deze mail en wij verwijderen de vacature.",
-        "en": "You receive this email because someone applied to a vacancy found by ItsPeanuts AI on the internet. Don't want your vacancies on our platform? Send a reply to this email and we will remove the vacancy.",
-        "de": "Sie erhalten diese E-Mail, weil jemand sich auf eine Stelle beworben hat, die ItsPeanuts AI im Internet gefunden hat. Möchten Sie nicht, dass Ihre Stellen auf unserer Plattform stehen? Senden Sie eine Antwort auf diese E-Mail und wir entfernen die Stelle.",
-        "fr": "Vous recevez cet e-mail car quelqu'un a postulé à une offre trouvée par ItsPeanuts AI sur internet. Vous ne souhaitez pas que vos offres soient sur notre plateforme ? Envoyez une réponse à cet e-mail et nous supprimerons l'offre.",
-        "es": "Recibes este correo porque alguien solicitó una vacante encontrada por ItsPeanuts AI en internet. ¿No quieres que tus vacantes estén en nuestra plataforma? Envía una respuesta a este correo y eliminaremos la vacante.",
+        "nl": "U ontvangt deze mail omdat iemand heeft gesolliciteerd op een vacature die door VorzaIQ is gevonden op internet. Wilt u liever niet dat uw vacatures op ons platform staan? Stuur een reactie op deze mail en wij verwijderen de vacature.",
+        "en": "You receive this email because someone applied to a vacancy found by VorzaIQ on the internet. Don't want your vacancies on our platform? Send a reply to this email and we will remove the vacancy.",
+        "de": "Sie erhalten diese E-Mail, weil jemand sich auf eine Stelle beworben hat, die VorzaIQ im Internet gefunden hat. Möchten Sie nicht, dass Ihre Stellen auf unserer Plattform stehen? Senden Sie eine Antwort auf diese E-Mail und wir entfernen die Stelle.",
+        "fr": "Vous recevez cet e-mail car quelqu'un a postulé à une offre trouvée par VorzaIQ sur internet. Vous ne souhaitez pas que vos offres soient sur notre plateforme ? Envoyez une réponse à cet e-mail et nous supprimerons l'offre.",
+        "es": "Recibes este correo porque alguien solicitó una vacante encontrada por VorzaIQ en internet. ¿No quieres que tus vacantes estén en nuestra plataforma? Envía una respuesta a este correo y eliminaremos la vacante.",
     },
     # send_status_update_email — shortlisted
     "status_shortlisted_header_sub": {
@@ -361,11 +361,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "Ver tus solicitudes",
     },
     "status_footer": {
-        "nl": "Dit is een automatische melding van ItsPeanuts AI.",
-        "en": "This is an automatic notification from ItsPeanuts AI.",
-        "de": "Dies ist eine automatische Benachrichtigung von ItsPeanuts AI.",
-        "fr": "Ceci est une notification automatique d'ItsPeanuts AI.",
-        "es": "Esta es una notificación automática de ItsPeanuts AI.",
+        "nl": "Dit is een automatische melding van VorzaIQ.",
+        "en": "This is an automatic notification from VorzaIQ.",
+        "de": "Dies ist eine automatische Benachrichtigung von VorzaIQ.",
+        "fr": "Ceci est une notification automatique d'VorzaIQ.",
+        "es": "Esta es una notificación automática de VorzaIQ.",
     },
     "status_position_label": {
         "nl": "Functie",
@@ -376,11 +376,11 @@ STRINGS: dict[str, dict[str, str]] = {
     },
     # send_team_invite_email
     "team_invite_subject": {
-        "nl": "Je bent uitgenodigd voor het team van {org_name} — ItsPeanuts AI",
-        "en": "You have been invited to the team of {org_name} — ItsPeanuts AI",
-        "de": "Sie wurden zum Team von {org_name} eingeladen — ItsPeanuts AI",
-        "fr": "Vous avez été invité à rejoindre l'équipe de {org_name} — ItsPeanuts AI",
-        "es": "Has sido invitado al equipo de {org_name} — ItsPeanuts AI",
+        "nl": "Je bent uitgenodigd voor het team van {org_name} — VorzaIQ",
+        "en": "You have been invited to the team of {org_name} — VorzaIQ",
+        "de": "Sie wurden zum Team von {org_name} eingeladen — VorzaIQ",
+        "fr": "Vous avez été invité à rejoindre l'équipe de {org_name} — VorzaIQ",
+        "es": "Has sido invitado al equipo de {org_name} — VorzaIQ",
     },
     "team_invite_header_sub": {
         "nl": "Je bent toegevoegd aan een team",
@@ -397,11 +397,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "¡Bienvenido, {full_name}!",
     },
     "team_invite_intro": {
-        "nl": "<strong>{inviter_name}</strong> heeft je toegevoegd aan het team van <strong>{org_name}</strong> op ItsPeanuts AI. Hieronder vind je je inloggegevens.",
-        "en": "<strong>{inviter_name}</strong> has added you to the team of <strong>{org_name}</strong> on ItsPeanuts AI. Below you will find your login credentials.",
-        "de": "<strong>{inviter_name}</strong> hat Sie dem Team von <strong>{org_name}</strong> auf ItsPeanuts AI hinzugefügt. Unten finden Sie Ihre Anmeldedaten.",
-        "fr": "<strong>{inviter_name}</strong> vous a ajouté à l'équipe de <strong>{org_name}</strong> sur ItsPeanuts AI. Vous trouverez ci-dessous vos identifiants de connexion.",
-        "es": "<strong>{inviter_name}</strong> te ha añadido al equipo de <strong>{org_name}</strong> en ItsPeanuts AI. A continuación encontrarás tus credenciales de acceso.",
+        "nl": "<strong>{inviter_name}</strong> heeft je toegevoegd aan het team van <strong>{org_name}</strong> op VorzaIQ. Hieronder vind je je inloggegevens.",
+        "en": "<strong>{inviter_name}</strong> has added you to the team of <strong>{org_name}</strong> on VorzaIQ. Below you will find your login credentials.",
+        "de": "<strong>{inviter_name}</strong> hat Sie dem Team von <strong>{org_name}</strong> auf VorzaIQ hinzugefügt. Unten finden Sie Ihre Anmeldedaten.",
+        "fr": "<strong>{inviter_name}</strong> vous a ajouté à l'équipe de <strong>{org_name}</strong> sur VorzaIQ. Vous trouverez ci-dessous vos identifiants de connexion.",
+        "es": "<strong>{inviter_name}</strong> te ha añadido al equipo de <strong>{org_name}</strong> en VorzaIQ. A continuación encontrarás tus credenciales de acceso.",
     },
     "team_invite_credentials_label": {
         "nl": "Jouw inloggegevens",
@@ -439,11 +439,11 @@ STRINGS: dict[str, dict[str, str]] = {
         "es": "Ir al panel del empleador",
     },
     "team_invite_footer": {
-        "nl": "Je ontvangt dit bericht omdat je bent toegevoegd aan een team op ItsPeanuts AI.",
-        "en": "You receive this message because you have been added to a team on ItsPeanuts AI.",
-        "de": "Sie erhalten diese Nachricht, weil Sie einem Team auf ItsPeanuts AI hinzugefügt wurden.",
-        "fr": "Vous recevez ce message car vous avez été ajouté à une équipe sur ItsPeanuts AI.",
-        "es": "Recibes este mensaje porque has sido añadido a un equipo en ItsPeanuts AI.",
+        "nl": "Je ontvangt dit bericht omdat je bent toegevoegd aan een team op VorzaIQ.",
+        "en": "You receive this message because you have been added to a team on VorzaIQ.",
+        "de": "Sie erhalten diese Nachricht, weil Sie einem Team auf VorzaIQ hinzugefügt wurden.",
+        "fr": "Vous recevez ce message car vous avez été ajouté à une équipe sur VorzaIQ.",
+        "es": "Recibes este mensaje porque has sido añadido a un equipo en VorzaIQ.",
     },
     # send_verification_email
     "verification_subject": {
@@ -717,6 +717,13 @@ STRINGS: dict[str, dict[str, str]] = {
         "fr": "Sur place",
         "es": "Presencial",
     },
+    "sched_type_whatsapp": {
+        "nl": "Via WhatsApp",
+        "en": "Via WhatsApp",
+        "de": "Über WhatsApp",
+        "fr": "Via WhatsApp",
+        "es": "Vía WhatsApp",
+    },
     "sched_minutes": {
         "nl": "{n} minuten",
         "en": "{n} minutes",
@@ -821,7 +828,7 @@ def send_application_confirmation(
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
 
     <div style="background:#0f766e;padding:28px 32px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
       <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">Jouw AI-gedreven recruitment partner</div>
     </div>
 
@@ -899,7 +906,7 @@ def send_new_applicant_notification(
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
 
     <div style="background:#0f766e;padding:28px 32px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
       <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">{get_string("new_applicant_header_sub", language)}</div>
     </div>
 
@@ -972,7 +979,7 @@ def send_claim_notification(
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
 
     <div style="background:#0f766e;padding:28px 32px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
       <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">{get_string("claim_header_sub", language)}</div>
     </div>
 
@@ -1093,7 +1100,7 @@ def send_status_update_email(
 <body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
     <div style="background:{header_bg};padding:28px 32px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
       <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-top:4px;">{header_sub}</div>
     </div>
     <div style="padding:32px;">
@@ -1134,7 +1141,7 @@ def send_team_invite_email(
   <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
 
     <div style="background:#0f766e;padding:28px 32px;">
-      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">ItsPeanuts AI</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
       <div style="font-size:14px;color:#ccfbf1;margin-top:4px;">{get_string("team_invite_header_sub", language)}</div>
     </div>
 

@@ -54,7 +54,7 @@ def seed_test_data() -> None:
         if not system_user:
             system_user = models.User(
                 email=SYSTEM_EMAIL,
-                full_name="ItsPeanuts AI Platform",
+                full_name="VorzaIQ Platform",
                 hashed_password=hash_password("SysP3anutsX!2025#"),
                 role="employer",
                 plan="normaal",

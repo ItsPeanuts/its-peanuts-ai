@@ -23,7 +23,7 @@ class InterviewSession(Base):
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
     duration_minutes = Column(Integer, default=30)
 
-    # Type: "teams" | "phone" | "in_person"
+    # Type: "teams" | "phone" | "in_person" | "whatsapp"
     interview_type = Column(String(20), default="teams", nullable=False)
 
     # Microsoft Teams meeting details (ingevuld na Graph API call)

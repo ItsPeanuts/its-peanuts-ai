@@ -152,7 +152,7 @@ async def teams_webhook(request: Request) -> Response:
                         conversation_id,
                         activity_id,
                         (
-                            "Hoi! Ik ben Lisa, jullie AI HR-recruiter van It's Peanuts AI. "
+                            "Hoi! Ik ben Lisa, jullie AI HR-recruiter van VorzaIQ. "
                             "Ik begeleid het eerste gesprek met kandidaten. "
                             "Ik kan ook gesprekken inplannen en de agenda bijhouden. "
                             "Hoe kan ik je helpen?"
@@ -205,9 +205,9 @@ def _process_message(text: str, sender_name: str) -> str:
 
     if any(k in text for k in schedule_keywords):
         return (
-            "Je kunt een interview inplannen via het werkgeversportaal op It's Peanuts AI. "
+            "Je kunt een interview inplannen via het werkgeversportaal op VorzaIQ. "
             "Ik maak dan automatisch een Teams meeting aan en stuur beide partijen een uitnodiging. "
-            "Ga naar: https://its-peanuts-ai.vercel.app/employer"
+            "Ga naar: https://vorzaiq.com/employer"
         )
 
     if any(k in text for k in help_keywords):

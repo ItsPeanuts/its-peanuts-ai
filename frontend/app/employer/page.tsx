@@ -89,13 +89,14 @@ export default function EmployerPage() {
   const [chatMessages, setChatMessages] = useState<Record<number, ChatMessage[]>>({});
   const [chatLoading, setChatLoading] = useState<Record<number, boolean>>({});
   const [chatOpen, setChatOpen] = useState<Record<number, boolean>>({});
+  const [aiOpen, setAiOpen] = useState<Record<number, boolean>>({});
 
   // Interview modal state
   const [interviewModal, setInterviewModal] = useState<ApplicationWithCandidate | null>(null);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("10:00");
   const [interviewDuration, setInterviewDuration] = useState(30);
-  const [interviewType, setInterviewType] = useState<"teams" | "phone" | "in_person">("teams");
+  const [interviewType, setInterviewType] = useState<"teams" | "phone" | "in_person" | "whatsapp">("teams");
   const [interviewNotes, setInterviewNotes] = useState("");
   const [interviewSaving, setInterviewSaving] = useState(false);
   // Extra datumvelden voor Live op locatie (3 datumvoorstellen)
@@ -1102,38 +1103,47 @@ export default function EmployerPage() {
                             <ScoreBar score={app.match_score} />
                           </div>
 
-                          {/* AI Samenvatting */}
-                          {app.ai_summary && (
-                            <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">{app.ai_summary}</p>
-                          )}
+                          {/* AI Analyse */}
+                          {(app.ai_summary || app.ai_strengths || app.ai_gaps) && (
+                            <div className="mt-3">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setAiOpen((prev) => ({ ...prev, [app.id]: !prev[app.id] })); }}
+                                className="flex items-center gap-2 text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ color: "#7C3AED", background: "none", border: "none", padding: 0 }}
+                              >
+                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[10px] font-bold">AI</span>
+                                Bekijk AI-analyse {aiOpen[app.id] ? "▴" : "▾"}
+                              </button>
 
-                          {/* AI Details uitklapper */}
-                          {(app.ai_strengths || app.ai_gaps) && (
-                            <details className="mt-2">
-                              <summary className="text-xs text-purple-600 cursor-pointer font-medium hover:text-purple-700">
-                                Zie AI-analyse ▾
-                              </summary>
-                              <div className="mt-2 space-y-2">
-                                {app.ai_strengths && (
-                                  <div className="bg-green-50 rounded-lg p-3">
-                                    <div className="text-xs font-semibold text-green-700 mb-1">Sterktes</div>
-                                    <div className="text-xs text-green-600">{app.ai_strengths}</div>
-                                  </div>
-                                )}
-                                {app.ai_gaps && (
-                                  <div className="bg-red-50 rounded-lg p-3">
-                                    <div className="text-xs font-semibold text-red-700 mb-1">Aandachtspunten</div>
-                                    <div className="text-xs text-red-600">{app.ai_gaps}</div>
-                                  </div>
-                                )}
-                                {app.ai_suggested_questions && (
-                                  <div className="bg-blue-50 rounded-lg p-3">
-                                    <div className="text-xs font-semibold text-blue-700 mb-1">Interviewvragen</div>
-                                    <div className="text-xs text-blue-600">{app.ai_suggested_questions}</div>
-                                  </div>
-                                )}
-                              </div>
-                            </details>
+                              {aiOpen[app.id] && (
+                                <div className="mt-3 space-y-2 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                  {app.ai_summary && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-gray-700 mb-1">Samenvatting</div>
+                                      <div className="text-sm text-gray-600 leading-relaxed">{app.ai_summary}</div>
+                                    </div>
+                                  )}
+                                  {app.ai_strengths && (
+                                    <div className="bg-green-50 rounded-lg p-3">
+                                      <div className="text-xs font-semibold text-green-700 mb-1">Sterke punten</div>
+                                      <div className="text-sm text-green-700 leading-relaxed">{app.ai_strengths}</div>
+                                    </div>
+                                  )}
+                                  {app.ai_gaps && (
+                                    <div className="bg-amber-50 rounded-lg p-3">
+                                      <div className="text-xs font-semibold text-amber-700 mb-1">Aandachtspunten</div>
+                                      <div className="text-sm text-amber-700 leading-relaxed">{app.ai_gaps}</div>
+                                    </div>
+                                  )}
+                                  {app.ai_suggested_questions && (
+                                    <div className="bg-blue-50 rounded-lg p-3">
+                                      <div className="text-xs font-semibold text-blue-700 mb-1">Voorgestelde interviewvragen</div>
+                                      <div className="text-sm text-blue-700 leading-relaxed">{app.ai_suggested_questions}</div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           )}
 
                           {/* Lisa chat transcript */}
@@ -2277,9 +2287,10 @@ export default function EmployerPage() {
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   Type gesprek
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {([
                     { value: "teams", label: "Teams", desc: "Online via Teams" },
+                    { value: "whatsapp", label: "WhatsApp", desc: "Via WhatsApp" },
                     { value: "phone", label: "Telefoon", desc: "Telefonisch" },
                     { value: "in_person", label: "Live", desc: "Op locatie" },
                   ] as const).map((opt) => (

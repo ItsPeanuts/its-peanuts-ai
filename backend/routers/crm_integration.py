@@ -212,7 +212,7 @@ def _hubspot_create_meeting(contact_id: str, title: str, scheduled_at_iso: str, 
             "title": title,
             "startTime": scheduled_ts,
             "endTime": scheduled_ts + duration_ms,
-            "body": f"Gesprek ingepland via It's Peanuts AI — {title}",
+            "body": f"Gesprek ingepland via VorzaIQ — {title}",
         },
     }
     resp = requests.post(meetings_url, json=engagement_body, headers=_hubspot_headers(), timeout=10)
@@ -332,7 +332,7 @@ def _salesforce_upsert_lead(candidate: models.User, vacancy_title: str) -> str:
     # POST https://{instance}.salesforce.com/services/data/v58.0/sobjects/Lead
     raise HTTPException(
         status_code=501,
-        detail="Salesforce integratie is beschikbaar als add-on. Neem contact op met It's Peanuts AI.",
+        detail="Salesforce integratie is beschikbaar als add-on. Neem contact op met VorzaIQ.",
     )
 
 

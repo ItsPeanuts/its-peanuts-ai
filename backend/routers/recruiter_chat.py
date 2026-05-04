@@ -35,7 +35,7 @@ router = APIRouter(prefix="/ai/recruiter", tags=["recruiter-chat"])
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-MAX_QUESTIONS = 3  # Lisa stelt 3 vragen, bericht 4 is het sluitingsbericht
+BASE_QUESTIONS = 3  # Lisa stelt minimaal 3 vragen, meer als er intake vragen zijn
 
 LANG_NAMES = {"nl": "Dutch", "en": "English", "de": "German", "fr": "French", "es": "Spanish"}
 
@@ -89,22 +89,47 @@ def _get_application_context(app_id: int, db: Session) -> dict:
         if vacancy else None
     )
 
+    # Haal intake vragen op die de werkgever heeft ingesteld
+    intake_questions = []
+    if vacancy:
+        iq_rows = (
+            db.query(models.IntakeQuestion)
+            .filter(models.IntakeQuestion.vacancy_id == vacancy.id)
+            .all()
+        )
+        intake_questions = [q.question for q in iq_rows]
+
     return {
         "app": app,
         "candidate_name": candidate.full_name if candidate else "Kandidaat",
         "vacancy_title": vacancy.title if vacancy else "Vacature",
         "vacancy_description": vacancy.description or "" if vacancy else "",
-        "employer_name": employer.full_name if employer else "It's Peanuts AI",
+        "employer_name": employer.full_name if employer else "VorzaIQ",
         "match_score": ai_result.match_score if ai_result else None,
         "gaps": ai_result.gaps if ai_result else "",
         "strengths": ai_result.strengths if ai_result else "",
         "suggested_questions": ai_result.suggested_questions if ai_result else "",
         "cv_text": cv.extracted_text or "" if cv else "",
+        "intake_questions": intake_questions,
     }
 
 
 def _build_system_prompt(ctx: dict, language: str = "nl") -> str:
     lang_instruction = f"Always respond in {LANG_NAMES.get(language, 'Dutch')}."
+
+    # Bouw intake vragen sectie
+    intake_qs = ctx.get("intake_questions", [])
+    max_q = max(BASE_QUESTIONS, BASE_QUESTIONS + len(intake_qs))
+    if intake_qs:
+        intake_section = "\n".join(f"  {i+1}. {q}" for i, q in enumerate(intake_qs))
+        intake_instruction = f"""
+INTAKE VRAGEN VAN DE WERKGEVER (BELANGRIJK — stel deze vragen!):
+De werkgever wil specifiek het volgende weten van de kandidaat:
+{intake_section}
+Verwerk deze vragen in je gesprek. Je mag ze herformuleren zodat ze natuurlijk klinken, maar zorg dat elk onderwerp aan bod komt."""
+    else:
+        intake_instruction = ""
+
     return f"""Je bent Lisa, HR-recruiter bij {ctx['employer_name']}.
 
 Je hebt {ctx['candidate_name']} uitgenodigd voor een eerste kennismakingsgesprek over de functie {ctx['vacancy_title']}.
@@ -117,6 +142,7 @@ ACHTERGROND (intern — niet letterlijk noemen):
 - Aandachtspunten: {ctx['gaps'] or 'geen specifieke gaps'}
 - CV highlights: {ctx['cv_text'][:800] if ctx['cv_text'] else 'CV niet beschikbaar'}
 - Interviewvragen om te stellen: {ctx['suggested_questions'] or 'gebruik je eigen oordeel'}
+{intake_instruction}
 
 GESPREKSSTIJL:
 - Praat zoals een echte HR-recruiter: warm, betrokken, nieuwsgierig
@@ -127,10 +153,10 @@ GESPREKSSTIJL:
 - Geen bullet points, geen opsommingen
 
 GESPREKSDOEL:
-- Stel {MAX_QUESTIONS} gerichte vragen over de aandachtspunten en motivatie van de kandidaat
+- Stel {max_q} gerichte vragen over de aandachtspunten en motivatie van de kandidaat
 - Diep door op interessante antwoorden ("Interessant, kun je daar een voorbeeld van geven?")
 - Als een antwoord onduidelijk is, vraag vriendelijk om verduidelijking
-- Sluit het gesprek na {MAX_QUESTIONS} vragen positief af zonder nieuwe vragen te stellen
+- Sluit het gesprek na {max_q} vragen positief af zonder nieuwe vragen te stellen
 
 {lang_instruction}
 """
@@ -308,8 +334,12 @@ def send_message(
     system_prompt = _build_system_prompt(ctx, language)
     history = _get_conversation_history(app_id, db)
 
-    # Sluit af na MAX_QUESTIONS recruiter berichten
-    if recruiter_count >= MAX_QUESTIONS:
+    # Dynamisch max vragen: basis + intake vragen van werkgever
+    intake_qs = ctx.get("intake_questions", [])
+    max_questions = max(BASE_QUESTIONS, BASE_QUESTIONS + len(intake_qs))
+
+    # Sluit af na max_questions recruiter berichten
+    if recruiter_count >= max_questions:
         closing = (
             f"Dit is je LAATSTE bericht. Bedank {ctx['candidate_name']} hartelijk voor de antwoorden. "
             f"Zeg dat de werkgever zo snel mogelijk contact opneemt. Sluit vriendelijk af. "

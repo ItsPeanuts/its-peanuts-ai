@@ -312,86 +312,43 @@ export default function SollicitatieDetailPage() {
               );
             })()}
 
-            {/* AI Analyse */}
-            {aiResult ? (
+            {/* Status melding voor kandidaat */}
+            {aiResult?.match_score != null && (
               <div style={{
                 background: "#fff",
                 borderRadius: 16,
-                padding: "28px",
+                padding: "24px 28px",
                 boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                 marginBottom: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: 0 }}>AI-analyse</h2>
-                  {aiResult.match_score != null && (
-                    <div style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: "50%",
-                      background: scoreBg,
-                      border: `3px solid ${scoreColor}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 16,
-                      fontWeight: 800,
-                      color: scoreColor,
-                    }}>
-                      {aiResult.match_score}
-                    </div>
-                  )}
+                <div style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: "50%",
+                  background: scoreBg,
+                  border: `3px solid ${scoreColor}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: scoreColor,
+                  flexShrink: 0,
+                }}>
+                  {aiResult.match_score}
                 </div>
-
-                {aiResult.summary && (
-                  <div style={{ marginBottom: 18 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Samenvatting</div>
-                    <div style={{ fontSize: 14, color: "#4b5563", lineHeight: 1.6, background: "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
-                      {aiResult.summary}
-                    </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Matchscore</div>
+                  <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                    {aiResult.match_score >= 70
+                      ? "Je profiel past goed bij deze vacature. De werkgever bekijkt je sollicitatie."
+                      : aiResult.match_score >= 40
+                      ? "Je profiel is beoordeeld. De werkgever bekijkt je sollicitatie."
+                      : "Je sollicitatie is ontvangen en wordt beoordeeld door de werkgever."}
                   </div>
-                )}
-
-                <div className="app-detail-ai-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  {aiResult.strengths && (
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#059669", marginBottom: 6 }}>Sterke punten</div>
-                      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, background: "#f0fdf4", borderRadius: 10, padding: "12px 14px" }}>
-                        {aiResult.strengths}
-                      </div>
-                    </div>
-                  )}
-                  {aiResult.gaps && (
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#d97706", marginBottom: 6 }}>Aandachtspunten</div>
-                      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, background: "#fffbeb", borderRadius: 10, padding: "12px 14px" }}>
-                        {aiResult.gaps}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {aiResult.suggested_questions && (
-                  <div style={{ marginTop: 18 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#7c3aed", marginBottom: 6 }}>Mogelijke interviewvragen</div>
-                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, background: "#f5f3ff", borderRadius: 10, padding: "12px 14px" }}>
-                      {aiResult.suggested_questions}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{
-                background: "#fff",
-                borderRadius: 16,
-                padding: "28px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                marginBottom: 20,
-                textAlign: "center",
-              }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🤖</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Nog geen AI-analyse</div>
-                <div style={{ fontSize: 13, color: "#9ca3af" }}>
-                  De AI-analyse wordt uitgevoerd zodra je sollicitatie is verwerkt.
                 </div>
               </div>
             )}

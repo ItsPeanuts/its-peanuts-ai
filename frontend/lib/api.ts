@@ -539,7 +539,7 @@ export type InterviewSession = {
   application_id: number;
   scheduled_at: string;
   duration_minutes: number;
-  interview_type: "teams" | "phone" | "in_person";
+  interview_type: "teams" | "phone" | "in_person" | "whatsapp";
   teams_join_url: string | null;
   teams_organizer_email: string | null;
   status: string;
