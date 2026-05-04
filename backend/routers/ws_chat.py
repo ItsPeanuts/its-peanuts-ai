@@ -27,7 +27,7 @@ from backend.routers.recruiter_chat import (
     _get_conversation_history,
     _save_message,
     _call_ai,
-    MAX_QUESTIONS,
+    BASE_QUESTIONS,
 )
 
 _openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("OPENAI_API_KEY") else None
@@ -166,7 +166,10 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
         ).order_by(models.RecruiterChatMessage.created_at.asc()).all()
 
         recruiter_count = sum(1 for m in history_msgs if m.role == "recruiter")
-        ended = recruiter_count > MAX_QUESTIONS
+        ctx = _get_application_context(app_id, db)
+        intake_qs = ctx.get("intake_questions", [])
+        max_questions = BASE_QUESTIONS + len(intake_qs)
+        ended = recruiter_count > max_questions
 
         for m in history_msgs:
             await manager.send(ws, {
@@ -228,7 +231,9 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                 system_prompt = _build_system_prompt(ctx)
                 conv_history = _get_conversation_history(app_id, db)
 
-                if recruiter_count >= MAX_QUESTIONS:
+                intake_qs_ws = ctx.get("intake_questions", [])
+                max_questions_ws = BASE_QUESTIONS + len(intake_qs_ws)
+                if recruiter_count >= max_questions_ws:
                     closing = (
                         f"Dit is je LAATSTE bericht. Bedank {ctx['candidate_name']} hartelijk voor de antwoorden. "
                         f"Zeg dat de werkgever zo snel mogelijk contact opneemt. Sluit vriendelijk af. "

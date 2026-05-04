@@ -2041,7 +2041,7 @@ export default function EmployerPage() {
             </div>
 
             <div className="px-6 pb-5 text-center">
-              <span className="text-xs text-gray-400">Vragen? Mail ons op <a href="mailto:info@itspeanuts.ai" className="text-purple-600 no-underline">info@itspeanuts.ai</a></span>
+              <span className="text-xs text-gray-400">Vragen? Mail ons op <a href="mailto:info@vorzaiq.com" className="text-purple-600 no-underline">info@vorzaiq.com</a></span>
             </div>
           </div>
         </div>

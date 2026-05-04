@@ -79,7 +79,7 @@ export default function AdminSetupPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="admin@itspeanuts.ai"
+                placeholder="admin@vorzaiq.com"
                 required
                 className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
               />

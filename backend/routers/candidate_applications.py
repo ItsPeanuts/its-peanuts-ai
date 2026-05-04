@@ -7,7 +7,7 @@ from sqlalchemy import func as sqlfunc
 from backend.db import get_db
 from backend import models, schemas
 from backend.routers.auth import get_current_user, require_role
-from backend.routers.recruiter_chat import MAX_QUESTIONS
+from backend.routers.recruiter_chat import BASE_QUESTIONS
 
 router = APIRouter(prefix="/candidate", tags=["candidate-applications"])
 
@@ -93,7 +93,7 @@ def my_applications_with_details(
         interview_type = app.vacancy.interview_type or "both"
         chat_required = interview_type in ("chat", "both")
 
-        # Chat completed: recruiter heeft sluitingsbericht gestuurd (> MAX_QUESTIONS = closing msg sent)
+        # Chat completed: recruiter heeft sluitingsbericht gestuurd (> max_questions = closing msg sent)
         chat_completed = False
         if chat_required:
             recruiter_msg_count = (
@@ -104,7 +104,14 @@ def my_applications_with_details(
                 )
                 .scalar()
             ) or 0
-            chat_completed = recruiter_msg_count > MAX_QUESTIONS
+            # Dynamisch: basis + intake vragen van werkgever
+            intake_q_count = (
+                db.query(sqlfunc.count(models.IntakeQuestion.id))
+                .filter(models.IntakeQuestion.vacancy_id == app.vacancy_id)
+                .scalar()
+            ) or 0
+            max_questions = BASE_QUESTIONS + intake_q_count
+            chat_completed = recruiter_msg_count > max_questions
         else:
             chat_completed = True  # niet vereist = automatisch afgerond
 
