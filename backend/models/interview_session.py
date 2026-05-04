@@ -31,7 +31,11 @@ class InterviewSession(Base):
     teams_join_url = Column(Text, nullable=True)             # Kandidaat join link
     teams_organizer_email = Column(String(255), nullable=True)
 
-    # Status: "scheduled" | "completed" | "cancelled" | "rescheduled"
+    # Voorgestelde datums (JSON array) — voor in_person gesprekken met keuze
+    # Formaat: ["2026-05-10T14:00:00", "2026-05-11T10:00:00", "2026-05-12T15:00:00"]
+    proposed_dates = Column(Text, nullable=True)
+
+    # Status: "scheduled" | "pending_choice" | "completed" | "cancelled" | "rescheduled"
     status = Column(String(20), default="scheduled", nullable=False)
 
     # Optionele notities van de werkgever

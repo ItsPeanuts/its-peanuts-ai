@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { getMyApplications, ApplicationWithDetails } from "@/lib/api";
+import { getMyApplications, chooseInterviewDate, ApplicationWithDetails } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
@@ -41,14 +41,16 @@ function ScoreCircle({ score }: { score: number | null }) {
   );
 }
 
-export default function SollicitatiePage() {
+function SollicitatieContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
 
   const [apps, setApps] = useState<ApplicationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   useEffect(() => {
     if (!token) { router.replace("/candidate/login"); return; }
@@ -66,6 +68,25 @@ export default function SollicitatiePage() {
       })
       .finally(() => setLoading(false));
   }, [router, token, role]);
+
+  // Datumkeuze via email link: ?choose={sessionId}&date={iso}
+  useEffect(() => {
+    const chooseId = searchParams?.get("choose");
+    const chooseDate = searchParams?.get("date");
+    if (!chooseId || !chooseDate || !token) return;
+
+    chooseInterviewDate(token, Number(chooseId), chooseDate)
+      .then(() => {
+        const dt = new Date(chooseDate);
+        setSuccessMsg(`Datum bevestigd: ${dt.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} om ${dt.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}`);
+        // Verwijder query params
+        router.replace("/candidate/sollicitaties");
+      })
+      .catch((e) => {
+        setError(e?.message || "Datum kiezen mislukt");
+        router.replace("/candidate/sollicitaties");
+      });
+  }, [searchParams, token, router]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,6 +130,10 @@ export default function SollicitatiePage() {
 
         {loading && (
           <div className="flex items-center justify-center py-16 text-gray-400 text-sm">Laden...</div>
+        )}
+
+        {successMsg && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-700 text-sm mb-5">{successMsg}</div>
         )}
 
         {error && (
@@ -160,5 +185,13 @@ export default function SollicitatiePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SollicitatiePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">Laden...</div>}>
+      <SollicitatieContent />
+    </Suspense>
   );
 }

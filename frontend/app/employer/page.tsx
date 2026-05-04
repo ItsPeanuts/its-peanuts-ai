@@ -98,6 +98,11 @@ export default function EmployerPage() {
   const [interviewType, setInterviewType] = useState<"teams" | "phone" | "in_person">("teams");
   const [interviewNotes, setInterviewNotes] = useState("");
   const [interviewSaving, setInterviewSaving] = useState(false);
+  // Extra datumvelden voor Live op locatie (3 datumvoorstellen)
+  const [interviewDate2, setInterviewDate2] = useState("");
+  const [interviewTime2, setInterviewTime2] = useState("14:00");
+  const [interviewDate3, setInterviewDate3] = useState("");
+  const [interviewTime3, setInterviewTime3] = useState("10:00");
   const [scheduledInterviews, setScheduledInterviews] = useState<Record<number, InterviewSession>>({});
 
   // CRM sync state
@@ -355,22 +360,38 @@ export default function EmployerPage() {
     setInterviewSaving(true);
     try {
       const scheduledAt = `${interviewDate}T${interviewTime}:00`;
+
+      // Bij Live op locatie met meerdere datums: stuur proposed_dates
+      let proposedDates: string[] | undefined;
+      if (interviewType === "in_person" && interviewDate2) {
+        proposedDates = [`${interviewDate}T${interviewTime}:00`];
+        proposedDates.push(`${interviewDate2}T${interviewTime2}:00`);
+        if (interviewDate3) proposedDates.push(`${interviewDate3}T${interviewTime3}:00`);
+      }
+
       const session = await scheduleInterview(token, {
         application_id: interviewModal.id,
         scheduled_at: scheduledAt,
         duration_minutes: interviewDuration,
         interview_type: interviewType,
         notes: interviewNotes || undefined,
+        proposed_dates: proposedDates,
       });
       setScheduledInterviews((prev) => ({ ...prev, [interviewModal.id]: session }));
       setMsg(
-        interviewType === "teams" && session.teams_join_url
-          ? "Teams gesprek ingepland! Meeting link verstuurd naar kandidaat."
-          : "Gesprek ingepland!"
+        session.status === "pending_choice"
+          ? "Datumvoorstellen verstuurd naar kandidaat!"
+          : interviewType === "teams" && session.teams_join_url
+            ? "Teams gesprek ingepland! Meeting link verstuurd naar kandidaat."
+            : "Gesprek ingepland!"
       );
       setInterviewModal(null);
       setInterviewDate("");
       setInterviewTime("10:00");
+      setInterviewDate2("");
+      setInterviewTime2("14:00");
+      setInterviewDate3("");
+      setInterviewTime3("10:00");
       setInterviewNotes("");
       setTimeout(() => setMsg(""), 4000);
     } catch (e: unknown) {
@@ -2280,11 +2301,11 @@ export default function EmployerPage() {
               </div>
 
               {/* Datum + tijd */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    Datum *
-                  </label>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  {interviewType === "in_person" ? "Datum 1 *" : "Datum *"}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     type="date"
                     required
@@ -2293,11 +2314,6 @@ export default function EmployerPage() {
                     min={new Date().toISOString().split("T")[0]}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                    Tijd *
-                  </label>
                   <input
                     type="time"
                     required
@@ -2307,6 +2323,57 @@ export default function EmployerPage() {
                   />
                 </div>
               </div>
+
+              {/* Extra datumvelden voor Live op locatie */}
+              {interviewType === "in_person" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Datum 2 *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        required
+                        value={interviewDate2}
+                        onChange={(e) => setInterviewDate2(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                      />
+                      <input
+                        type="time"
+                        required
+                        value={interviewTime2}
+                        onChange={(e) => setInterviewTime2(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Datum 3 (optioneel)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={interviewDate3}
+                        onChange={(e) => setInterviewDate3(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                      />
+                      <input
+                        type="time"
+                        value={interviewTime3}
+                        onChange={(e) => setInterviewTime3(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 text-xs text-purple-700">
+                    De kandidaat ontvangt een e-mail en kiest zelf de datum die het beste uitkomt.
+                  </div>
+                </>
+              )}
 
               {/* Duur */}
               <div>

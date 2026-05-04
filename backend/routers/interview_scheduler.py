@@ -28,7 +28,11 @@ from sqlalchemy.orm import Session
 from backend.db import get_db
 from backend import models
 from backend.routers.auth import get_current_user, require_role
-from backend.services.email import send_interview_scheduled_candidate, send_interview_scheduled_employer
+from backend.services.email import (
+    send_interview_scheduled_candidate,
+    send_interview_scheduled_employer,
+    send_interview_date_choice,
+)
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
 
@@ -45,10 +49,15 @@ MS_ORGANIZER_EMAIL = os.getenv("MS_ORGANIZER_EMAIL", "")  # bijv. lisa@itspeanut
 
 class ScheduleInterviewIn(BaseModel):
     application_id: int
-    scheduled_at: str          # ISO 8601: "2026-03-15T14:00:00+01:00"
+    scheduled_at: str = ""     # ISO 8601: "2026-03-15T14:00:00+01:00"
     duration_minutes: int = 30
     interview_type: str = "teams"   # "teams" | "phone" | "in_person"
     notes: Optional[str] = None
+    proposed_dates: Optional[List[str]] = None  # Voor in_person: 3 datumvoorstellen
+
+
+class ChooseDateIn(BaseModel):
+    chosen_date: str  # ISO 8601: één van de proposed_dates
 
 
 class InterviewSessionOut(BaseModel):
@@ -61,6 +70,7 @@ class InterviewSessionOut(BaseModel):
     teams_organizer_email: Optional[str] = None
     status: str
     notes: Optional[str] = None
+    proposed_dates: Optional[List[str]] = None
     created_at: str
 
     # Verrijkt vanuit gerelateerde tabellen
@@ -198,6 +208,14 @@ def _enrich_session(session: models.InterviewSession, db: Session) -> InterviewS
     candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first() if app else None
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first() if app else None
 
+    # Parse proposed_dates JSON
+    proposed = None
+    if session.proposed_dates:
+        try:
+            proposed = json.loads(session.proposed_dates)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     return InterviewSessionOut(
         id=session.id,
         application_id=session.application_id,
@@ -208,6 +226,7 @@ def _enrich_session(session: models.InterviewSession, db: Session) -> InterviewS
         teams_organizer_email=session.teams_organizer_email,
         status=session.status,
         notes=session.notes,
+        proposed_dates=proposed,
         created_at=str(session.created_at),
         candidate_name=candidate.full_name if candidate else None,
         candidate_email=candidate.email if candidate else None,
@@ -238,20 +257,39 @@ def schedule_interview(
     if not vacancy or vacancy.employer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Geen toegang tot deze sollicitatie")
 
-    try:
-        scheduled_dt = datetime.fromisoformat(payload.scheduled_at)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Ongeldige datumnotatie, gebruik ISO 8601")
+    # Bij in_person met proposed_dates: sla datumvoorstellen op, status = pending_choice
+    if payload.proposed_dates and len(payload.proposed_dates) >= 2:
+        # Valideer alle datums
+        parsed_dates = []
+        for d in payload.proposed_dates:
+            try:
+                parsed_dates.append(datetime.fromisoformat(d))
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Ongeldige datum: {d}")
 
-    # Maak de InterviewSession aan
-    session = models.InterviewSession(
-        application_id=payload.application_id,
-        scheduled_at=scheduled_dt,
-        duration_minutes=payload.duration_minutes,
-        interview_type=payload.interview_type,
-        status="scheduled",
-        notes=payload.notes,
-    )
+        session = models.InterviewSession(
+            application_id=payload.application_id,
+            scheduled_at=parsed_dates[0],  # tijdelijk eerste datum
+            duration_minutes=payload.duration_minutes,
+            interview_type=payload.interview_type,
+            status="pending_choice",
+            notes=payload.notes,
+            proposed_dates=json.dumps([d.isoformat() for d in parsed_dates]),
+        )
+    else:
+        try:
+            scheduled_dt = datetime.fromisoformat(payload.scheduled_at)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Ongeldige datumnotatie, gebruik ISO 8601")
+
+        session = models.InterviewSession(
+            application_id=payload.application_id,
+            scheduled_at=scheduled_dt,
+            duration_minutes=payload.duration_minutes,
+            interview_type=payload.interview_type,
+            status="scheduled",
+            notes=payload.notes,
+        )
     db.add(session)
     db.commit()
     db.refresh(session)
@@ -298,13 +336,60 @@ def schedule_interview(
 
     # ── E-mail notificaties sturen ───────────────────────────────────────────
     candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
-    scheduled_str = scheduled_dt.strftime("%d-%m-%Y om %H:%M")
 
-    if candidate:
+    if session.status == "pending_choice" and candidate:
+        # Stuur datum-keuze email naar kandidaat
         try:
-            send_interview_scheduled_candidate(
+            send_interview_date_choice(
                 candidate_email=candidate.email,
                 candidate_name=candidate.full_name or "Kandidaat",
+                vacancy_title=vacancy.title or "Vacature",
+                proposed_dates=[datetime.fromisoformat(d) for d in json.loads(session.proposed_dates)],
+                duration_minutes=payload.duration_minutes,
+                interview_id=session.id,
+                notes=payload.notes,
+            )
+        except Exception:
+            pass
+        # Bevestiging naar werkgever
+        try:
+            dates_str = ", ".join(
+                datetime.fromisoformat(d).strftime("%d-%m-%Y om %H:%M")
+                for d in json.loads(session.proposed_dates)
+            )
+            send_interview_scheduled_employer(
+                employer_email=current_user.email,
+                employer_name=current_user.full_name or "",
+                candidate_name=candidate.full_name if candidate else "Kandidaat",
+                vacancy_title=vacancy.title or "Vacature",
+                scheduled_at=f"Keuze uit: {dates_str}",
+                duration_minutes=payload.duration_minutes,
+                interview_type=payload.interview_type,
+                notes=payload.notes,
+            )
+        except Exception:
+            pass
+    else:
+        scheduled_str = session.scheduled_at.strftime("%d-%m-%Y om %H:%M") if session.scheduled_at else ""
+        if candidate:
+            try:
+                send_interview_scheduled_candidate(
+                    candidate_email=candidate.email,
+                    candidate_name=candidate.full_name or "Kandidaat",
+                    vacancy_title=vacancy.title or "Vacature",
+                    scheduled_at=scheduled_str,
+                    duration_minutes=payload.duration_minutes,
+                    interview_type=payload.interview_type,
+                    notes=payload.notes,
+                )
+            except Exception:
+                pass
+
+        try:
+            send_interview_scheduled_employer(
+                employer_email=current_user.email,
+                employer_name=current_user.full_name or "",
+                candidate_name=candidate.full_name if candidate else "Kandidaat",
                 vacancy_title=vacancy.title or "Vacature",
                 scheduled_at=scheduled_str,
                 duration_minutes=payload.duration_minutes,
@@ -312,21 +397,7 @@ def schedule_interview(
                 notes=payload.notes,
             )
         except Exception:
-            pass  # niet-fataal
-
-    try:
-        send_interview_scheduled_employer(
-            employer_email=current_user.email,
-            employer_name=current_user.full_name or "",
-            candidate_name=candidate.full_name if candidate else "Kandidaat",
-            vacancy_title=vacancy.title or "Vacature",
-            scheduled_at=scheduled_str,
-            duration_minutes=payload.duration_minutes,
-            interview_type=payload.interview_type,
-            notes=payload.notes,
-        )
-    except Exception:
-        pass  # niet-fataal
+            pass
 
     return _enrich_session(session, db)
 
@@ -449,5 +520,79 @@ def create_teams_meeting_for_session(
     session.teams_organizer_email = MS_ORGANIZER_EMAIL or current_user.email
     db.commit()
     db.refresh(session)
+
+    return _enrich_session(session, db)
+
+
+@router.post("/{session_id}/choose-date", response_model=InterviewSessionOut)
+def choose_interview_date(
+    session_id: int,
+    payload: ChooseDateIn,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Kandidaat kiest een datum uit de voorgestelde opties.
+    Zet status van pending_choice naar scheduled.
+    """
+    session = db.query(models.InterviewSession).filter(models.InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Interview niet gevonden")
+
+    if session.status != "pending_choice":
+        raise HTTPException(status_code=400, detail="Dit gesprek staat niet open voor datumkeuze")
+
+    # Verifieer dat het de kandidaat is
+    app = db.query(models.Application).filter(models.Application.id == session.application_id).first()
+    if not app or app.candidate_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+
+    # Valideer dat gekozen datum in proposed_dates staat
+    proposed = json.loads(session.proposed_dates) if session.proposed_dates else []
+    if payload.chosen_date not in proposed:
+        raise HTTPException(status_code=400, detail="Gekozen datum is geen geldige optie")
+
+    try:
+        chosen_dt = datetime.fromisoformat(payload.chosen_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ongeldige datumnotatie")
+
+    session.scheduled_at = chosen_dt
+    session.status = "scheduled"
+    db.commit()
+    db.refresh(session)
+
+    # Stuur bevestigingsmail naar beide partijen
+    vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == app.vacancy_id).first()
+    employer = db.query(models.User).filter(models.User.id == vacancy.employer_id).first() if vacancy else None
+    scheduled_str = chosen_dt.strftime("%d-%m-%Y om %H:%M")
+
+    try:
+        send_interview_scheduled_candidate(
+            candidate_email=current_user.email,
+            candidate_name=current_user.full_name or "Kandidaat",
+            vacancy_title=vacancy.title if vacancy else "Vacature",
+            scheduled_at=scheduled_str,
+            duration_minutes=session.duration_minutes,
+            interview_type=session.interview_type,
+            notes=session.notes,
+        )
+    except Exception:
+        pass
+
+    if employer:
+        try:
+            send_interview_scheduled_employer(
+                employer_email=employer.email,
+                employer_name=employer.full_name or "",
+                candidate_name=current_user.full_name or "Kandidaat",
+                vacancy_title=vacancy.title if vacancy else "Vacature",
+                scheduled_at=scheduled_str,
+                duration_minutes=session.duration_minutes,
+                interview_type=session.interview_type,
+                notes=session.notes,
+            )
+        except Exception:
+            pass
 
     return _enrich_session(session, db)

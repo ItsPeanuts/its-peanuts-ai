@@ -1827,3 +1827,111 @@ def send_interview_scheduled_employer(
         subject=get_string("sched_employer_subject", language).format(candidate_name=candidate_name),
         html=html,
     )
+
+
+# ── Kandidaat: kies een datum voor gesprek ────────────────────────────────
+
+def send_interview_date_choice(
+    candidate_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    proposed_dates: list,
+    duration_minutes: int,
+    interview_id: int,
+    notes: str | None = None,
+    language: str = "nl",
+) -> None:
+    """Stuur kandidaat een e-mail met datumopties om uit te kiezen."""
+    from datetime import datetime as dt
+
+    dates_html = ""
+    for d in proposed_dates:
+        date_str = d.strftime("%A %d %B %Y om %H:%M") if isinstance(d, dt) else str(d)
+        choose_url = f"{FRONTEND_URL}/candidate/sollicitaties?choose={interview_id}&date={d.isoformat() if isinstance(d, dt) else d}"
+        dates_html += f"""
+        <a href="{choose_url}"
+           style="display:block;padding:16px 20px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:12px;margin-bottom:10px;text-decoration:none;transition:all 0.2s;">
+          <div style="font-size:15px;font-weight:700;color:#7c3aed;">{date_str}</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Klik om deze datum te kiezen</div>
+        </a>"""
+
+    notes_html = ""
+    if notes:
+        notes_html = f"""
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+        <div style="font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">{get_string("sched_notes_label", language)}</div>
+        <div style="font-size:14px;color:#374151;">{notes}</div>
+      </div>"""
+
+    heading_map = {
+        "nl": "Kies een datum voor je gesprek",
+        "en": "Choose a date for your interview",
+        "de": "Wählen Sie einen Termin für Ihr Gespräch",
+        "fr": "Choisissez une date pour votre entretien",
+        "es": "Elige una fecha para tu entrevista",
+    }
+    intro_map = {
+        "nl": f"Hi {candidate_name}, de werkgever heeft meerdere datums voorgesteld voor een gesprek over de functie <strong>{vacancy_title}</strong>. Kies de datum die jou het beste uitkomt.",
+        "en": f"Hi {candidate_name}, the employer has proposed several dates for an interview regarding the position <strong>{vacancy_title}</strong>. Choose the date that works best for you.",
+        "de": f"Hallo {candidate_name}, der Arbeitgeber hat mehrere Termine für ein Gespräch zur Stelle <strong>{vacancy_title}</strong> vorgeschlagen. Wählen Sie den Termin, der Ihnen am besten passt.",
+        "fr": f"Bonjour {candidate_name}, l'employeur a proposé plusieurs dates pour un entretien concernant le poste <strong>{vacancy_title}</strong>. Choisissez la date qui vous convient le mieux.",
+        "es": f"Hola {candidate_name}, el empleador ha propuesto varias fechas para una entrevista sobre el puesto <strong>{vacancy_title}</strong>. Elige la fecha que más te convenga.",
+    }
+    footer_map = {
+        "nl": f"Gespreksduur: {duration_minutes} minuten — Op locatie",
+        "en": f"Interview duration: {duration_minutes} minutes — On-site",
+        "de": f"Gesprächsdauer: {duration_minutes} Minuten — Vor Ort",
+        "fr": f"Durée de l'entretien : {duration_minutes} minutes — Sur place",
+        "es": f"Duración de la entrevista: {duration_minutes} minutos — Presencial",
+    }
+
+    heading = heading_map.get(language, heading_map["nl"])
+    intro = intro_map.get(language, intro_map["nl"])
+    footer = footer_map.get(language, footer_map["nl"])
+
+    subject_map = {
+        "nl": f"Kies een datum: gesprek voor {vacancy_title}",
+        "en": f"Choose a date: interview for {vacancy_title}",
+        "de": f"Termin wählen: Gespräch für {vacancy_title}",
+        "fr": f"Choisissez une date : entretien pour {vacancy_title}",
+        "es": f"Elige una fecha: entrevista para {vacancy_title}",
+    }
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="{language}">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+
+    <div style="background:#7C3AED;padding:28px 32px;">
+      <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VorzaIQ</div>
+      <div style="font-size:14px;color:#e9d5ff;margin-top:4px;">{heading}</div>
+    </div>
+
+    <div style="padding:32px;">
+      <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 8px;">
+        {heading}
+      </h1>
+      <p style="font-size:15px;color:#6b7280;margin:0 0 24px;line-height:1.6;">
+        {intro}
+      </p>
+
+      {dates_html}
+
+      {notes_html}
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+      <p style="font-size:12px;color:#9ca3af;margin:0;">
+        {footer}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    _send(
+        to=candidate_email,
+        subject=subject_map.get(language, subject_map["nl"]),
+        html=html,
+    )

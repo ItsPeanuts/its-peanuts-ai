@@ -544,11 +544,27 @@ export type InterviewSession = {
   teams_organizer_email: string | null;
   status: string;
   notes: string | null;
+  proposed_dates: string[] | null;
   created_at: string;
   candidate_name: string | null;
   candidate_email: string | null;
   vacancy_title: string | null;
 };
+
+export async function chooseInterviewDate(
+  token: string,
+  sessionId: number,
+  chosenDate: string,
+): Promise<InterviewSession> {
+  const res = await fetch(`${BASE}/interviews/${sessionId}/choose-date`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ chosen_date: chosenDate }),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || "Datum kiezen mislukt");
+  return data as InterviewSession;
+}
 
 export async function scheduleInterview(
   token: string,
@@ -558,6 +574,7 @@ export async function scheduleInterview(
     duration_minutes?: number;
     interview_type?: string;
     notes?: string;
+    proposed_dates?: string[];
   }
 ): Promise<InterviewSession> {
   const res = await fetch(`${BASE}/interviews/schedule`, {
