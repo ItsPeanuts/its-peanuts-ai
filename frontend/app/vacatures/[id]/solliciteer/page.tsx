@@ -183,10 +183,8 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
     load();
   }, [vacancyId, isLoggedIn, token]);
 
-  const hasIntake = (vacancy?.intake_questions.length ?? 0) > 0;
-
-  // Stap-definities (altijd ingelogde flow)
-  const steps = hasIntake ? ["Motivatie", "Vragen", "Klaar"] : ["Motivatie", "Klaar"];
+  // Intake vragen worden nu door Lisa gesteld in de chat, niet als formulier
+  const steps = ["Motivatie", "Klaar"];
   const totalSteps = steps.length - 1; // laatste stap = resultaat
 
   // ── Navigatie ──
@@ -338,8 +336,8 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
             )}
           </div>
 
-          {/* Stap-indicator (niet op resultaat-stap) */}
-          {step < steps.length && (
+          {/* Stap-indicator (alleen tonen bij meerdere stappen, niet op resultaat-stap) */}
+          {step < steps.length && steps.length > 2 && (
             <StepIndicator steps={steps.slice(0, -1)} current={step} />
           )}
 
@@ -380,38 +378,6 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
                     {genLoading ? "Bezig met schrijven..." : "AI schrijft motivatiebrief"}
                   </button>
                 )}
-              </div>
-            )}
-
-            {/* ── STAP: Screeningsvragen ── */}
-            {step === gStep("Vragen") && vacancy && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Beantwoord de vragen van de werkgever.</p>
-                {vacancy.intake_questions.map((q, index) => (
-                  <div key={q.id}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>{q.question}</label>
-                    {q.qtype === "yes_no" ? (
-                      <div style={{ display: "flex", gap: 16 }}>
-                        {["Ja", "Nee"].map(opt => (
-                          <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, color: "#374151" }}>
-                            <input type="radio" name={`q_${q.id}`} value={opt} checked={answers[index]?.answer === opt} onChange={() => {
-                              const u = [...answers]; u[index] = { question_id: q.id, answer: opt }; setAnswers(u);
-                            }} style={{ accentColor: "#7C3AED" }} />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <textarea
-                        rows={3} placeholder="Jouw antwoord..." value={answers[index]?.answer ?? ""}
-                        onChange={e => { const u = [...answers]; u[index] = { question_id: q.id, answer: e.target.value }; setAnswers(u); }}
-                        style={{ width: "100%", padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 14, color: "#111827", outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
-                        onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = "#7C3AED"}
-                        onBlur={e => (e.target as HTMLTextAreaElement).style.borderColor = "#e5e7eb"}
-                      />
-                    )}
-                  </div>
-                ))}
               </div>
             )}
 
