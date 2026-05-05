@@ -126,6 +126,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── HOE HET WERKT — LISA ── */}
+      <section style={{ background: "#fff", borderBottom: "1px solid #f3f4f6", padding: "48px 0" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px", textAlign: "center" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+            {T.page.lisaLabel}
+          </p>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 12 }}>
+            {T.page.lisaTitle}
+          </h2>
+          <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.7 }}>
+            {T.page.lisaSubtitle}
+          </p>
+        </div>
+      </section>
+
       {/* ── VACATURES ── */}
       <section style={{ background: "#f9fafb", padding: "40px 0 60px" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
