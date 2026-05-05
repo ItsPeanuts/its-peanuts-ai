@@ -36,12 +36,6 @@ export default function HomePage() {
     window.location.href = `/vacatures?${p.toString()}`;
   };
 
-  const sep = lang === "nl" ? "." : ",";
-  const stats = [
-    { n: vacancies.length > 0 ? `${vacancies.length}+` : `14${sep}780+`, label: T.page.statsJobs },
-    { n: "200+", label: T.page.statsCompanies },
-    { n: `5${sep}000+`, label: T.page.statsCandidates },
-  ];
 
   return (
     <div>
@@ -90,14 +84,6 @@ export default function HomePage() {
             </button>
           </form>
 
-          {/* Stats */}
-          <div className="hero-stats" style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 24 }}>
-            {stats.map(s => (
-              <span key={s.label} style={{ fontSize: 13, color: "#6b7280" }}>
-                <strong style={{ color: "#111827", fontWeight: 700 }}>{s.n}</strong> {s.label}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 

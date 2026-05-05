@@ -67,9 +67,6 @@ export type TranslationSet = {
     ctaTitle: string;
     ctaSubtitle: string;
     ctaCreateAccount: string;
-    statsJobs: string;
-    statsCompanies: string;
-    statsCandidates: string;
   };
   subscription: {
     subscriptionActivated: string;
@@ -243,9 +240,6 @@ const nl: TranslationSet = {
     ctaTitle: "Klaar om te starten?",
     ctaSubtitle: "Maak een gratis account, upload je CV en ontvang AI-matches op maat.",
     ctaCreateAccount: "Maak account aan",
-    statsJobs: "vacatures",
-    statsCompanies: "bedrijven",
-    statsCandidates: "kandidaten",
   },
   subscription: {
     subscriptionActivated: "Abonnement geactiveerd!",
@@ -473,9 +467,6 @@ const en: TranslationSet = {
     ctaTitle: "Ready to get started?",
     ctaSubtitle: "Create a free account, upload your CV and receive tailored AI matches.",
     ctaCreateAccount: "Create account",
-    statsJobs: "jobs",
-    statsCompanies: "companies",
-    statsCandidates: "candidates",
   },
   subscription: {
     subscriptionActivated: "Subscription activated!",
@@ -703,9 +694,6 @@ const de: TranslationSet = {
     ctaTitle: "Bereit loszulegen?",
     ctaSubtitle: "Erstelle ein kostenloses Konto, lade deinen Lebenslauf hoch und erhalte KI-Matches.",
     ctaCreateAccount: "Konto erstellen",
-    statsJobs: "Stellen",
-    statsCompanies: "Unternehmen",
-    statsCandidates: "Kandidaten",
   },
   subscription: {
     subscriptionActivated: "Abonnement aktiviert!",
@@ -933,9 +921,6 @@ const fr: TranslationSet = {
     ctaTitle: "Prêt à commencer ?",
     ctaSubtitle: "Créez un compte gratuit, téléchargez votre CV et recevez des correspondances IA personnalisées.",
     ctaCreateAccount: "Créer un compte",
-    statsJobs: "offres",
-    statsCompanies: "entreprises",
-    statsCandidates: "candidats",
   },
   subscription: {
     subscriptionActivated: "Abonnement activé !",
@@ -1163,9 +1148,6 @@ const es: TranslationSet = {
     ctaTitle: "¿Listo para empezar?",
     ctaSubtitle: "Crea una cuenta gratis, sube tu CV y recibe coincidencias IA personalizadas.",
     ctaCreateAccount: "Crear cuenta",
-    statsJobs: "empleos",
-    statsCompanies: "empresas",
-    statsCandidates: "candidatos",
   },
   subscription: {
     subscriptionActivated: "¡Suscripción activada!",
