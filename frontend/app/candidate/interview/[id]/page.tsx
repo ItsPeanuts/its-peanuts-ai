@@ -365,13 +365,9 @@ export default function VideoInterviewPage() {
           setLisaTurnCount(Math.min(Math.max(0, newCount - 1), MAX_LISA_TURNS));
 
           // Na MAX_LISA_TURNS+1 beurten: Lisa heeft haar laatste vraag gesteld
-          // Wacht op antwoord van kandidaat voordat we afsluiten
+          // Inject sluitingsinstructie in context zodat Lisa's VOLGENDE
+          // auto-response (na het antwoord van de kandidaat) de afsluiting is
           if (newCount === MAX_LISA_TURNS + 1) {
-            awaitingLastAnswerRef.current = true;
-            // Stuur NIET meteen de sluiting — wacht tot kandidaat antwoordt
-          } else if (newCount === MAX_LISA_TURNS + 2) {
-            // Kandidaat heeft geantwoord op de laatste vraag, Lisa heeft gereageerd
-            // Nu sluiten we af
             setStage("wrapping");
             ws.send(JSON.stringify({
               type: "conversation.item.create",
@@ -380,15 +376,12 @@ export default function VideoInterviewPage() {
                 role: "user",
                 content: [{
                   type: "input_text",
-                  text: "[SYSTEEM: Sluit het interview nu vriendelijk af. Bedank de kandidaat en vertel wat de volgende stap is. Stel geen nieuwe vragen meer.]",
+                  text: "[SYSTEEM: Dit was je laatste vraag. Wanneer de kandidaat antwoordt, reageer KORT op hun antwoord, bedank ze hartelijk voor het gesprek en vertel dat de werkgever zo snel mogelijk contact opneemt. Stel ABSOLUUT GEEN nieuwe vragen meer. Eindig het gesprek definitief.]",
                 }],
               },
             }));
-            ws.send(JSON.stringify({
-              type: "response.create",
-              response: { modalities: ["text", "audio"] },
-            }));
-          } else if (newCount > MAX_LISA_TURNS + 2) {
+            // Geen response.create — wacht tot kandidaat antwoordt, dan genereert OpenAI auto de afsluiting
+          } else if (newCount > MAX_LISA_TURNS + 1) {
             // Lisa's afsluitbericht is klaar — sluit mic/ws maar laat Anam uitpraten
             // OpenAI genereert audio sneller dan realtime, dus Anam heeft
             // een groot buffer dat nog afgespeeld moet worden.
