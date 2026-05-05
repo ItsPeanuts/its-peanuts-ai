@@ -38,10 +38,19 @@ export async function generateMetadata({
   }
 
   const city = vacancy.location || "Nederland";
+  const title = `${vacancy.title} — ${city} | VorzaIQ`;
+  const description = `Bekijk de vacature voor ${vacancy.title} in ${city}. Solliciteer direct en word benaderd door Lisa, onze AI-recruiter.`;
+  const url = `https://www.vorzaiq.com/vacatures/${params.id}`;
 
   return {
-    title: `${vacancy.title} — ${city} | VorzaIQ`,
-    description: `Bekijk de vacature voor ${vacancy.title} in ${city}. Solliciteer direct en word benaderd door Lisa, onze AI-recruiter.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+    },
   };
 }
 

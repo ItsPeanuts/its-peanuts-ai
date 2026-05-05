@@ -12,4 +12,4 @@ Disallow: /auth/
 Disallow: /verify-email
 Disallow: /reset-password
 
-Sitemap: https://vorzaiq.com/sitemap.xml
+Sitemap: https://www.vorzaiq.com/sitemap.xml

@@ -5,6 +5,13 @@ export const metadata: Metadata = {
   title: "Alle Vacatures | VorzaIQ — AI Recruitment Nederland",
   description:
     "Bekijk alle openstaande vacatures. Upload je CV en ontvang automatisch AI-matches op maat.",
+  openGraph: {
+    title: "Alle Vacatures | VorzaIQ — AI Recruitment Nederland",
+    description:
+      "Bekijk alle openstaande vacatures. Upload je CV en ontvang automatisch AI-matches op maat.",
+    url: "https://www.vorzaiq.com/vacatures",
+    type: "website",
+  },
 };
 
 export default function VacaturesPage() {
