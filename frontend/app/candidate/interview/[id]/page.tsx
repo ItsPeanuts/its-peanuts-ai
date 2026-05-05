@@ -569,21 +569,26 @@ export default function VideoInterviewPage() {
   // ── Resultaatscherm ───────────────────────────────────────────────────────────
 
   if (stage === "completed" && result) {
+    const scoreColor = result.score >= 70 ? "#059669" : result.score >= 50 ? "#d97706" : "#dc2626";
+    const scoreBg = result.score >= 70 ? "#d1fae5" : result.score >= 50 ? "#fef3c7" : "#fee2e2";
     return (
       <div style={{ fontFamily: "system-ui, sans-serif", background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ background: "#fff", borderRadius: 20, padding: "40px 36px", maxWidth: 520, width: "100%", textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>
-            ✅
+            {result.score >= 70 ? "🎉" : result.score >= 50 ? "👍" : "📋"}
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 8px" }}>
             Interview afgerond
           </h1>
           <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20, lineHeight: 1.6 }}>
-            Bedankt voor je tijd! Je interview is succesvol afgerond.
+            Bedankt voor je tijd! Je score:
           </p>
+          <div style={{ width: 90, height: 90, borderRadius: "50%", background: scoreBg, border: `4px solid ${scoreColor}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 26, fontWeight: 900, color: scoreColor }}>
+            {result.score}
+          </div>
           <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "16px 20px", marginBottom: 24 }}>
             <p style={{ fontSize: 14, color: "#059669", fontWeight: 600, margin: 0 }}>
-              De werkgever ontvangt je resultaten en neemt zo snel mogelijk contact met je op.
+              De werkgever bekijkt je resultaten en neemt zo snel mogelijk contact met je op.
             </p>
           </div>
           {result.followup_scheduled && result.teams_join_url && (
