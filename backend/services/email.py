@@ -1847,6 +1847,7 @@ def send_interview_date_choice(
     interview_id: int,
     notes: str | None = None,
     language: str = "nl",
+    interview_type: str = "in_person",
 ) -> None:
     """Stuur kandidaat een e-mail met datumopties om uit te kiezen."""
     from datetime import datetime as dt
@@ -1884,12 +1885,13 @@ def send_interview_date_choice(
         "fr": f"Bonjour {candidate_name}, l'employeur a proposé plusieurs dates pour un entretien concernant le poste <strong>{vacancy_title}</strong>. Choisissez la date qui vous convient le mieux.",
         "es": f"Hola {candidate_name}, el empleador ha propuesto varias fechas para una entrevista sobre el puesto <strong>{vacancy_title}</strong>. Elige la fecha que más te convenga.",
     }
+    type_label = get_string(f"sched_type_{interview_type}", language)
     footer_map = {
-        "nl": f"Gespreksduur: {duration_minutes} minuten — Op locatie",
-        "en": f"Interview duration: {duration_minutes} minutes — On-site",
-        "de": f"Gesprächsdauer: {duration_minutes} Minuten — Vor Ort",
-        "fr": f"Durée de l'entretien : {duration_minutes} minutes — Sur place",
-        "es": f"Duración de la entrevista: {duration_minutes} minutos — Presencial",
+        "nl": f"Gespreksduur: {duration_minutes} minuten — {type_label}",
+        "en": f"Interview duration: {duration_minutes} minutes — {type_label}",
+        "de": f"Gesprächsdauer: {duration_minutes} Minuten — {type_label}",
+        "fr": f"Durée de l'entretien : {duration_minutes} minutes — {type_label}",
+        "es": f"Duración de la entrevista: {duration_minutes} minutos — {type_label}",
     }
 
     heading = heading_map.get(language, heading_map["nl"])

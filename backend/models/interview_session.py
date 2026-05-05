@@ -6,7 +6,7 @@ from backend.models.base import Base
 
 class InterviewSession(Base):
     """
-    Een gepland interview (Teams, telefoon of live) gekoppeld aan een sollicitatie.
+    Een gepland interview (Teams, telefoon, live of WhatsApp) gekoppeld aan een sollicitatie.
     Bevat de Teams meeting link zodra die via Microsoft Graph is aangemaakt.
     """
     __tablename__ = "interview_sessions"

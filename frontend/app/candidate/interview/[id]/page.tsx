@@ -156,7 +156,6 @@ export default function VideoInterviewPage() {
   const lisaIsSpeakingRef = useRef(false); // sync ref — voorkomt phantom speech (mic gedempt terwijl Lisa praat)
   const responseDoneTimeRef = useRef(0); // timestamp van laatste response.done — beschermt Anam tegen phantom interrupts
   const stageRef = useRef<Stage>("idle"); // sync ref voor ws.onclose
-  const awaitingLastAnswerRef = useRef(false); // wacht op antwoord na laatste vraag
 
   // Anam AI avatar refs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

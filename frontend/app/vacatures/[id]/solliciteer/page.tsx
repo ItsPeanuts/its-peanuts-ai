@@ -8,7 +8,6 @@ import {
 } from "@/lib/api";
 import { getToken, getRole } from "@/lib/session";
 
-interface Answer { question_id: number; answer: string; }
 
 // ── Resultaat + auto-redirect naar Lisa chat ─────────────────────
 function ResultRedirect({
@@ -161,9 +160,6 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   const [motivation, setMotivation]       = useState("");
   const [genLoading, setGenLoading]       = useState(false);
 
-  // Intake
-  const [answers, setAnswers] = useState<Answer[]>([]);
-
   // Resultaat
   const [result, setResult] = useState<{ match_score: number; explanation: string; application_id: number } | null>(null);
 
@@ -175,7 +171,6 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
           isLoggedIn && token ? getCandidateCVs(token).catch(() => []) : Promise.resolve([]),
         ]);
         setVacancy(v as PublicVacancyDetail);
-        setAnswers((v as PublicVacancyDetail).intake_questions.map((q: { id: number }) => ({ question_id: q.id, answer: "" })));
         if (isLoggedIn) setHasCV((cvs as []).length > 0);
       } catch { /* gebruik mock */ }
       setLoading(false);
@@ -204,10 +199,8 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
     setError(null);
     try {
       if (token) {
-        const intakeJson = JSON.stringify(answers);
         const res = await applyToVacancyAuthenticated(token, vacancyId, {
           motivation_letter: motivation || undefined,
-          intake_answers_json: intakeJson,
         });
         setResult({ match_score: res.match_score, explanation: res.explanation, application_id: res.application_id });
       }

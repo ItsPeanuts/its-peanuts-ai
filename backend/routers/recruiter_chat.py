@@ -119,7 +119,7 @@ def _build_system_prompt(ctx: dict, language: str = "nl") -> str:
 
     # Bouw intake vragen sectie
     intake_qs = ctx.get("intake_questions", [])
-    max_q = max(BASE_QUESTIONS, BASE_QUESTIONS + len(intake_qs))
+    max_q = BASE_QUESTIONS + len(intake_qs)
     if intake_qs:
         intake_section = "\n".join(f"  {i+1}. {q}" for i, q in enumerate(intake_qs))
         intake_instruction = f"""
@@ -336,7 +336,7 @@ def send_message(
 
     # Dynamisch max vragen: basis + intake vragen van werkgever
     intake_qs = ctx.get("intake_questions", [])
-    max_questions = max(BASE_QUESTIONS, BASE_QUESTIONS + len(intake_qs))
+    max_questions = BASE_QUESTIONS + len(intake_qs)
 
     # Sluit af na max_questions recruiter berichten
     if recruiter_count >= max_questions:

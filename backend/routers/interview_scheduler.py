@@ -53,7 +53,7 @@ class ScheduleInterviewIn(BaseModel):
     duration_minutes: int = 30
     interview_type: str = "teams"   # "teams" | "phone" | "in_person" | "whatsapp"
     notes: Optional[str] = None
-    proposed_dates: Optional[List[str]] = None  # Voor in_person: 3 datumvoorstellen
+    proposed_dates: Optional[List[str]] = None  # Voor non-teams types: 3 datumvoorstellen
 
 
 class ChooseDateIn(BaseModel):
@@ -257,8 +257,8 @@ def schedule_interview(
     if not vacancy or vacancy.employer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Geen toegang tot deze sollicitatie")
 
-    # Bij in_person met proposed_dates: sla datumvoorstellen op, status = pending_choice
-    if payload.proposed_dates and len(payload.proposed_dates) >= 2:
+    # Bij non-teams types met proposed_dates: sla datumvoorstellen op, status = pending_choice
+    if payload.proposed_dates and len(payload.proposed_dates) >= 2 and payload.interview_type != "teams":
         # Valideer alle datums
         parsed_dates = []
         for d in payload.proposed_dates:
@@ -348,6 +348,7 @@ def schedule_interview(
                 duration_minutes=payload.duration_minutes,
                 interview_id=session.id,
                 notes=payload.notes,
+                interview_type=payload.interview_type,
             )
         except Exception:
             pass
