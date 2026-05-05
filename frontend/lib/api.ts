@@ -169,6 +169,7 @@ export type PublicVacancyDetail = PublicVacancy & {
   intake_questions: IntakeQuestion[];
   interview_type: string;   // "chat" | "virtual" | "both"
   employer_plan: string;    // "gratis" | "normaal" | "premium"
+  employer_name: string | null;
 };
 
 // ----------------------------

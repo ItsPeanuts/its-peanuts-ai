@@ -117,6 +117,10 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
 
     employer_plan = (vacancy.employer.plan or "gratis") if vacancy.employer else "gratis"
 
+    employer_name = None
+    if vacancy.employer:
+        employer_name = vacancy.employer.company_name or vacancy.employer.full_name
+
     return schemas.PublicVacancyDetail(
         id=vacancy.id,
         title=vacancy.title,
@@ -127,6 +131,7 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
         created_at=vacancy.created_at,
         interview_type=vacancy.interview_type or "both",
         employer_plan=employer_plan,
+        employer_name=employer_name,
         intake_questions=[
             schemas.IntakeQuestionPublic(
                 id=q.id,

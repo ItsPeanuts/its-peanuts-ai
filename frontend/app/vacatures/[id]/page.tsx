@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getVacancy, PublicVacancyDetail } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
@@ -17,7 +17,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
     id: 1, title: "Senior Frontend Developer", location: "Amsterdam", hours_per_week: "40",
     salary_range: "€4.500 - €6.000", created_at: "2026-02-20T10:00:00",
     employment_type: "fulltime", work_location: "hybride", language: null,
-    interview_type: "both", employer_plan: "premium",
+    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf",
     description: "Wij zoeken een ervaren Senior Frontend Developer die ons team komt versterken. Je werkt aan uitdagende projecten voor grote klanten in de fintech- en e-commerce sector.\n\nJe bent verantwoordelijk voor het bouwen van schaalbare, performante React-applicaties. Je werkt nauw samen met designers, backend-developers en product managers.\n\nWat we bieden:\n- Uitdagend werk in een innovatief team\n- Marktconform salaris + bonusregeling\n- 25 vakantiedagen\n- Thuiswerkmogelijkheden\n- Goede pensioenregeling",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar ervaring heb je met React?", options_json: null },
@@ -29,7 +29,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
     id: 2, title: "Product Manager", location: "Rotterdam", hours_per_week: "40",
     salary_range: "€5.000 - €7.000", created_at: "2026-02-19T09:00:00",
     employment_type: "fulltime", work_location: "op-locatie", language: null,
-    interview_type: "both", employer_plan: "premium",
+    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf",
     description: "Als Product Manager bij ons bedrijf ben jij de verbindende schakel tussen techniek, design en business. Je definieert de productstrategie en zorgt voor een succesvolle uitvoering.\n\nJe werkt nauw samen met engineering teams en stakeholders om de beste producten op de markt te brengen.",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar PM-ervaring heb je?", options_json: null },
@@ -53,6 +53,87 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
       })
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  // JobPosting structured data for Google for Jobs
+  const jsonLd = useMemo(() => {
+    if (!vacancy) return null;
+
+    const datePosted = vacancy.created_at?.split("T")[0] || new Date().toISOString().split("T")[0];
+    const validDate = new Date(datePosted);
+    validDate.setDate(validDate.getDate() + 60);
+    const validThrough = validDate.toISOString().split("T")[0];
+
+    // Map employment_type to schema.org format
+    const typeMap: Record<string, string> = {
+      fulltime: "FULL_TIME",
+      parttime: "PART_TIME",
+      freelance: "CONTRACTOR",
+      stage: "INTERN",
+      tijdelijk: "TEMPORARY",
+    };
+    const employmentType = typeMap[vacancy.employment_type || ""] || "FULL_TIME";
+
+    // Parse salary from salary_range (e.g. "€4.500 - €6.000" or "6500")
+    let baseSalary = null;
+    if (vacancy.salary_range) {
+      const nums = vacancy.salary_range.match(/[\d.]+/g);
+      if (nums && nums.length > 0) {
+        const val = parseFloat(nums[0].replace(".", ""));
+        if (val > 0) {
+          baseSalary = {
+            "@type": "MonetaryAmount",
+            currency: "EUR",
+            value: {
+              "@type": "QuantitativeValue",
+              value: val,
+              unitText: "MONTH",
+            },
+          };
+        }
+      }
+    }
+
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org/",
+      "@type": "JobPosting",
+      title: vacancy.title,
+      description: vacancy.description || vacancy.title,
+      datePosted,
+      validThrough,
+      employmentType,
+      hiringOrganization: {
+        "@type": "Organization",
+        name: vacancy.employer_name || "VorzaIQ",
+        sameAs: "https://www.vorzaiq.com",
+      },
+      jobLocation: {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: vacancy.location || "Nederland",
+          addressCountry: "NL",
+        },
+      },
+    };
+
+    if (baseSalary) ld.baseSalary = baseSalary;
+
+    return ld;
+  }, [vacancy]);
+
+  // Inject JSON-LD into head
+  useEffect(() => {
+    if (!jsonLd) return;
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(jsonLd);
+    script.id = "jobposting-jsonld";
+    document.head.appendChild(script);
+    return () => {
+      const el = document.getElementById("jobposting-jsonld");
+      if (el) el.remove();
+    };
+  }, [jsonLd]);
 
   if (loading) {
     return (

@@ -227,6 +227,7 @@ class PublicVacancyDetail(PublicVacancyOut):
     intake_questions: List[IntakeQuestionPublic] = []
     interview_type: str = "both"   # "chat" | "virtual" | "both"
     employer_plan: str = "gratis"  # "gratis" | "normaal" | "premium"
+    employer_name: Optional[str] = None
 
 
 class ApplyResponse(BaseModel):
