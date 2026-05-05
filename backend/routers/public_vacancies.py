@@ -117,9 +117,7 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
 
     employer_plan = (vacancy.employer.plan or "gratis") if vacancy.employer else "gratis"
 
-    employer_name = None
-    if vacancy.employer:
-        employer_name = vacancy.employer.company_name or vacancy.employer.full_name
+    employer_name = vacancy.employer.full_name if vacancy.employer else None
 
     return schemas.PublicVacancyDetail(
         id=vacancy.id,
