@@ -362,9 +362,9 @@ export default function EmployerPage() {
     try {
       const scheduledAt = `${interviewDate}T${interviewTime}:00`;
 
-      // Bij Live op locatie met meerdere datums: stuur proposed_dates
+      // Bij niet-Teams types met meerdere datums: stuur proposed_dates
       let proposedDates: string[] | undefined;
-      if (interviewType === "in_person" && interviewDate2) {
+      if (interviewType !== "teams" && interviewDate2) {
         proposedDates = [`${interviewDate}T${interviewTime}:00`];
         proposedDates.push(`${interviewDate2}T${interviewTime2}:00`);
         if (interviewDate3) proposedDates.push(`${interviewDate3}T${interviewTime3}:00`);
@@ -2335,8 +2335,8 @@ export default function EmployerPage() {
                 </div>
               </div>
 
-              {/* Extra datumvelden voor Live op locatie */}
-              {interviewType === "in_person" && (
+              {/* Extra datumvelden voor meerdere voorstellen (niet bij Teams — die maakt 1 meeting aan) */}
+              {(interviewType === "in_person" || interviewType === "whatsapp" || interviewType === "phone") && (
                 <>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
