@@ -245,7 +245,7 @@ const nl: TranslationSet = {
     ctaCreateAccount: "Upload je CV gratis",
     lisaLabel: "Hoe het werkt",
     lisaTitle: "Maak kennis met Lisa",
-    lisaSubtitle: "Upload je CV en zoek zelf niet meer naar vacatures. Druk in je portaal op 'Analyseer mijn matches' en ontvang de vacatures die het beste bij jouw CV passen. Solliciteer je? Dan neemt Lisa — onze AI-recruiter — direct 24/7 het eerste gesprek met je af.",
+    lisaSubtitle: "Upload je CV en zoek zelf niet meer naar vacatures. Druk in je portaal op 'Analyseer mijn matches' en ontvang de vacatures die het beste bij jouw CV passen. Solliciteer je? Dan neemt Lisa, onze AI-recruiter, direct 24/7 het eerste gesprek met je af.",
   },
   subscription: {
     subscriptionActivated: "Abonnement geactiveerd!",
@@ -475,7 +475,7 @@ const en: TranslationSet = {
     ctaCreateAccount: "Upload your CV for free",
     lisaLabel: "How it works",
     lisaTitle: "Meet Lisa",
-    lisaSubtitle: "Upload your CV and stop searching for jobs yourself. Click 'Analyse my matches' in your portal and receive the vacancies that best match your CV. Apply? Then Lisa — our AI recruiter — immediately conducts the first interview with you, 24/7.",
+    lisaSubtitle: "Upload your CV and stop searching for jobs yourself. Click 'Analyse my matches' in your portal and receive the vacancies that best match your CV. Apply? Then Lisa, our AI recruiter, immediately conducts the first interview with you, 24/7.",
   },
   subscription: {
     subscriptionActivated: "Subscription activated!",
@@ -705,7 +705,7 @@ const de: TranslationSet = {
     ctaCreateAccount: "Lebenslauf kostenlos hochladen",
     lisaLabel: "So funktioniert's",
     lisaTitle: "Lerne Lisa kennen",
-    lisaSubtitle: "Lade deinen Lebenslauf hoch und höre auf, selbst nach Stellen zu suchen. Klicke in deinem Portal auf 'Meine Matches analysieren' und erhalte die Stellen, die am besten zu deinem Lebenslauf passen. Bewirbst du dich? Dann führt Lisa — unsere KI-Recruiterin — sofort rund um die Uhr das erste Gespräch mit dir.",
+    lisaSubtitle: "Lade deinen Lebenslauf hoch und höre auf, selbst nach Stellen zu suchen. Klicke in deinem Portal auf 'Meine Matches analysieren' und erhalte die Stellen, die am besten zu deinem Lebenslauf passen. Bewirbst du dich? Dann führt Lisa, unsere KI-Recruiterin, sofort rund um die Uhr das erste Gespräch mit dir.",
   },
   subscription: {
     subscriptionActivated: "Abonnement aktiviert!",
@@ -935,7 +935,7 @@ const fr: TranslationSet = {
     ctaCreateAccount: "Téléchargez votre CV gratuitement",
     lisaLabel: "Comment ça marche",
     lisaTitle: "Découvrez Lisa",
-    lisaSubtitle: "Téléchargez votre CV et arrêtez de chercher des offres vous-même. Cliquez sur 'Analyser mes correspondances' dans votre portail et recevez les postes qui correspondent le mieux à votre CV. Vous postulez ? Alors Lisa — notre recruteuse IA — mène immédiatement le premier entretien avec vous, 24h/24.",
+    lisaSubtitle: "Téléchargez votre CV et arrêtez de chercher des offres vous-même. Cliquez sur 'Analyser mes correspondances' dans votre portail et recevez les postes qui correspondent le mieux à votre CV. Vous postulez ? Alors Lisa, notre recruteuse IA, mène immédiatement le premier entretien avec vous, 24h/24.",
   },
   subscription: {
     subscriptionActivated: "Abonnement activé !",
@@ -1165,7 +1165,7 @@ const es: TranslationSet = {
     ctaCreateAccount: "Sube tu CV gratis",
     lisaLabel: "Cómo funciona",
     lisaTitle: "Conoce a Lisa",
-    lisaSubtitle: "Sube tu CV y deja de buscar vacantes tú mismo. Haz clic en 'Analizar mis coincidencias' en tu portal y recibe las vacantes que mejor se adapten a tu CV. ¿Te postulas? Entonces Lisa — nuestra reclutadora IA — realiza la primera entrevista contigo de inmediato, las 24 horas.",
+    lisaSubtitle: "Sube tu CV y deja de buscar vacantes tú mismo. Haz clic en 'Analizar mis coincidencias' en tu portal y recibe las vacantes que mejor se adapten a tu CV. ¿Te postulas? Entonces Lisa, nuestra reclutadora IA, realiza la primera entrevista contigo de inmediato, las 24 horas.",
   },
   subscription: {
     subscriptionActivated: "¡Suscripción activada!",
