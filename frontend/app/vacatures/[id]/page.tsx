@@ -50,6 +50,10 @@ export async function generateMetadata({
       description,
       url,
       type: "article",
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
+    },
+    twitter: {
+      images: ["/opengraph-image.png"],
     },
   };
 }
