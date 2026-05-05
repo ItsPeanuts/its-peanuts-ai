@@ -121,20 +121,6 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
     return ld;
   }, [vacancy]);
 
-  // Inject JSON-LD into head
-  useEffect(() => {
-    if (!jsonLd) return;
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.text = JSON.stringify(jsonLd);
-    script.id = "jobposting-jsonld";
-    document.head.appendChild(script);
-    return () => {
-      const el = document.getElementById("jobposting-jsonld");
-      if (el) el.remove();
-    };
-  }, [jsonLd]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -162,6 +148,12 @@ export default function VacatureDetailPage({ params }: { params: { id: string } 
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <PublicNav />
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
