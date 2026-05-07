@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { me } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
@@ -49,6 +50,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [token] = useState<string | null>(() => getToken());
   const [role] = useState<string | null>(() => getRole());
+  const { T } = useLanguage();
 
   const [view, setView] = useState<"stats" | "users" | "vacancies" | "promotions" | "analytics">("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -589,7 +591,7 @@ export default function AdminPage() {
             </div>
 
             {promotionsLoading ? (
-              <div className="text-gray-400 text-sm py-8 text-center">Laden...</div>
+              <div className="text-gray-400 text-sm py-8 text-center">{T.common.loading}</div>
             ) : promotions.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm">
                 Nog geen promoties.
@@ -666,7 +668,7 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Analytics</h1>
 
             {analyticsLoading ? (
-              <div className="text-gray-400 text-sm">Laden...</div>
+              <div className="text-gray-400 text-sm">{T.common.loading}</div>
             ) : (
               <>
                 {/* KPI kaarten */}

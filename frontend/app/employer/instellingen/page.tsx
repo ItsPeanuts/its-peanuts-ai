@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { me, updateProfile, changePassword, deleteAccount } from "@/lib/api";
 import { clearSession, getToken } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 export default function InstellingenPage() {
   const router = useRouter();
   const token = useMemo(() => getToken(), []);
+  const { T } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("");
@@ -93,7 +95,7 @@ export default function InstellingenPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400 text-sm">Laden...</div>
+        <div className="text-gray-400 text-sm">{T.common.loading}</div>
       </div>
     );
   }

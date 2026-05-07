@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getMyApplications, getApplicationAIResult, getApplicationAnswers, getVacancy, ApplicationWithDetails, AIResult, IntakeAnswerOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   applied:       { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
@@ -28,6 +29,7 @@ export default function SollicitatieDetailPage() {
 
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
+  const { T } = useLanguage();
 
   const [app, setApp] = useState<ApplicationWithDetails | null>(null);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
@@ -86,7 +88,7 @@ export default function SollicitatieDetailPage() {
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", fontFamily: "system-ui" }}>
-        <div style={{ color: "#6b7280", fontSize: 16 }}>Laden...</div>
+        <div style={{ color: "#6b7280", fontSize: 16 }}>{T.common.loading}</div>
       </div>
     );
   }

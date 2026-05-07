@@ -386,10 +386,11 @@ function AbonnementenContent() {
 }
 
 export default function AbonnementenPage() {
+  const { T } = useLanguage();
   return (
     <Suspense fallback={
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <div style={{ color: "#6b7280", fontSize: 14 }}>Laden...</div>
+        <div style={{ color: "#6b7280", fontSize: 14 }}>{T.common.loading}</div>
       </div>
     }>
       <AbonnementenContent />

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCandidateCVs, uploadCV, CandidateCVOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/candidate" },
@@ -18,6 +19,7 @@ function CVBeheerContent() {
   const nextUrl = searchParams.get("next");
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
+  const { T } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [cvs, setCvs] = useState<CandidateCVOut[]>([]);
@@ -165,7 +167,7 @@ function CVBeheerContent() {
           <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", margin: "0 0 18px" }}>Geüploade CV's</h2>
 
           {loading && (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>Laden...</div>
+            <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af" }}>{T.common.loading}</div>
           )}
 
           {!loading && cvs.length === 0 && (
@@ -236,8 +238,9 @@ function CVBeheerContent() {
 }
 
 export default function CVBeheerPage() {
+  const { T } = useLanguage();
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontSize: 13, color: "#9ca3af" }}>Laden...</div></div>}>
+    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontSize: 13, color: "#9ca3af" }}>{T.common.loading}</div></div>}>
       <CVBeheerContent />
     </Suspense>
   );

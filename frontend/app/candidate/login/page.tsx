@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, register, me } from "@/lib/api";
 import { setSession } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 function CandidateLoginContent() {
   const router = useRouter();
@@ -217,8 +218,9 @@ function CandidateLoginContent() {
 }
 
 export default function CandidateLoginPage() {
+  const { T } = useLanguage();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center overflow-x-hidden"><div className="text-sm text-gray-400">Laden...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center overflow-x-hidden"><div className="text-sm text-gray-400">{T.common.loading}</div></div>}>
       <CandidateLoginContent />
     </Suspense>
   );

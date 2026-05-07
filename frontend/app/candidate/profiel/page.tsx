@@ -9,6 +9,7 @@ import {
   CandidateCVOut, ApplicationWithDetails,
 } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   applied:     { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
@@ -34,6 +35,7 @@ export default function ProfielPage() {
   const router  = useRouter();
   const token   = useMemo(() => getToken(), []);
   const role    = useMemo(() => getRole(), []);
+  const { T } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [user, setUser]             = useState<{ full_name: string; email: string } | null>(null);
@@ -171,7 +173,7 @@ export default function ProfielPage() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontSize: 13, color: "#9ca3af" }}>Laden...</div>
+        <div style={{ fontSize: 13, color: "#9ca3af" }}>{T.common.loading}</div>
       </div>
     );
   }
@@ -266,7 +268,7 @@ export default function ProfielPage() {
                     disabled={editLoading}
                     style={{ fontSize: 12, color: "#7C3AED", background: "none", border: "1px solid #7C3AED", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontWeight: 500 }}
                   >
-                    {editLoading ? "Laden..." : "Bewerken"}
+                    {editLoading ? T.common.loading : "Bewerken"}
                   </button>
                 )}
                 {cvs.length > 1 && (

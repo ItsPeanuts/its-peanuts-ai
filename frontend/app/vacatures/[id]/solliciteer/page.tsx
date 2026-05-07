@@ -7,6 +7,7 @@ import {
   getVacancy, getCandidateCVs, PublicVacancyDetail,
 } from "@/lib/api";
 import { getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 
 // ── Resultaat + auto-redirect naar Lisa chat ─────────────────────
@@ -147,6 +148,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   const token = useMemo(() => getToken(), []);
   const role  = useMemo(() => getRole(), []);
   const isLoggedIn = !!token && (role === "candidate" || role === "admin");
+  const { T } = useLanguage();
 
   const [vacancy, setVacancy]     = useState<PublicVacancyDetail | null>(null);
   const [hasCV, setHasCV]         = useState(false);
@@ -237,7 +239,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontSize: 13, color: "#9ca3af" }}>Laden...</div>
+        <div style={{ fontSize: 13, color: "#9ca3af" }}>{T.common.loading}</div>
       </div>
     );
   }

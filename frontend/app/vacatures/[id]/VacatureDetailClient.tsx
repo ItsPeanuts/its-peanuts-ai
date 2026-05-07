@@ -66,6 +66,7 @@ export default function VacatureDetailClient({ id }: { id: string }) {
       fulltime: "FULL_TIME",
       parttime: "PART_TIME",
       freelance: "CONTRACTOR",
+      zzp: "CONTRACTOR",
       stage: "INTERN",
       tijdelijk: "TEMPORARY",
     };

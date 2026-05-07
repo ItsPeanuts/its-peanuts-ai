@@ -1171,7 +1171,7 @@ export default function EmployerPage() {
                             {chatOpen[app.id] && (
                               <div className="mt-2 border border-gray-100 rounded-xl overflow-hidden">
                                 {chatLoading[app.id] ? (
-                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                  <div className="px-4 py-3 text-xs text-gray-400">{T.common.loading}</div>
                                 ) : !chatMessages[app.id]?.length ? (
                                   <div className="px-4 py-3 text-xs text-gray-400">
                                     Nog geen gesprek gevoerd met Lisa.
@@ -1229,7 +1229,7 @@ export default function EmployerPage() {
                             {videoInterviewOpen[app.id] && (
                               <div className="mt-2 border border-blue-100 rounded-xl overflow-hidden">
                                 {videoInterviewLoading[app.id] ? (
-                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                  <div className="px-4 py-3 text-xs text-gray-400">{T.common.loading}</div>
                                 ) : !videoInterviews[app.id] ? (
                                   <div className="px-4 py-3 text-xs text-gray-400">
                                     Kandidaat heeft nog geen video interview gedaan.
@@ -1288,7 +1288,7 @@ export default function EmployerPage() {
                             {appAnswersOpen[app.id] && (
                               <div className="mt-2 border border-purple-100 rounded-xl overflow-hidden">
                                 {appAnswersLoading[app.id] ? (
-                                  <div className="px-4 py-3 text-xs text-gray-400">Laden...</div>
+                                  <div className="px-4 py-3 text-xs text-gray-400">{T.common.loading}</div>
                                 ) : !appAnswers[app.id]?.length ? (
                                   <div className="px-4 py-3 text-xs text-gray-400">
                                     Kandidaat heeft geen antwoorden ingediend.
@@ -1586,7 +1586,7 @@ export default function EmployerPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl mb-4">
               <h2 className="text-sm font-bold text-gray-700 mb-4">Huidige vragen</h2>
               {questionsLoading ? (
-                <p className="text-xs text-gray-400">Laden...</p>
+                <p className="text-xs text-gray-400">{T.common.loading}</p>
               ) : questions.length === 0 ? (
                 <p className="text-xs text-gray-400">Nog geen vragen toegevoegd. Voeg hieronder je eerste vraag toe.</p>
               ) : (
@@ -1833,7 +1833,7 @@ export default function EmployerPage() {
                 <h2 className="font-semibold text-gray-800">Teamleden ({teamMembers.length})</h2>
               </div>
               {teamLoading ? (
-                <div className="p-5 text-sm text-gray-400">Laden...</div>
+                <div className="p-5 text-sm text-gray-400">{T.common.loading}</div>
               ) : (
                 <table className="w-full text-sm min-w-[360px]">
                   <thead>

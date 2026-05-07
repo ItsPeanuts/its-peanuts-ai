@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getMyApplications, chooseInterviewDate, ApplicationWithDetails } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   applied:       { label: "In behandeling", color: "#6b7280", bg: "#f3f4f6" },
@@ -46,6 +47,7 @@ function SollicitatieContent() {
   const searchParams = useSearchParams();
   const token = useMemo(() => getToken(), []);
   const role = useMemo(() => getRole(), []);
+  const { T } = useLanguage();
 
   const [apps, setApps] = useState<ApplicationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +131,7 @@ function SollicitatieContent() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-16 text-gray-400 text-sm">Laden...</div>
+          <div className="flex items-center justify-center py-16 text-gray-400 text-sm">{T.common.loading}</div>
         )}
 
         {successMsg && (
@@ -189,8 +191,9 @@ function SollicitatieContent() {
 }
 
 export default function SollicitatiePage() {
+  const { T } = useLanguage();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">Laden...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">{T.common.loading}</div>}>
       <SollicitatieContent />
     </Suspense>
   );

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, me, createCheckoutSession } from "@/lib/api";
 import { setSession } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
@@ -308,8 +309,9 @@ function EmployerLoginContent() {
 }
 
 export default function EmployerLoginPage() {
+  const { T } = useLanguage();
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-400 text-sm">Laden...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-400 text-sm">{T.common.loading}</div></div>}>
       <EmployerLoginContent />
     </Suspense>
   );

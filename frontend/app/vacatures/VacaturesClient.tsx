@@ -16,11 +16,11 @@ const getInitials = (t: string)  =>
   t.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
 
 const HOURS_RANGES = [
-  { label_nl: "< 16 uur",    label_en: "< 16 h",     min: 0,  max: 15 },
-  { label_nl: "16 – 24 uur", label_en: "16 – 24 h",  min: 16, max: 24 },
-  { label_nl: "24 – 32 uur", label_en: "24 – 32 h",  min: 25, max: 32 },
-  { label_nl: "32 – 40 uur", label_en: "32 – 40 h",  min: 33, max: 40 },
-  { label_nl: "40+ uur",     label_en: "40+ h",       min: 40, max: 999 },
+  { label_nl: "< 16 uur",    label_en: "< 16 h",     label_de: "< 16 Std.",    label_fr: "< 16 h",     label_es: "< 16 h",     min: 0,  max: 15 },
+  { label_nl: "16 – 24 uur", label_en: "16 – 24 h",  label_de: "16 – 24 Std.", label_fr: "16 – 24 h",  label_es: "16 – 24 h",  min: 16, max: 24 },
+  { label_nl: "24 – 32 uur", label_en: "24 – 32 h",  label_de: "24 – 32 Std.", label_fr: "24 – 32 h",  label_es: "24 – 32 h",  min: 25, max: 32 },
+  { label_nl: "32 – 40 uur", label_en: "32 – 40 h",  label_de: "32 – 40 Std.", label_fr: "32 – 40 h",  label_es: "32 – 40 h",  min: 33, max: 40 },
+  { label_nl: "40+ uur",     label_en: "40+ h",       label_de: "40+ Std.",     label_fr: "40+ h",      label_es: "40+ h",      min: 40, max: 999 },
 ];
 
 /** Parseer een salaris-string zoals "€4.500 – €6.000" naar [4500, 6000] */
@@ -369,7 +369,7 @@ function VacaturesContent() {
                       onClick={() => { if (hoursRange === i) setHoursRange(null); }}
                       style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#7C3AED", flexShrink: 0 }}
                     />
-                    <span style={{ fontSize: 13, color: "#374151" }}>{lang === "en" ? r.label_en : r.label_nl}</span>
+                    <span style={{ fontSize: 13, color: "#374151" }}>{r[`label_${lang}` as keyof typeof r] || r.label_nl}</span>
                   </label>
                 ))}
               </div>
@@ -441,7 +441,7 @@ function VacaturesContent() {
               )}
               {hoursRange !== null && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 100, background: "#fefce8", border: "1px solid #fef08a", fontSize: 12, color: "#374151" }}>
-                  {lang === "en" ? HOURS_RANGES[hoursRange].label_en : HOURS_RANGES[hoursRange].label_nl}
+                  {HOURS_RANGES[hoursRange][`label_${lang}` as keyof typeof HOURS_RANGES[number]] || HOURS_RANGES[hoursRange].label_nl}
                   <button onClick={() => setHoursRange(null)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#6b7280", lineHeight: 1 }}>×</button>
                 </span>
               )}

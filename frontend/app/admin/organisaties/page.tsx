@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getToken, getRole } from "@/lib/session";
+import { useLanguage } from "@/lib/i18n";
 import {
   getAdminOrganisations,
   createAdminOrganisation,
@@ -15,6 +16,7 @@ import {
 
 export default function AdminOrganisatiesPage() {
   const router = useRouter();
+  const { T } = useLanguage();
   const [orgs, setOrgs] = useState<AdminOrganisation[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function AdminOrganisatiesPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-gray-500">Laden...</div>;
+  if (loading) return <div className="p-8 text-gray-500">{T.common.loading}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
