@@ -20,7 +20,7 @@ const PLAN_BASES = [
     bg: "#fff",
     border: "#bfdbfe",
     highlight: false,
-    ctaHref: "/employer/login",
+    ctaHref: "/employer/login?tab=register",
   },
   {
     id: "growth",
@@ -31,7 +31,7 @@ const PLAN_BASES = [
     bg: "linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%)",
     border: "#7C3AED",
     highlight: true,
-    ctaHref: "/employer/login",
+    ctaHref: "/employer/login?tab=register",
   },
   {
     id: "scale",
@@ -42,7 +42,7 @@ const PLAN_BASES = [
     bg: "#111827",
     border: "#111827",
     highlight: false,
-    ctaHref: "/employer/login",
+    ctaHref: "/employer/login?tab=register",
   },
 ];
 
