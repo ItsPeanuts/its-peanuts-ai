@@ -50,6 +50,8 @@ export type TranslationSet = {
     found: string;
     vacancy: string;
     vacancies: string;
+    allVacancies: string;
+    allVacanciesSub: string;
     noResults: string;
     noResultsHint: string;
     removeFilters: string;
@@ -226,6 +228,8 @@ const nl: TranslationSet = {
     found: "gevonden",
     vacancy: "vacature",
     vacancies: "vacatures",
+    allVacancies: "Alle vacatures",
+    allVacanciesSub: "Vind je volgende baan met AI-matching. Upload je CV één keer, krijg directe matches.",
     noResults: "Geen vacatures gevonden",
     noResultsHint: "Pas je zoekopdracht of filters aan",
     removeFilters: "Verwijder alle filters",
@@ -456,6 +460,8 @@ const en: TranslationSet = {
     found: "found",
     vacancy: "job",
     vacancies: "jobs",
+    allVacancies: "All vacancies",
+    allVacanciesSub: "Find your next job with AI matching. Upload your CV once and get instant matches.",
     noResults: "No jobs found",
     noResultsHint: "Adjust your search or filters",
     removeFilters: "Remove all filters",
@@ -686,6 +692,8 @@ const de: TranslationSet = {
     found: "gefunden",
     vacancy: "Stelle",
     vacancies: "Stellen",
+    allVacancies: "Alle Stellenangebote",
+    allVacanciesSub: "Finde deinen nächsten Job mit AI-Matching. Lade deinen Lebenslauf einmal hoch und erhalte sofortige Matches.",
     noResults: "Keine Stellen gefunden",
     noResultsHint: "Passe deine Suche oder Filter an",
     removeFilters: "Alle Filter entfernen",
@@ -916,6 +924,8 @@ const fr: TranslationSet = {
     found: "trouvé(s)",
     vacancy: "offre",
     vacancies: "offres",
+    allVacancies: "Toutes les offres",
+    allVacanciesSub: "Trouvez votre prochain emploi avec le matching IA. Uploadez votre CV une fois et obtenez des matches instantanés.",
     noResults: "Aucune offre trouvée",
     noResultsHint: "Ajustez votre recherche ou vos filtres",
     removeFilters: "Supprimer tous les filtres",
@@ -1146,6 +1156,8 @@ const es: TranslationSet = {
     found: "encontrado(s)",
     vacancy: "empleo",
     vacancies: "empleos",
+    allVacancies: "Todas las ofertas",
+    allVacanciesSub: "Encuentra tu próximo empleo con matching IA. Sube tu CV una vez y obtén matches instantáneos.",
     noResults: "No se encontraron empleos",
     noResultsHint: "Ajusta tu búsqueda o filtros",
     removeFilters: "Eliminar todos los filtros",

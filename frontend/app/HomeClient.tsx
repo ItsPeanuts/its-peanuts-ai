@@ -5,6 +5,7 @@ import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { JsonLd } from "@/components/JsonLd";
 import { useLanguage } from "@/lib/i18n";
 
 const CATEGORIES = [
@@ -37,8 +38,32 @@ export default function HomeClient() {
   };
 
 
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "VorzaIQ",
+    url: "https://www.vorzaiq.com",
+    logo: "https://www.vorzaiq.com/apple-touch-icon.png",
+    description: "AI Recruitment Platform voor MKB in Nederland",
+    sameAs: [],
+  };
+
+  const siteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "VorzaIQ",
+    url: "https://www.vorzaiq.com",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://www.vorzaiq.com/vacatures?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <div>
+      <JsonLd data={orgJsonLd} />
+      <JsonLd data={siteJsonLd} />
       <PublicNav />
 
       {/* ── HERO ── */}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { listVacancies, PublicVacancy } from "@/lib/api";
 import PublicNav from "@/components/PublicNav";
 import PublicFooter from "@/components/PublicFooter";
+import { JsonLd } from "@/components/JsonLd";
 import { useLanguage } from "@/lib/i18n";
 
 const CARD_COLORS = [
@@ -220,9 +221,29 @@ function VacaturesContent() {
     </label>
   );
 
+  const itemListJsonLd = vacancies.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: vacancies.slice(0, 50).map((v, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `https://www.vorzaiq.com/vacatures/${v.id}`,
+      name: v.title,
+    })),
+  } : null;
+
   return (
     <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
+      {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
       <PublicNav />
+
+      {/* ── Header ── */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #f3f4f6", padding: "28px 0 12px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 6px" }}>{T.jobs.allVacancies || "Alle vacatures"}</h1>
+          <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>{T.jobs.allVacanciesSub || "Vind je volgende baan met AI-matching. Upload je CV één keer, krijg directe matches."}</p>
+        </div>
+      </div>
 
       {/* ── Zoekbalk ── */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "20px 0" }}>

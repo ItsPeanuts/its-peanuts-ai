@@ -11,15 +11,23 @@ const SITE_URL = "https://www.vorzaiq.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "VorzaIQ — The Smart Way to Hire",
-  description: "Find smarter. Hire faster. AI-powered recruitment platform voor kandidaten en werkgevers.",
+  title: {
+    default: "VorzaIQ — AI Recruitment Platform voor MKB | Nederland",
+    template: "%s | VorzaIQ",
+  },
+  description:
+    "Upload je CV en ontvang direct AI-matches. Werkgevers: vind kandidaten sneller met Lisa, onze AI-recruiter.",
   openGraph: {
     siteName: "VorzaIQ",
     locale: "nl_NL",
     type: "website",
+    url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
+  },
+  alternates: {
+    canonical: SITE_URL,
   },
   icons: {
     icon: [
