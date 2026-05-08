@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   verification: {
     google: "gETe5OY1ntOsM9KhIxKo5PVEJQ7KSO3JrFNklSBwJWs",
   },
