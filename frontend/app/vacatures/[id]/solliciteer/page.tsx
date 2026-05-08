@@ -298,7 +298,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
           >
             CV uploaden
           </Link>
-          <PdfToWordTip variant="compact" />
+          <PdfToWordTip />
         </div>
       </div>
     );

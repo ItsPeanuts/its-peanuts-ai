@@ -17,6 +17,19 @@ export default function PublicFooter() {
               Algemene Voorwaarden
             </Link>
           </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span>Ook van VorzaIQ:</span>
+            <a
+              href="https://vorzapdf.com?utm_source=vorzaiq&utm_medium=referral&utm_campaign=footer"
+              target="_blank"
+              rel="noopener"
+              className="text-gray-400 hover:text-gray-200 no-underline font-semibold"
+            >
+              VorzaPDF
+            </a>
+            <span className="text-gray-700">—</span>
+            <span className="text-gray-600">Gratis PDF tools</span>
+          </div>
         </div>
       </div>
     </footer>
