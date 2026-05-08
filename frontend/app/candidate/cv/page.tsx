@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCandidateCVs, uploadCV, CandidateCVOut } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
 import { useLanguage } from "@/lib/i18n";
+import PdfToWordTip from "@/components/PdfToWordTip";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/candidate" },
@@ -160,6 +161,7 @@ function CVBeheerContent() {
           >
             {uploading ? "Bezig met uploaden..." : "CV selecteren en uploaden"}
           </label>
+          <PdfToWordTip />
         </div>
 
         {/* CV lijst */}

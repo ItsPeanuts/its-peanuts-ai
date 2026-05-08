@@ -8,6 +8,7 @@ import {
 } from "@/lib/api";
 import { getToken, getRole } from "@/lib/session";
 import { useLanguage } from "@/lib/i18n";
+import PdfToWordTip from "@/components/PdfToWordTip";
 
 
 // ── Resultaat + auto-redirect naar Lisa chat ─────────────────────
@@ -297,6 +298,7 @@ export default function SolliciteerPage({ params }: { params: { id: string } }) 
           >
             CV uploaden
           </Link>
+          <PdfToWordTip variant="compact" />
         </div>
       </div>
     );
