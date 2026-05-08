@@ -28,8 +28,6 @@ function EmployerLoginContent() {
       localStorage.setItem("vorzaiq_launch_coupon", "7bzV8eqk");
       setTab("register");
       setIsLaunch(true);
-    } else if (typeof window !== "undefined" && localStorage.getItem("vorzaiq_launch_coupon")) {
-      setIsLaunch(true);
     }
   }, [searchParams]);
 
