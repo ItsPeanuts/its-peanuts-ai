@@ -248,15 +248,10 @@ function EmployerLoginContent() {
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              {isLaunch ? (
+              {isLaunch && (
                 <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-purple-800 text-sm font-medium">
                   <span className="text-purple-600 font-bold text-base">★</span>
                   Scale abonnement — 6 maanden gratis
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-green-800 text-sm font-medium">
-                  <span className="text-green-600 font-bold text-base">✓</span>
-                  Eerste maand gratis — geen creditcard nodig
                 </div>
               )}
               <div>
