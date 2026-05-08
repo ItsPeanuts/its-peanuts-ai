@@ -208,7 +208,7 @@ export default function HomeClient() {
             {T.page.ctaSubtitle}
           </p>
           <div className="cta-buttons" style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            <Link href="/candidate/login" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+            <Link href="/candidate/login?tab=register" style={{ background: "#7C3AED", color: "#fff", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
               {T.page.ctaCreateAccount}
             </Link>
             <Link href="/vacatures" style={{ background: "#f9fafb", color: "#374151", padding: "11px 28px", borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none", border: "1px solid #e5e7eb" }}>
