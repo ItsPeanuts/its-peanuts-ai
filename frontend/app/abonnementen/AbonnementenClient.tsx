@@ -320,9 +320,6 @@ function AbonnementenContent() {
             <h2 style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 8 }}>
               {S.whyTitle}
             </h2>
-            <p style={{ fontSize: 18, fontWeight: 700, color: "#7C3AED", fontStyle: "italic" }}>
-              {S.whyQuote}
-            </p>
           </div>
 
           <div className="abo-compare-wrapper" style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden" }}>
