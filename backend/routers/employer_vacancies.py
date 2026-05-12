@@ -39,7 +39,7 @@ def list_vacancies(
     return rows
 
 
-PLAN_VACANCY_LIMITS = {"gratis": 1, "normaal": 10}  # None = onbeperkt (premium)
+PLAN_VACANCY_LIMITS = {"gratis": 1, "normaal": 5}  # None = onbeperkt (premium)
 
 
 @router.post("", response_model=schemas.VacancyOut)
