@@ -666,9 +666,11 @@ export async function createCheckoutSession(
   plan: string,
   interval: "month" | "year",
   coupon?: string,
+  trial?: boolean,
 ): Promise<{ checkout_url: string }> {
-  const body: Record<string, string> = { plan, interval };
+  const body: Record<string, string | boolean> = { plan, interval };
   if (coupon) body.coupon = coupon;
+  if (trial) body.trial = true;
   const res = await fetch(`${BASE}/billing/checkout`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },

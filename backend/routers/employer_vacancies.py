@@ -52,12 +52,17 @@ def create_vacancy(
 
     # Controleer of gratis trial verlopen is
     plan = current_user.plan or "gratis"
-    if plan == "gratis" and current_user.role != "admin":
+    if current_user.role != "admin":
         trial_ends = current_user.trial_ends_at
         if trial_ends and datetime.now(timezone.utc) > trial_ends:
+            # Trial verlopen en geen actief Stripe abonnement — blokkeer
+            current_user.plan = "gratis"
+            current_user.trial_ends_at = None
+            db.commit()
+            plan = "gratis"
             raise HTTPException(
                 status_code=403,
-                detail="Je gratis proefperiode van 30 dagen is verlopen. Kies een abonnement op /abonnementen.",
+                detail="Je gratis proefperiode is verlopen. Activeer je abonnement op /abonnementen om verder te gaan.",
             )
 
     # Controleer plan-limiet op aantal vacatures

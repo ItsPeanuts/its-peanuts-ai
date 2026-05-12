@@ -73,6 +73,19 @@ function EmployerLoginContent() {
         }
       }
 
+      // Growth trial: als werkgever plan="normaal" + trial_ends_at (nog geen Stripe subscription),
+      // redirect naar Stripe Checkout met gratis trial zodat na afloop automatisch afgeschreven wordt
+      if (role === "employer" && user.plan === "normaal" && user.trial_ends_at) {
+        try {
+          setLaunchRedirecting(true);
+          const { checkout_url } = await createCheckoutSession(access_token, "normaal", "month", undefined, true);
+          window.location.href = checkout_url;
+          return;
+        } catch {
+          // Checkout mislukt — ga door naar dashboard, user kan later alsnog activeren
+        }
+      }
+
       if (role === "admin") router.push("/admin");
       else router.push("/employer");
     } catch (err: unknown) {
@@ -128,7 +141,7 @@ function EmployerLoginContent() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
             <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mx-auto mb-4" />
             <h1 className="text-xl font-bold text-gray-900 mb-2">Even geduld...</h1>
-            <p className="text-sm text-gray-500">Je wordt doorgestuurd naar de betaalpagina om je Scale abonnement te activeren.</p>
+            <p className="text-sm text-gray-500">Je wordt doorgestuurd naar de betaalpagina om je abonnement te activeren.</p>
           </div>
         </div>
       </div>

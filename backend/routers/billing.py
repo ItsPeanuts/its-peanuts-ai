@@ -75,6 +75,7 @@ class CheckoutIn(BaseModel):
     plan: str      # "normaal" | "premium"
     interval: str  # "month" | "year"
     coupon: str | None = None  # optioneel: coupon code (bijv. launch promo)
+    trial: bool = False  # True = start Stripe subscription met gratis trial
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -124,13 +125,21 @@ def create_checkout_session(
         )
 
     try:
+        sub_data: dict = {"metadata": {"user_id": str(current_user.id), "plan": payload.plan}}
+
+        # Gratis trial: bereken resterende dagen van database-trial
+        if payload.trial and current_user.trial_ends_at:
+            remaining = (current_user.trial_ends_at - datetime.now(current_user.trial_ends_at.tzinfo or None)).days
+            trial_days = max(remaining, 1)  # minimaal 1 dag
+            sub_data["trial_period_days"] = trial_days
+
         checkout_params: dict = {
             "mode": "subscription",
             "line_items": [{"price": price_id, "quantity": 1}],
             "customer_email": current_user.email,
             "metadata": {"user_id": str(current_user.id), "plan": payload.plan},
-            "subscription_data": {"metadata": {"user_id": str(current_user.id), "plan": payload.plan}},
-            "success_url": f"{FRONTEND_URL}/employer?welcome=1" if payload.coupon else f"{FRONTEND_URL}/abonnementen?success=1",
+            "subscription_data": sub_data,
+            "success_url": f"{FRONTEND_URL}/employer?welcome=1" if (payload.coupon or payload.trial) else f"{FRONTEND_URL}/abonnementen?success=1",
             "cancel_url": f"{FRONTEND_URL}/abonnementen?cancelled=1",
         }
 

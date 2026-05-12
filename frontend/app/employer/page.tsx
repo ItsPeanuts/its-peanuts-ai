@@ -1926,7 +1926,7 @@ export default function EmployerPage() {
               {userPlan === "premium" ? (
                 <>Je <strong className="text-purple-700">Scale</strong> abonnement is geactiveerd.<br />Alle features zijn beschikbaar.</>
               ) : (
-                <>Je eerste maand <strong className="text-purple-700">Growth</strong> is volledig gratis.<br />Geen creditcard nodig, geen verplichtingen.</>
+                <>Je eerste maand <strong className="text-purple-700">Growth</strong> is volledig gratis.<br />Na je gratis maand wordt €149/maand automatisch afgeschreven.</>
               )}
             </p>
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-6 text-left space-y-2">
