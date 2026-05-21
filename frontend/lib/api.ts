@@ -45,7 +45,31 @@ export async function me(token: string) {
     role: "candidate" | "employer" | "admin";
     plan?: string | null;
     trial_ends_at?: string | null;
+    logo_key?: string | null;
   };
+}
+
+export async function uploadLogo(token: string, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE}/auth/logo`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Logo uploaden mislukt");
+  return data as { ok: boolean; logo_key: string };
+}
+
+export async function deleteLogo(token: string) {
+  const res = await fetch(`${BASE}/auth/logo`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "Logo verwijderen mislukt");
+  return data;
 }
 
 export async function updateProfile(token: string, fullName: string) {
@@ -156,6 +180,8 @@ export type PublicVacancy = {
   work_location: string | null;
   language: string | null;
   created_at: string;
+  employer_name: string | null;
+  employer_logo: string | null;
 };
 
 export type IntakeQuestion = {
@@ -169,7 +195,6 @@ export type PublicVacancyDetail = PublicVacancy & {
   intake_questions: IntakeQuestion[];
   interview_type: string;   // "chat" | "virtual" | "both"
   employer_plan: string;    // "gratis" | "normaal" | "premium"
-  employer_name: string | null;
 };
 
 // ----------------------------

@@ -35,6 +35,9 @@ class User(Base):
     password_reset_token = Column(String(255), nullable=True, default=None)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True, default=None)
 
+    # bedrijfslogo (storage key, bijv. "abc123.png")
+    logo_key = Column(String(255), nullable=True, default=None)
+
     # organisatie (multi-user werkgever); None = individueel
     org_id = Column(Integer, ForeignKey("organisations.id"), nullable=True, index=True)
 

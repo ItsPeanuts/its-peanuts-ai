@@ -96,7 +96,27 @@ def list_vacancies(
     if language:
         query = query.filter(models.Vacancy.language == language)
 
-    return query.offset(skip).limit(limit).all()
+    vacancies = query.offset(skip).limit(limit).all()
+
+    api_base = os.getenv("API_BASE_URL", "").rstrip("/")
+
+    return [
+        schemas.PublicVacancyOut(
+            id=v.id,
+            title=v.title,
+            location=v.location,
+            hours_per_week=v.hours_per_week,
+            salary_range=v.salary_range,
+            description=v.description,
+            employment_type=v.employment_type,
+            work_location=v.work_location,
+            language=v.language,
+            created_at=v.created_at,
+            employer_name=v.employer.full_name if v.employer else None,
+            employer_logo=f"{api_base}/auth/logos/{v.employer.logo_key}" if v.employer and v.employer.logo_key and api_base else None,
+        )
+        for v in vacancies
+    ]
 
 
 @router.get("/{vacancy_id}", response_model=schemas.PublicVacancyDetail)
@@ -116,8 +136,12 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
     )
 
     employer_plan = (vacancy.employer.plan or "gratis") if vacancy.employer else "gratis"
-
     employer_name = vacancy.employer.full_name if vacancy.employer else None
+    employer_logo = None
+    if vacancy.employer and vacancy.employer.logo_key:
+        api_base = os.getenv("API_BASE_URL", "").rstrip("/")
+        if api_base:
+            employer_logo = f"{api_base}/auth/logos/{vacancy.employer.logo_key}"
 
     return schemas.PublicVacancyDetail(
         id=vacancy.id,
@@ -130,6 +154,7 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
         interview_type=vacancy.interview_type or "both",
         employer_plan=employer_plan,
         employer_name=employer_name,
+        employer_logo=employer_logo,
         intake_questions=[
             schemas.IntakeQuestionPublic(
                 id=q.id,

@@ -17,7 +17,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
     id: 1, title: "Senior Frontend Developer", location: "Amsterdam", hours_per_week: "40",
     salary_range: "€4.500 - €6.000", created_at: "2026-02-20T10:00:00",
     employment_type: "fulltime", work_location: "hybride", language: null,
-    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf",
+    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf", employer_logo: null,
     description: "Wij zoeken een ervaren Senior Frontend Developer die ons team komt versterken. Je werkt aan uitdagende projecten voor grote klanten in de fintech- en e-commerce sector.\n\nJe bent verantwoordelijk voor het bouwen van schaalbare, performante React-applicaties. Je werkt nauw samen met designers, backend-developers en product managers.\n\nWat we bieden:\n- Uitdagend werk in een innovatief team\n- Marktconform salaris + bonusregeling\n- 25 vakantiedagen\n- Thuiswerkmogelijkheden\n- Goede pensioenregeling",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar ervaring heb je met React?", options_json: null },
@@ -29,7 +29,7 @@ const MOCK_VACANCIES: PublicVacancyDetail[] = [
     id: 2, title: "Product Manager", location: "Rotterdam", hours_per_week: "40",
     salary_range: "€5.000 - €7.000", created_at: "2026-02-19T09:00:00",
     employment_type: "fulltime", work_location: "op-locatie", language: null,
-    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf",
+    interview_type: "both", employer_plan: "premium", employer_name: "Demo Bedrijf", employer_logo: null,
     description: "Als Product Manager bij ons bedrijf ben jij de verbindende schakel tussen techniek, design en business. Je definieert de productstrategie en zorgt voor een succesvolle uitvoering.\n\nJe werkt nauw samen met engineering teams en stakeholders om de beste producten op de markt te brengen.",
     intake_questions: [
       { id: 1, qtype: "text", question: "Hoeveel jaar PM-ervaring heb je?", options_json: null },
@@ -172,9 +172,13 @@ export default function VacatureDetailClient({ id }: { id: string }) {
             {/* Job header card */}
             <div className="bg-white rounded-xl border border-gray-100 p-6">
               <div className="flex gap-5 items-start">
-                <div className={`${color} w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0`}>
-                  {initials}
-                </div>
+                {vacancy.employer_logo ? (
+                  <img src={vacancy.employer_logo} alt="" className="w-16 h-16 rounded-2xl object-contain flex-shrink-0 bg-gray-50 border border-gray-100" />
+                ) : (
+                  <div className={`${color} w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0`}>
+                    {initials}
+                  </div>
+                )}
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900 leading-tight">{vacancy.title}</h1>
                   <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">

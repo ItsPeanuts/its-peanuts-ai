@@ -521,9 +521,13 @@ function VacaturesContent() {
                 return (
                   <div key={v.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: "16px 20px" }}>
                     <div className="vacancy-card-inner" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                        {getInitials(v.title)}
-                      </div>
+                      {v.employer_logo ? (
+                        <img src={v.employer_logo} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: "#f9fafb" }} />
+                      ) : (
+                        <div style={{ width: 40, height: 40, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                          {getInitials(v.title)}
+                        </div>
+                      )}
 
                       <div className="vacancy-card-content" style={{ flex: 1, minWidth: 0 }}>
                         <Link

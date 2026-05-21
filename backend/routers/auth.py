@@ -1,8 +1,10 @@
 import os
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
@@ -13,6 +15,10 @@ from backend.db import get_db
 from backend import models, schemas
 from backend.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from backend.services.email import send_verification_email, send_password_reset_email
+
+LOGO_DIR = os.path.join(os.getenv("UPLOAD_DIR", "uploads"), "logos")
+LOGO_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
+LOGO_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
 
@@ -228,6 +234,71 @@ def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(
     user.password_reset_expires_at = None
     db.commit()
     return {"ok": True}
+
+
+@router.post("/logo")
+async def upload_logo(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload of vervang het bedrijfslogo (max 2 MB, PNG/JPG/WebP/SVG)."""
+    if current_user.role not in ("employer", "admin"):
+        raise HTTPException(status_code=403, detail="Alleen werkgevers")
+
+    if file.content_type not in LOGO_ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Alleen PNG, JPG, WebP of SVG toegestaan")
+
+    data = await file.read()
+    if len(data) > LOGO_MAX_SIZE:
+        raise HTTPException(status_code=400, detail="Logo mag maximaal 2 MB zijn")
+
+    ext = os.path.splitext(file.filename or "")[1].lower()[:10] or ".png"
+    key = f"{uuid.uuid4().hex}{ext}"
+
+    os.makedirs(LOGO_DIR, exist_ok=True)
+    with open(os.path.join(LOGO_DIR, key), "wb") as f:
+        f.write(data)
+
+    # Verwijder oud logo bestand
+    if current_user.logo_key:
+        old_path = os.path.join(LOGO_DIR, current_user.logo_key)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    current_user.logo_key = key
+    db.commit()
+    db.refresh(current_user)
+    return {"ok": True, "logo_key": key}
+
+
+@router.delete("/logo")
+def delete_logo(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Verwijder het bedrijfslogo."""
+    if not current_user.logo_key:
+        raise HTTPException(status_code=404, detail="Geen logo gevonden")
+
+    old_path = os.path.join(LOGO_DIR, current_user.logo_key)
+    if os.path.exists(old_path):
+        os.remove(old_path)
+
+    current_user.logo_key = None
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/logos/{key}")
+def serve_logo(key: str):
+    """Serveer een logo bestand. Publiek toegankelijk (geen auth nodig)."""
+    # Voorkom path traversal
+    safe_key = os.path.basename(key)
+    path = os.path.join(LOGO_DIR, safe_key)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Logo niet gevonden")
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
 
 
 

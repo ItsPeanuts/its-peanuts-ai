@@ -197,9 +197,13 @@ export default function HomeClient() {
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "#d1fae5"}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "#f3f4f6"}
                   >
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-                      {getInitials(v.title)}
-                    </div>
+                    {v.employer_logo ? (
+                      <img src={v.employer_logo} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: "#f9fafb" }} />
+                    ) : (
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: getColor(v.id), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
+                        {getInitials(v.title)}
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.title}</div>
                       <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{v.location || T.page.locationUnknown}</div>

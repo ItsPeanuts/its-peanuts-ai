@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { me, updateProfile, changePassword, deleteAccount } from "@/lib/api";
+import { me, updateProfile, changePassword, deleteAccount, uploadLogo, deleteLogo } from "@/lib/api";
 import { clearSession, getToken } from "@/lib/session";
 import { useLanguage } from "@/lib/i18n";
 
@@ -15,6 +15,12 @@ export default function InstellingenPage() {
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+
+  // Logo
+  const [logoKey, setLogoKey] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoMsg, setLogoMsg] = useState("");
+  const [logoErr, setLogoErr] = useState("");
 
   // Profiel opslaan
   const [nameSaving, setNameSaving] = useState(false);
@@ -39,6 +45,7 @@ export default function InstellingenPage() {
         const u = await me(token);
         setFullName(u.full_name);
         setEmail(u.email);
+        setLogoKey(u.logo_key ?? null);
       } catch {
         clearSession();
         router.push("/employer/login");
@@ -92,6 +99,41 @@ export default function InstellingenPage() {
     }
   }
 
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://its-peanuts-backend.onrender.com";
+  const logoUrl = logoKey ? `${API_BASE}/auth/logos/${logoKey}` : null;
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    setLogoUploading(true); setLogoErr(""); setLogoMsg("");
+    try {
+      const res = await uploadLogo(token, file);
+      setLogoKey(res.logo_key);
+      setLogoMsg("Logo opgeslagen!");
+      setTimeout(() => setLogoMsg(""), 3000);
+    } catch (err: unknown) {
+      setLogoErr(err instanceof Error ? err.message : "Upload mislukt");
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleLogoDelete() {
+    if (!token || !logoKey) return;
+    setLogoUploading(true); setLogoErr(""); setLogoMsg("");
+    try {
+      await deleteLogo(token);
+      setLogoKey(null);
+      setLogoMsg("Logo verwijderd");
+      setTimeout(() => setLogoMsg(""), 3000);
+    } catch (err: unknown) {
+      setLogoErr(err instanceof Error ? err.message : "Verwijderen mislukt");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -115,6 +157,58 @@ export default function InstellingenPage() {
       </div>
 
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
+
+        {/* Bedrijfslogo */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-base font-bold text-gray-900 mb-1">Bedrijfslogo</h2>
+          <p className="text-xs text-gray-500 mb-4">Dit logo wordt getoond naast je vacatures. Max 2 MB, PNG/JPG/WebP/SVG.</p>
+
+          <div className="flex items-center gap-4 mb-4">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt="Bedrijfslogo"
+                className="w-16 h-16 rounded-xl object-contain border border-gray-200 bg-gray-50"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs font-medium">
+                Geen logo
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <label
+                className="px-4 py-2 rounded-xl text-white text-sm font-semibold cursor-pointer transition inline-block text-center"
+                style={{ background: "#7C3AED", opacity: logoUploading ? 0.6 : 1 }}
+              >
+                {logoUploading ? "Uploaden..." : logoUrl ? "Logo wijzigen" : "Logo uploaden"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading}
+                  className="hidden"
+                />
+              </label>
+              {logoUrl && (
+                <button
+                  onClick={handleLogoDelete}
+                  disabled={logoUploading}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                >
+                  Logo verwijderen
+                </button>
+              )}
+            </div>
+          </div>
+
+          {logoErr && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2 text-red-700 text-sm">{logoErr}</div>
+          )}
+          {logoMsg && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-green-700 text-sm">{logoMsg}</div>
+          )}
+        </div>
 
         {/* Profielgegevens */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

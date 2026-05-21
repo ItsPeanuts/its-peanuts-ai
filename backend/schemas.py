@@ -54,6 +54,7 @@ class UserOut(BaseModel):
     role: str
     plan: Optional[str] = None
     trial_ends_at: Optional[datetime] = None
+    logo_key: Optional[str] = None
     org_id: Optional[int] = None
     org_name: Optional[str] = None
 
@@ -213,6 +214,8 @@ class PublicVacancyOut(BaseModel):
     work_location: Optional[str] = None
     language: Optional[str] = None
     created_at: datetime
+    employer_name: Optional[str] = None
+    employer_logo: Optional[str] = None
 
 
 class IntakeQuestionPublic(BaseModel):
