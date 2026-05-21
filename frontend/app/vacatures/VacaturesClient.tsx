@@ -125,19 +125,12 @@ function VacaturesContent() {
 
   useEffect(() => {
     load({
-      q:        searchParams.get("q") ?? undefined,
-      location: searchParams.get("location") ?? undefined,
-    });
-  }, [load, searchParams]);
-
-  useEffect(() => {
-    load({
-      q:           query || undefined,
-      location:    location || undefined,
+      q:           query || searchParams.get("q") || undefined,
+      location:    location || searchParams.get("location") || undefined,
       date_posted: datePosted || undefined,
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employmentTypes, workLocations, datePosted, vacancyLang]);
+  }, [load, searchParams, employmentTypes, workLocations, datePosted, vacancyLang]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
