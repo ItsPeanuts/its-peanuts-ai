@@ -29,7 +29,7 @@ const BASE =
   "https://api.vorzaiq.com";
 
 const OPENAI_REALTIME_WS =
-  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03";
 
 const LISA_MAINTENANCE = false;
 
@@ -273,7 +273,6 @@ export default function VideoInterviewPage() {
     const ws = new WebSocket(OPENAI_REALTIME_WS, [
       "realtime",
       `openai-insecure-api-key.${clientSecret}`,
-      "openai-beta.realtime-v1",
     ]);
     wsRef.current = ws;
 
@@ -309,19 +308,19 @@ export default function VideoInterviewPage() {
           setLisaLiveText("");
           break;
 
-        case "response.audio.delta":
+        case "response.output_audio.delta":
           // Audio chunk van Lisa — afspelen
           enqueueAudio(msg.delta as string);
           break;
 
-        case "response.audio_transcript.delta":
+        case "response.output_audio_transcript.delta":
           // Streaming tekst van Lisa
           currentLisaTranscriptRef.current += (msg.delta as string) || "";
           setLisaLiveText(currentLisaTranscriptRef.current);
           break;
 
-        case "response.audio_transcript.done":
-        case "response.text.done": {
+        case "response.output_audio_transcript.done":
+        case "response.output_text.done": {
           // Lisa's volledige beurt is klaar → toevoegen aan transcript
           const text = (msg.transcript || msg.text || currentLisaTranscriptRef.current) as string;
           if (text?.trim()) {

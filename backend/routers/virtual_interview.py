@@ -990,27 +990,33 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
         db.commit()
         db.refresh(vi_session)
 
-    # Vraag ephemeral token op bij OpenAI Realtime Sessions API
+    # Vraag ephemeral token op bij OpenAI Realtime GA API (client_secrets)
     try:
         resp = http.post(
-            "https://api.openai.com/v1/realtime/sessions",
+            "https://api.openai.com/v1/realtime/client_secrets",
             headers={
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "Content-Type": "application/json",
             },
             json={
-                "model": "gpt-4o-realtime-preview",
-                "voice": LISA_V2_VOICE,
-                "instructions": system_prompt,
-                "turn_detection": {
-                    "type": "server_vad",
-                    "threshold": 0.7,
-                    "prefix_padding_ms": 300,
-                    "silence_duration_ms": 2500,
+                "session": {
+                    "type": "realtime",
+                    "model": "gpt-4o-realtime-preview-2025-06-03",
+                    "instructions": system_prompt,
+                    "audio": {
+                        "input": {
+                            "turn_detection": {
+                                "type": "server_vad",
+                                "create_response": True,
+                            },
+                            "transcription": {"model": "whisper-1"},
+                        },
+                        "output": {
+                            "voice": LISA_V2_VOICE,
+                        },
+                    },
+                    "max_response_output_tokens": 300,
                 },
-                "input_audio_transcription": {"model": "whisper-1"},
-                "temperature": 0.8,
-                "max_response_output_tokens": 300,
             },
             timeout=15,
         )
@@ -1024,7 +1030,7 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
         )
 
     data = resp.json()
-    client_secret = (data.get("client_secret") or {}).get("value", "")
+    client_secret = data.get("client_secret", "")
 
     if not client_secret:
         raise HTTPException(status_code=502, detail="Geen client_secret ontvangen van OpenAI")
@@ -1035,7 +1041,7 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
     return {
         "client_secret": client_secret,
         "session_id": vi_session.id,
-        "model": "gpt-4o-realtime-preview",
+        "model": "gpt-4o-realtime-preview-2025-06-03",
         "voice": LISA_V2_VOICE,
     }
 
