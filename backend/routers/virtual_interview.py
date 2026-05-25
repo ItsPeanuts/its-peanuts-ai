@@ -1029,7 +1029,7 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
         )
 
     data = resp.json()
-    client_secret = data.get("client_secret", "")
+    client_secret = data.get("value", "") or data.get("client_secret", "")
 
     if not client_secret:
         raise HTTPException(status_code=502, detail="Geen client_secret ontvangen van OpenAI")
