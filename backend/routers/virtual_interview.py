@@ -1015,7 +1015,6 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
                             "voice": LISA_V2_VOICE,
                         },
                     },
-                    "max_response_output_tokens": 300,
                 },
             },
             timeout=15,
