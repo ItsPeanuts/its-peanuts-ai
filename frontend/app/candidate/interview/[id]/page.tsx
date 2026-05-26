@@ -29,7 +29,7 @@ const BASE =
   "https://api.vorzaiq.com";
 
 const OPENAI_REALTIME_WS =
-  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03";
+  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
 const LISA_MAINTENANCE = false;
 
