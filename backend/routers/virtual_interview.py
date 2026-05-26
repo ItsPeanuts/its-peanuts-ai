@@ -1001,7 +1001,8 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
             json={
                 "session": {
                     "type": "realtime",
-                    "model": "gpt-4o-realtime-preview",
+                    "model": "gpt-realtime-2",
+                    "output_modalities": ["audio"],
                     "instructions": system_prompt,
                     "audio": {
                         "input": {
@@ -1040,7 +1041,7 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
     return {
         "client_secret": client_secret,
         "session_id": vi_session.id,
-        "model": "gpt-4o-realtime-preview",
+        "model": "gpt-realtime-2",
         "voice": LISA_V2_VOICE,
     }
 

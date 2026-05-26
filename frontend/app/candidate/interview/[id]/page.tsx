@@ -29,7 +29,7 @@ const BASE =
   "https://api.vorzaiq.com";
 
 const OPENAI_REALTIME_WS =
-  "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+  "wss://api.openai.com/v1/realtime?model=gpt-realtime-2";
 
 const LISA_MAINTENANCE = false;
 
@@ -278,10 +278,10 @@ export default function VideoInterviewPage() {
 
     ws.onopen = () => {
       // Sessie is al geconfigureerd via backend /realtime-token
+      // (output_modalities staat al op ["audio"] in de sessie-config)
       // Geef Lisa een seintje om haar intro te starten
       ws.send(JSON.stringify({
         type: "response.create",
-        response: { modalities: ["text", "audio"] },
       }));
     };
 
