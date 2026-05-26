@@ -106,6 +106,10 @@ export default function EmployerPage() {
   const [interviewTime3, setInterviewTime3] = useState("10:00");
   const [scheduledInterviews, setScheduledInterviews] = useState<Record<number, InterviewSession>>({});
 
+  // Applicants filter & sort
+  const [appFilterVacancy, setAppFilterVacancy] = useState<number | "all">("all");
+  const [appSort, setAppSort] = useState<"score" | "date">("score");
+
   // CRM sync state
   const [crmSyncing, setCrmSyncing] = useState<Record<number, boolean>>({});
   const [crmSynced, setCrmSynced] = useState<Record<number, boolean>>({});
@@ -1061,19 +1065,75 @@ export default function EmployerPage() {
               </div>
             </div>
 
+            {/* Filter & Sort bar */}
+            {!selectedVacancy && applications.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-4 items-center">
+                <select
+                  value={appFilterVacancy}
+                  onChange={(e) => setAppFilterVacancy(e.target.value === "all" ? "all" : Number(e.target.value))}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:border-purple-400"
+                >
+                  <option value="all">Alle vacatures</option>
+                  {vacancies.map((v) => (
+                    <option key={v.id} value={v.id}>{v.title} ({applications.filter((a) => a.vacancy_id === v.id).length})</option>
+                  ))}
+                </select>
+                <select
+                  value={appSort}
+                  onChange={(e) => setAppSort(e.target.value as "score" | "date")}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:border-purple-400"
+                >
+                  <option value="score">Hoogste score eerst</option>
+                  <option value="date">Nieuwste eerst</option>
+                </select>
+              </div>
+            )}
+
             {applications.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
                 <div className="text-lg font-semibold text-gray-700 mb-2">{txt.noApplicants}</div>
                 <div className="text-gray-400 text-sm">{txt.noApplicantsSub}</div>
               </div>
-            ) : (
+            ) : (() => {
+              const filtered = !selectedVacancy && appFilterVacancy !== "all"
+                ? applications.filter((a) => a.vacancy_id === appFilterVacancy)
+                : applications;
+              const sorted = [...filtered].sort((a, b) =>
+                appSort === "score"
+                  ? (b.match_score ?? 0) - (a.match_score ?? 0)
+                  : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              // Group by vacancy when viewing all (no filter active)
+              const showGroupHeaders = !selectedVacancy && appFilterVacancy === "all";
+              let lastVacancyId = -1;
+
+              return sorted.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-100 p-14 text-center">
+                  <div className="text-lg font-semibold text-gray-700 mb-2">Geen sollicitanten voor deze vacature</div>
+                </div>
+              ) : (
               <div className="space-y-3">
-                {applications.map((app) => {
+                {(showGroupHeaders && appSort === "score"
+                  ? sorted
+                  : showGroupHeaders
+                    ? [...sorted].sort((a, b) => a.vacancy_id - b.vacancy_id || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                    : sorted
+                ).map((app) => {
+                  const showHeader = showGroupHeaders && app.vacancy_id !== lastVacancyId;
+                  if (showGroupHeaders) lastVacancyId = app.vacancy_id;
                   const sc = { ...(STATUS_CONFIG[app.status] ?? { color: "#374151", bg: "#f3f4f6", next: [] }), label: STATUS_LABELS[app.status] ?? app.status };
                   const initials = getInitials(app.candidate_name);
                   const color = avatarColor(app.candidate_id);
                   return (
-                    <div key={app.id} className="bg-white rounded-xl border border-gray-100 p-4 md:p-5">
+                    <div key={app.id}>
+                      {showHeader && appSort !== "score" && (
+                        <div className="flex items-center gap-2 mt-4 mb-2">
+                          <div className="text-sm font-bold text-gray-700">{vacancies.find((v) => v.id === app.vacancy_id)?.title ?? "Vacature"}</div>
+                          <div className="flex-1 h-px bg-gray-200" />
+                          <div className="text-xs text-gray-400">{sorted.filter((a) => a.vacancy_id === app.vacancy_id).length} sollicitant(en)</div>
+                        </div>
+                      )}
+                    <div className="bg-white rounded-xl border border-gray-100 p-4 md:p-5">
                       <div className="app-card-flex flex items-start gap-3 md:gap-4">
                         {/* Avatar */}
                         <div className={`${color} w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
@@ -1395,10 +1455,12 @@ export default function EmployerPage() {
                         </div>
                       </div>
                     </div>
+                    </div>
                   );
                 })}
               </div>
-            )}
+              );
+            })()}
           </>
         )}
 
