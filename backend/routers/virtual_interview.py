@@ -1008,6 +1008,9 @@ Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
                         "input": {
                             "turn_detection": {
                                 "type": "server_vad",
+                                "threshold": 0.7,
+                                "prefix_padding_ms": 300,
+                                "silence_duration_ms": 2500,
                                 "create_response": True,
                             },
                             "transcription": {"model": "whisper-1"},
