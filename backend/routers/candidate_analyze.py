@@ -61,8 +61,23 @@ def analyze(
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     prompt = f"""
-Je bent een recruiter-assistent.
+Je bent een STRENGE, kritische recruitment consultant.
 Analyseer de match tussen CV en vacature en geef strikt JSON terug.
+
+SCORINGSRICHTLIJNEN (wees STRENG):
+- 0-20: Totaal geen relevante ervaring of opleiding voor deze functie
+- 21-40: Minimale overlap — enkele overdraagbare vaardigheden maar geen directe ervaring
+- 41-55: Gedeeltelijke match — enige relevante ervaring maar mist belangrijke vereisten
+- 56-70: Redelijke match — heeft relevante ervaring maar niet alles wat gevraagd wordt
+- 71-85: Goede match — voldoet aan de meeste vereisten met relevante werkervaring
+- 86-100: Uitstekende match — voldoet aan vrijwel alle vereisten, sterke directe ervaring
+
+BELANGRIJK:
+- Beoordeel op HARDE vaardigheden en RELEVANTE werkervaring, niet op soft skills
+- Een CV uit een totaal andere branche zonder relevante skills = MAX 35
+- Generieke CV-tekst zonder specifieke ervaring voor de functie = MAX 45
+- Geef alleen 70+ als de kandidaat aantoonbaar relevante werkervaring heeft
+- Wees eerlijk en realistisch — een te hoge score is misleidend voor de werkgever
 
 CV (extracted):
 {cv.extracted_text}
@@ -167,7 +182,8 @@ def get_recommendations(
     )
 
     prompt = f"""
-Je bent een recruiter-AI. Analyseer welke vacatures het beste passen bij het CV.
+Je bent een STRENGE recruiter-AI. Analyseer welke vacatures het beste passen bij het CV.
+Wees realistisch: een CV uit een andere branche = MAX 35. Alleen 70+ bij directe relevante ervaring.
 
 CV (samenvatting, eerste 1000 tekens):
 {cv.extracted_text[:1000]}

@@ -20,15 +20,33 @@ def score_job_match(
 
     if language == "nl":
         system_prompt = (
-            "Je bent een ervaren Nederlandse recruitment consultant. "
-            "Je beoordeelt hoe goed een kandidaat past op een vacature. "
-            "Geef een matchscore van 0 tot 100 en een korte uitleg in het Nederlands."
+            "Je bent een STRENGE, kritische recruitment consultant. "
+            "Je beoordeelt hoe goed een kandidaat ECHT past bij een vacature.\n\n"
+            "SCORINGSRICHTLIJNEN (wees STRENG):\n"
+            "- 0-20: Totaal geen relevante ervaring of opleiding\n"
+            "- 21-40: Minimale overlap — enkele overdraagbare vaardigheden maar geen directe ervaring\n"
+            "- 41-55: Gedeeltelijke match — enige relevante ervaring maar mist belangrijke vereisten\n"
+            "- 56-70: Redelijke match — heeft relevante ervaring maar niet alles\n"
+            "- 71-85: Goede match — voldoet aan de meeste vereisten\n"
+            "- 86-100: Uitstekende match — sterke directe ervaring\n\n"
+            "BELANGRIJK: Beoordeel op HARDE vaardigheden en RELEVANTE werkervaring, niet op soft skills. "
+            "Een CV uit een andere branche zonder relevante skills = MAX 35. "
+            "Geef alleen 70+ bij aantoonbaar relevante werkervaring."
         )
     else:
         system_prompt = (
-            "You are an experienced recruitment consultant. "
-            "You evaluate how well a candidate fits a job description. "
-            "Give a match score from 0 to 100 and a short explanation in English."
+            "You are a STRICT, critical recruitment consultant. "
+            "You evaluate how well a candidate TRULY fits a job description.\n\n"
+            "SCORING GUIDELINES (be STRICT):\n"
+            "- 0-20: No relevant experience or education whatsoever\n"
+            "- 21-40: Minimal overlap — some transferable skills but no direct experience\n"
+            "- 41-55: Partial match — some relevant experience but missing key requirements\n"
+            "- 56-70: Reasonable match — has relevant experience but not everything required\n"
+            "- 71-85: Good match — meets most requirements with relevant work experience\n"
+            "- 86-100: Excellent match — meets nearly all requirements, strong direct experience\n\n"
+            "IMPORTANT: Evaluate on HARD skills and RELEVANT work experience, not soft skills. "
+            "A CV from a completely different industry with no relevant skills = MAX 35. "
+            "Only give 70+ for demonstrably relevant work experience."
         )
 
     user_payload = {

@@ -41,9 +41,19 @@ def rank_candidates_for_job(
         )
 
     system_prompt = (
-        "Je bent een ervaren recruitment consultant. "
-        "Je beoordeelt kandidaten objectief op basis van hun CV en de vacaturetekst. "
-        "Je geeft een matchscore tussen 0 en 100 en een korte Nederlandse uitleg per kandidaat."
+        "Je bent een STRENGE, kritische recruitment consultant. "
+        "Je beoordeelt kandidaten objectief op basis van hun CV en de vacaturetekst.\n\n"
+        "SCORINGSRICHTLIJNEN (wees STRENG):\n"
+        "- 0-20: Totaal geen relevante ervaring of opleiding\n"
+        "- 21-40: Minimale overlap — enkele overdraagbare vaardigheden maar geen directe ervaring\n"
+        "- 41-55: Gedeeltelijke match — enige relevante ervaring maar mist belangrijke vereisten\n"
+        "- 56-70: Redelijke match — heeft relevante ervaring maar niet alles\n"
+        "- 71-85: Goede match — voldoet aan de meeste vereisten\n"
+        "- 86-100: Uitstekende match — sterke directe ervaring\n\n"
+        "BELANGRIJK: Beoordeel op HARDE vaardigheden en RELEVANTE werkervaring, niet op soft skills. "
+        "Een CV uit een andere branche zonder relevante skills = MAX 35. "
+        "Geef alleen 70+ bij aantoonbaar relevante werkervaring. "
+        "Geef een matchscore en korte Nederlandse uitleg per kandidaat."
     )
 
     user_prompt = {
