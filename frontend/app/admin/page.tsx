@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/i18n";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -799,7 +799,7 @@ export default function AdminPage() {
                                   background: p.plan === "premium" ? "#f5f3ff" : p.plan === "normaal" ? "#dbeafe" : "#f0fdf4",
                                   color: p.plan === "premium" ? "#7c3aed" : p.plan === "normaal" ? "#1d4ed8" : "#15803d",
                                 }}>
-                                  {p.plan || "—"}{p.interval ? ` / ${p.interval}` : ""}
+                                  {p.plan === "premium" ? "Scale" : p.plan === "normaal" ? "Growth" : p.plan || "—"}{p.interval ? ` / ${p.interval}` : ""}
                                 </span>
                               </td>
                               <td className="py-2.5 px-3 text-right font-semibold text-green-600">€{(p.amount_total ?? 0).toFixed(2)}</td>

@@ -166,6 +166,22 @@ export default function VideoInterviewPage() {
   // Sync stageRef met stage state
   useEffect(() => { stageRef.current = stage; }, [stage]);
 
+  // Cleanup bij unmount (moet vóór early returns staan voor React hooks regels)
+  useEffect(() => () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.close(1000, "Interview beëindigd");
+    }
+    processorRef.current?.disconnect();
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    audioCtxRef.current?.close();
+    try { anamClientRef.current?.stopStreaming(); } catch { /* negeer */ }
+    processorRef.current = null;
+    micStreamRef.current = null;
+    audioCtxRef.current = null;
+    anamClientRef.current = null;
+    anamAudioStreamRef.current = null;
+  }, []);
+
   // ── Maintenance mode ──────────────────────────────────────────────────────────
   if (LISA_MAINTENANCE) {
     return (
@@ -554,8 +570,6 @@ export default function VideoInterviewPage() {
     anamClientRef.current = null;
     anamAudioStreamRef.current = null;
   };
-
-  useEffect(() => () => cleanup(), []);
 
   // ── Resultaatscherm ───────────────────────────────────────────────────────────
 

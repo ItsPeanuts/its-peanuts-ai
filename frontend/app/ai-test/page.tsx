@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 type Tab = "rewrite" | "motivation" | "match";
 

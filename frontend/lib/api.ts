@@ -1,6 +1,6 @@
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 async function parseJson(res: Response) {
   const text = await res.text();

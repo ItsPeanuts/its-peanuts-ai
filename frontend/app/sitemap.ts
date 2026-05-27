@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 const SITE_URL = "https://www.vorzaiq.com";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 type VacancyItem = { id: number; created_at: string };
 

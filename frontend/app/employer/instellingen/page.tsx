@@ -99,7 +99,7 @@ export default function InstellingenPage() {
     }
   }
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://its-peanuts-backend.onrender.com";
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "https://api.vorzaiq.com";
   const logoUrl = logoKey ? `${API_BASE}/auth/logos/${logoKey}` : null;
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {

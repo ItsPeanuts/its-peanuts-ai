@@ -97,7 +97,7 @@ const SETUP_GUIDES: Record<string, { title: string; steps: string[]; link: strin
       "Of via Azure Portal → Bot Services → Create",
       "Kopieer Microsoft App ID → TEAMS_BOT_APP_ID",
       "Genereer een wachtwoord → TEAMS_BOT_APP_PASSWORD",
-      "Stel de Messaging Endpoint in: https://its-peanuts-backend.onrender.com/teams/webhook",
+      "Stel de Messaging Endpoint in: https://api.vorzaiq.com/teams/webhook",
       "Voeg de bot toe aan Teams via het Teams App manifest",
     ],
     link: "https://dev.botframework.com",

@@ -70,7 +70,7 @@ def create_vacancy(
     if limit is not None and current_user.role != "admin":
         current_count = (
             db.query(models.Vacancy)
-            .filter(models.Vacancy.employer_id == current_user.id)
+            .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
             .count()
         )
         if current_count >= limit:
@@ -80,8 +80,8 @@ def create_vacancy(
                 current_user.vacancy_credits = credits - 1
                 db.commit()
             else:
-                plan_label = "Gratis" if plan == "gratis" else "Normaal"
-                upgrade_to = "Normaal" if plan == "gratis" else "Premium"
+                plan_label = "Gratis" if plan == "gratis" else "Growth"
+                upgrade_to = "Growth" if plan == "gratis" else "Scale"
                 raise HTTPException(
                     status_code=403,
                     detail=(

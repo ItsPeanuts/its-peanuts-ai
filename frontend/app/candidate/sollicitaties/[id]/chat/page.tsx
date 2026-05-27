@@ -8,7 +8,7 @@ import { getMyApplications, ApplicationWithDetails } from "@/lib/api";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 const AMBER_VIDEO_URL =
   "https://clips-presenters.d-id.com/v2/Amber/IVHRp0a96W/rrGsQrSVpu/talkingPreview.mp4";

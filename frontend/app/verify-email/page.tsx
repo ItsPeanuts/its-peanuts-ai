@@ -6,7 +6,7 @@ import Link from "next/link";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();

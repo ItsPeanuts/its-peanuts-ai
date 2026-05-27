@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 RESEND_API_KEY   = os.getenv("RESEND_API_KEY", "")
 FROM_EMAIL       = os.getenv("FROM_EMAIL", "VorzaIQ <noreply@vorzaiq.com>")
-FRONTEND_URL     = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+FRONTEND_URL     = os.getenv("FRONTEND_URL", "https://www.vorzaiq.com")
 ADMIN_EMAIL      = os.getenv("ADMIN_EMAIL", "admin@vorzaiq.com")
 BOOKKEEPER_EMAIL = os.getenv("BOOKKEEPER_EMAIL", "")
 INVOICE_FROM_EMAIL = os.getenv("INVOICE_FROM_EMAIL", "VorzaIQ <info@vorzaiq.com>")

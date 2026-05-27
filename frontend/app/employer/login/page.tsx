@@ -9,7 +9,7 @@ import { useLanguage } from "@/lib/i18n";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "https://its-peanuts-backend.onrender.com";
+  "https://api.vorzaiq.com";
 
 function EmployerLoginContent() {
   const router = useRouter();

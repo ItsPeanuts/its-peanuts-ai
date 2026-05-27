@@ -40,7 +40,7 @@ def _maybe_send_claim_mail(vacancy_id: int, vacancy_title: str, db: Session) -> 
     sv = db.query(SV).filter(SV.vacancy_id == vacancy_id, SV.claim_notified == False).first()
     if not sv:
         return
-    frontend_url = os.getenv("FRONTEND_URL", "https://its-peanuts-frontend.onrender.com")
+    frontend_url = os.getenv("FRONTEND_URL", "https://www.vorzaiq.com")
     claim_url = f"{frontend_url}/claim/{sv.claim_token}"
     send_claim_notification(
         employer_email=sv.contact_email,
