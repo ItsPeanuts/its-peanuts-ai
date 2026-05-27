@@ -37,7 +37,7 @@ export default function OgImage() {
             fontWeight: 500,
           }}
         >
-          AI Recruitment Platform voor MKB
+          AI Recruitment Platform
         </div>
       </div>
     ),

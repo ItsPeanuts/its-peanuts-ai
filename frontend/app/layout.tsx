@@ -12,7 +12,7 @@ const SITE_URL = "https://www.vorzaiq.com";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "VorzaIQ — AI Recruitment Platform voor MKB | Nederland",
+    default: "VorzaIQ — AI Recruitment Platform | Nederland",
     template: "%s | VorzaIQ",
   },
   description:

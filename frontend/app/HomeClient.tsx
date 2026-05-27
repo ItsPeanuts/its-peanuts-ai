@@ -44,7 +44,7 @@ export default function HomeClient() {
     name: "VorzaIQ",
     url: "https://www.vorzaiq.com",
     logo: "https://www.vorzaiq.com/apple-touch-icon.png",
-    description: "AI Recruitment Platform voor MKB in Nederland",
+    description: "AI Recruitment Platform in Nederland",
     sameAs: [],
   };
 
