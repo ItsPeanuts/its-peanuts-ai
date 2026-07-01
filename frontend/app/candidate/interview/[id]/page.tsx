@@ -31,7 +31,7 @@ const BASE =
 const OPENAI_REALTIME_WS =
   "wss://api.openai.com/v1/realtime?model=gpt-realtime-2";
 
-const LISA_MAINTENANCE = false;
+const LISA_MAINTENANCE = true;
 
 // Interview eindigt automatisch na dit aantal Lisa-beurten
 const MAX_LISA_TURNS = 7;

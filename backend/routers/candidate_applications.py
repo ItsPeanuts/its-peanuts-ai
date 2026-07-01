@@ -116,13 +116,10 @@ def my_applications_with_details(
             chat_completed = True  # niet vereist = automatisch afgerond
 
         # Employer plan check voor interview verplichting
-        # Admins zien altijd het video-interview (voor test doeleinden)
+        # Virtuele Lisa is tijdelijk uitgeschakeld — chatbot Lisa blijft actief
         employer = db.query(models.User).filter(models.User.id == app.vacancy.employer_id).first()
         employer_plan = (employer.plan if employer else "gratis") or "gratis"
-        interview_required = (
-            (employer_plan == "premium" or is_admin)
-            and interview_type in ("virtual", "both")
-        )
+        interview_required = False  # Virtuele Lisa tijdelijk uit
 
         # Interview completed: VirtualInterviewSession met status "completed"
         interview_completed = False
