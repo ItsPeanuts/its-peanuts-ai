@@ -168,7 +168,7 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
     )
 
 
-CURRENT_TERMS_VERSION = "2026-07"
+CURRENT_TERMS_VERSION = "2026-07b"
 
 
 @router.post("/{vacancy_id}/apply", response_model=schemas.ApplyResponse)

@@ -21,7 +21,7 @@ LOGO_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
 LOGO_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
-CURRENT_TERMS_VERSION = "2026-07"
+CURRENT_TERMS_VERSION = "2026-07b"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

@@ -298,6 +298,8 @@ function EmployerLoginContent() {
                 <span className="text-xs text-gray-600 leading-relaxed">
                   Ik ga akkoord met de{" "}
                   <Link href="/voorwaarden" target="_blank" className="text-purple-600 underline hover:text-purple-700">algemene voorwaarden</Link>
+                  , de{" "}
+                  <Link href="/verwerkersovereenkomst" target="_blank" className="text-purple-600 underline hover:text-purple-700">verwerkersovereenkomst</Link>
                   {" "}en het{" "}
                   <Link href="/privacy" target="_blank" className="text-purple-600 underline hover:text-purple-700">privacybeleid</Link>.
                 </span>

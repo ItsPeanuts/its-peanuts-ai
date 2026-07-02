@@ -16,6 +16,9 @@ export default function PublicFooter() {
             <Link href="/voorwaarden" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
               Algemene Voorwaarden
             </Link>
+            <Link href="/verwerkersovereenkomst" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
+              Verwerkersovereenkomst
+            </Link>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <span>Ook van VorzaIQ:</span>
