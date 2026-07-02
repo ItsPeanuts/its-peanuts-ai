@@ -20,6 +20,7 @@ function CandidateLoginContent() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +49,7 @@ function CandidateLoginContent() {
     setError("");
     setLoading(true);
     try {
-      const { access_token } = await register(regEmail, regPassword, regName);
+      const { access_token } = await register(regEmail, regPassword, regName, termsAccepted);
       const user = await me(access_token);
       setSession({ token: access_token, role: "candidate", email: user.email });
       router.push(nextUrl || "/candidate/cv?next=/candidate");
@@ -175,9 +176,24 @@ function CandidateLoginContent() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                 />
               </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 accent-purple-600"
+                  required
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  Ik ga akkoord met de{" "}
+                  <Link href="/voorwaarden" target="_blank" className="text-purple-600 underline hover:text-purple-700">algemene voorwaarden</Link>
+                  {" "}en het{" "}
+                  <Link href="/privacy" target="_blank" className="text-purple-600 underline hover:text-purple-700">privacybeleid</Link>.
+                </span>
+              </label>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !termsAccepted}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
                 style={{ background: "#7C3AED" }}
               >

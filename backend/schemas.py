@@ -13,12 +13,14 @@ class CandidateRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=1)
+    terms_accepted: bool = False
 
 
 class EmployerRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=1)
+    terms_accepted: bool = False
 
 
 class ResendVerification(BaseModel):

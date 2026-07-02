@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -167,6 +168,9 @@ def get_vacancy(vacancy_id: int, db: Session = Depends(get_db)):
     )
 
 
+CURRENT_TERMS_VERSION = "2026-07"
+
+
 @router.post("/{vacancy_id}/apply", response_model=schemas.ApplyResponse)
 async def apply_to_vacancy(
     vacancy_id: int,
@@ -175,8 +179,15 @@ async def apply_to_vacancy(
     password: str = Form(...),
     cv_file: UploadFile = File(...),
     intake_answers_json: str = Form(default="[]"),
+    terms_accepted: str = Form(default="false"),
     db: Session = Depends(get_db),
 ):
+    if terms_accepted.lower() not in ("true", "1", "yes"):
+        raise HTTPException(
+            status_code=422,
+            detail="Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid.",
+        )
+
     # Haal vacature op
     vacancy = db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
     if not vacancy:
@@ -202,6 +213,8 @@ async def apply_to_vacancy(
         full_name=full_name.strip(),
         hashed_password=hash_password(password),
         role="candidate",
+        terms_accepted_at=datetime.now(timezone.utc),
+        terms_version=CURRENT_TERMS_VERSION,
     )
     db.add(candidate)
     db.commit()

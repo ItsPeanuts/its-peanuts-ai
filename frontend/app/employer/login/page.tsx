@@ -39,6 +39,7 @@ function EmployerLoginContent() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -112,6 +113,7 @@ function EmployerLoginContent() {
           email: regEmail,
           password: regPassword,
           full_name: regName,
+          terms_accepted: termsAccepted,
         }),
       });
       const data = await res.json();
@@ -285,7 +287,22 @@ function EmployerLoginContent() {
                   placeholder="Minimaal 8 tekens"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition" />
               </div>
-              <button type="submit" disabled={loading}
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 accent-purple-600"
+                  required
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  Ik ga akkoord met de{" "}
+                  <Link href="/voorwaarden" target="_blank" className="text-purple-600 underline hover:text-purple-700">algemene voorwaarden</Link>
+                  {" "}en het{" "}
+                  <Link href="/privacy" target="_blank" className="text-purple-600 underline hover:text-purple-700">privacybeleid</Link>.
+                </span>
+              </label>
+              <button type="submit" disabled={loading || !termsAccepted}
                 className="w-full py-3 rounded-xl text-white font-bold text-sm transition-opacity disabled:opacity-60"
                 style={{ background: "#7C3AED" }}>
                 {loading ? "Bezig..." : "Account aanmaken"}

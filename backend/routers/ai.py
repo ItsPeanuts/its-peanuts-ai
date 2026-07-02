@@ -354,7 +354,11 @@ def motivation_letter_for_vacancy(
 def _scrape_website(url: str, max_chars: int = 3000) -> str:
     """Haal tekst op van een website. Geeft lege string terug bij fouten."""
     try:
-        resp = _requests.get(url, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+        resp = _requests.get(url, timeout=8, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
+        })
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         # Verwijder scripts, styles en nav

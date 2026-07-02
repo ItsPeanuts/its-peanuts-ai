@@ -21,6 +21,7 @@ LOGO_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
 LOGO_ALLOWED_TYPES = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
+CURRENT_TERMS_VERSION = "2026-07"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,6 +34,9 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post("/register", response_model=schemas.Token)
 @limiter.limit("10/minute")
 def register_candidate(request: Request, payload: schemas.CandidateRegister, db: Session = Depends(get_db)):
+    if not payload.terms_accepted:
+        raise HTTPException(status_code=422, detail="Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid.")
+
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
     if exists:
@@ -44,6 +48,8 @@ def register_candidate(request: Request, payload: schemas.CandidateRegister, db:
         hashed_password=hash_password(payload.password),
         role="candidate",
         plan=None,
+        terms_accepted_at=datetime.now(timezone.utc),
+        terms_version=CURRENT_TERMS_VERSION,
     )
     db.add(user)
     db.commit()
@@ -55,6 +61,9 @@ def register_candidate(request: Request, payload: schemas.CandidateRegister, db:
 @router.post("/register-employer", response_model=schemas.UserOut)
 @limiter.limit("10/minute")
 def register_employer(request: Request, payload: schemas.EmployerRegister, db: Session = Depends(get_db)):
+    if not payload.terms_accepted:
+        raise HTTPException(status_code=422, detail="Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid.")
+
     email = payload.email.lower()
     exists = db.query(models.User).filter(models.User.email == email).first()
     if exists:
@@ -70,6 +79,8 @@ def register_employer(request: Request, payload: schemas.EmployerRegister, db: S
         trial_ends_at=datetime.now(timezone.utc) + timedelta(days=30),
         email_verified=False,
         email_verify_token=verify_token,
+        terms_accepted_at=datetime.now(timezone.utc),
+        terms_version=CURRENT_TERMS_VERSION,
     )
     db.add(user)
     db.commit()

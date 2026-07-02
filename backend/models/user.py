@@ -43,6 +43,9 @@ class User(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    terms_accepted_at = Column(DateTime(timezone=True), nullable=True, default=None)
+    terms_version = Column(String(20), nullable=True, default=None)
+
     vacancies    = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
     organisation = relationship("Organisation", back_populates="users")
 

@@ -109,6 +109,7 @@ export default function EmployerPage() {
   // Applicants filter & sort
   const [appFilterVacancy, setAppFilterVacancy] = useState<number | "all">("all");
   const [appSort, setAppSort] = useState<"score" | "date">("score");
+  const [appTab, setAppTab] = useState<"active" | "rejected">("active");
 
   // CRM sync state
   const [crmSyncing, setCrmSyncing] = useState<Record<number, boolean>>({});
@@ -605,6 +606,8 @@ export default function EmployerPage() {
     allApplicationsTitle: { nl: "Alle sollicitanten", en: "All applicants", de: "Alle Bewerber", fr: "Tous les candidats", es: "Todos los candidatos" }[lang] ?? "Alle sollicitanten",
     noApplicants:      T.employer.noApplicants,
     noApplicantsSub:   { nl: "Nog geen sollicitaties ontvangen voor dit filter.", en: "No applications received for this filter.", de: "Noch keine Bewerbungen für diesen Filter.", fr: "Aucune candidature pour ce filtre.", es: "Sin solicitudes para este filtro." }[lang] ?? "Nog geen sollicitaties ontvangen voor dit filter.",
+    tabActive:         { nl: "Kandidaten", en: "Candidates", de: "Kandidaten", fr: "Candidats", es: "Candidatos" }[lang] ?? "Kandidaten",
+    tabRejected:       { nl: "Afgewezen", en: "Rejected", de: "Abgelehnt", fr: "Refusés", es: "Rechazados" }[lang] ?? "Afgewezen",
     // Vacature status
     online:            { nl: "Online",   en: "Online",   de: "Online",   fr: "En ligne", es: "Online" }[lang] ?? "Online",
     offline:           { nl: "Offline",  en: "Offline",  de: "Offline",  fr: "Hors ligne", es: "Offline" }[lang] ?? "Offline",
@@ -1065,6 +1068,28 @@ export default function EmployerPage() {
               </div>
             </div>
 
+            {/* Active / Rejected tabs */}
+            {applications.length > 0 && (() => {
+              const activeCount = applications.filter((a) => a.status !== "rejected").length;
+              const rejectedCount = applications.filter((a) => a.status === "rejected").length;
+              return (
+                <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+                  <button
+                    onClick={() => setAppTab("active")}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${appTab === "active" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    {txt.tabActive} ({activeCount})
+                  </button>
+                  <button
+                    onClick={() => setAppTab("rejected")}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${appTab === "rejected" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    {txt.tabRejected} ({rejectedCount})
+                  </button>
+                </div>
+              );
+            })()}
+
             {/* Filter & Sort bar */}
             {!selectedVacancy && applications.length > 0 && (
               <div className="flex flex-wrap gap-3 mb-4 items-center">
@@ -1095,9 +1120,12 @@ export default function EmployerPage() {
                 <div className="text-gray-400 text-sm">{txt.noApplicantsSub}</div>
               </div>
             ) : (() => {
+              const tabFiltered = appTab === "rejected"
+                ? applications.filter((a) => a.status === "rejected")
+                : applications.filter((a) => a.status !== "rejected");
               const filtered = !selectedVacancy && appFilterVacancy !== "all"
-                ? applications.filter((a) => a.vacancy_id === appFilterVacancy)
-                : applications;
+                ? tabFiltered.filter((a) => a.vacancy_id === appFilterVacancy)
+                : tabFiltered;
               const sorted = [...filtered].sort((a, b) =>
                 appSort === "score"
                   ? (b.match_score ?? 0) - (a.match_score ?? 0)
