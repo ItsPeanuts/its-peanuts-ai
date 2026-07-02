@@ -16,115 +16,108 @@ export default function VoorwaardenPage() {
           Algemene Voorwaarden
         </h1>
         <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 40 }}>
-          Laatste update: 17 april 2026
+          Laatst bijgewerkt: juli 2026
         </p>
 
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "32px", display: "flex", flexDirection: "column", gap: 32 }}>
 
-          <Section title="1. Definities">
-            <strong>VorzaIQ</strong> — het AI-gedreven recruitment platform van It&apos;s Peanuts AI, gevestigd in Nederland, bereikbaar via{" "}
-            <a href="https://vorzaiq.com" style={{ color: "#7C3AED" }}>vorzaiq.com</a>.<br /><br />
-            <strong>Werkgever</strong> — een gebruiker die vacatures plaatst en sollicitanten beheert via het platform.<br />
-            <strong>Kandidaat</strong> — een gebruiker die solliciteert op vacatures via het platform.<br />
-            <strong>Diensten</strong> — alle functionaliteiten van VorzaIQ, inclusief vacatureplaatsing, AI-matching, pre-screening, chatbot Lisa en CV-tools.
+          <Section title="1. Wie wij zijn">
+            Deze voorwaarden zijn van toepassing op het gebruik van het platform VorzaIQ (
+            <a href="https://vorzaiq.com" style={{ color: "#7C3AED" }}>vorzaiq.com</a>), aangeboden door:
+            <br /><br />
+            <strong>VorzaIQ</strong><br />
+            Zeeland, Nederland<br />
+            KVK-nummer: 78546338<br />
+            E-mail: <a href="mailto:info@vorzaiq.com" style={{ color: "#7C3AED" }}>info@vorzaiq.com</a>
           </Section>
 
-          <Section title="2. Toepasselijkheid">
-            Deze algemene voorwaarden zijn van toepassing op elk gebruik van het VorzaIQ platform,
-            inclusief het aanmaken van een account, het plaatsen van vacatures, het indienen van
-            sollicitaties en het gebruik van AI-functionaliteiten. Door gebruik te maken van VorzaIQ
-            ga je akkoord met deze voorwaarden.
+          <Section title="2. De dienst">
+            VorzaIQ is een AI-gedreven recruitmentplatform. Werkgevers kunnen vacatures plaatsen en
+            kandidaten laten voorscreenen door onze AI-recruiter &quot;Lisa&quot;. Kandidaten kunnen kosteloos
+            een profiel aanmaken, hun CV matchen met vacatures en solliciteren.
           </Section>
 
-          <Section title="3. Account en registratie">
+          <Section title="3. Accounts">
             <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Je bent verantwoordelijk voor het vertrouwelijk houden van je inloggegevens.</Li>
-              <Li>Alle activiteiten onder jouw account zijn jouw verantwoordelijkheid.</Li>
-              <Li>Je verstrekt correcte en actuele informatie bij registratie.</Li>
-              <Li>VorzaIQ behoudt het recht accounts te blokkeren of verwijderen bij misbruik.</Li>
+              <Li>Je bent zelf verantwoordelijk voor de juistheid van de gegevens in je account en voor het vertrouwelijk houden van je inloggegevens.</Li>
+              <Li>Je mag het platform niet gebruiken voor onrechtmatige doeleinden, waaronder het plaatsen van misleidende vacatures of discriminerende functie-eisen.</Li>
+              <Li>Wij mogen accounts opschorten of be&euml;indigen bij misbruik of schending van deze voorwaarden.</Li>
             </ul>
           </Section>
 
-          <Section title="4. Dienstverlening">
-            VorzaIQ biedt een AI-gedreven platform voor het matchen van kandidaten aan vacatures.
-            Onze diensten omvatten:
+          <Section title="4. Abonnementen en tarieven (werkgevers)">
             <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Vacatureplaatsing en -beheer voor werkgevers</Li>
-              <Li>AI-matching en pre-screening van sollicitanten</Li>
-              <Li>CV-upload, AI-herschrijving en motivatiebriefgenerator</Li>
-              <Li>Virtuele recruiter Lisa (chatbot)</Li>
-              <Li>Interview scheduling en kandidaatenbeheer</Li>
-            </ul>
-            <br />
-            VorzaIQ garandeert niet dat AI-resultaten (matchscores, herschrijvingen) foutloos zijn.
-            AI-uitkomsten zijn ondersteunend en vervangen geen menselijk oordeel.
-          </Section>
-
-          <Section title="5. Abonnementen en betalingen">
-            <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Werkgevers kunnen kiezen uit verschillende abonnementen (Growth, Scale) of per vacature betalen.</Li>
-              <Li>Nieuwe werkgevers ontvangen een gratis proefmaand op het Growth-pakket.</Li>
-              <Li>Betalingen worden verwerkt via Stripe. Prijzen zijn exclusief BTW tenzij anders vermeld.</Li>
-              <Li>Abonnementen worden automatisch verlengd tenzij je opzegt voor het einde van de lopende periode.</Li>
-              <Li>Opzeggen kan op elk moment via je accountinstellingen. Na opzegging blijft je account actief tot het einde van de betaalde periode.</Li>
-              <Li>Restitutie is niet mogelijk voor reeds betaalde periodes, tenzij wettelijk verplicht.</Li>
+              <Li>VorzaIQ biedt de abonnementen <strong>Starter</strong>, <strong>Growth</strong> en <strong>Scale</strong>, en daarnaast de mogelijkheid om per vacature te betalen. De actuele tarieven en inbegrepen functionaliteit staan op <a href="/abonnementen" style={{ color: "#7C3AED" }}>vorzaiq.com/abonnementen</a>.</Li>
+              <Li>Abonnementen worden aangegaan per maand en worden telkens stilzwijgend met &eacute;&eacute;n maand verlengd, tenzij tijdig opgezegd.</Li>
+              <Li>Opzeggen kan op elk moment via je accountinstellingen of per e-mail, met inachtneming van een opzegtermijn van maximaal &eacute;&eacute;n maand. Na opzegging blijft het abonnement actief tot het einde van de lopende periode.</Li>
+              <Li>Prijswijzigingen worden minimaal 30 dagen van tevoren aangekondigd. Bij een prijsverhoging heb je het recht om per de ingangsdatum op te zeggen.</Li>
             </ul>
           </Section>
 
-          <Section title="6. Gebruik door kandidaten">
+          <Section title="5. Herroepingsrecht">
+            Sluit je een abonnement af als consument of als natuurlijk persoon die niet hoofdzakelijk
+            handelt in de uitoefening van een beroep of bedrijf, dan heb je het recht om de overeenkomst
+            binnen 14 dagen na het sluiten daarvan zonder opgave van redenen te ontbinden. Als je verzoekt
+            om de dienst direct te laten ingaan, ben je bij herroeping een evenredige vergoeding
+            verschuldigd voor de periode waarin de dienst al is geleverd.
+            <br /><br />
+            Voor zakelijke afnemers (rechtspersonen en ondernemers die handelen in de uitoefening van hun
+            bedrijf) geldt geen herroepingsrecht.
+          </Section>
+
+          <Section title="6. Betaling">
+            Betaling verloopt via onze betaaldienstverlener. Facturen worden digitaal verstrekt.
+            Bij uitblijvende betaling kunnen wij de toegang tot het platform opschorten nadat een
+            betalingsherinnering is verstuurd.
+          </Section>
+
+          <Section title="7. Gebruik van AI">
             <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Het gebruik van VorzaIQ is gratis voor kandidaten.</Li>
-              <Li>Geüploade CV&apos;s en sollicitaties worden gedeeld met de werkgever van de betreffende vacature.</Li>
-              <Li>AI-tools (CV-herschrijving, motivatiebrief) zijn hulpmiddelen — controleer de output altijd zelf.</Li>
-              <Li>Je kunt je account en alle gegevens op elk moment verwijderen.</Li>
+              <Li>De screeningsgesprekken op VorzaIQ worden gevoerd door een AI-systeem. Dit wordt voorafgaand aan elk gesprek duidelijk aan de kandidaat gemeld.</Li>
+              <Li>AI-uitkomsten (matchscores, gespreksverslagen, samenvattingen) zijn hulpmiddelen ter ondersteuning van het wervingsproces. Zij vormen geen zelfstandig aannamebesluit.</Li>
+              <Li><strong>De werkgever is verplicht om beslissingen over kandidaten (afwijzen, uitnodigen, aannemen) altijd door een mens te laten nemen en de AI-uitkomsten daarbij kritisch te beoordelen.</strong> De werkgever mag kandidaten niet uitsluitend op basis van een geautomatiseerde uitkomst afwijzen.</Li>
+              <Li>De werkgever staat ervoor in dat functie-eisen en selectiecriteria niet in strijd zijn met gelijkebehandelingswetgeving.</Li>
             </ul>
           </Section>
 
-          <Section title="7. Intellectueel eigendom">
+          <Section title="8. Persoonsgegevens en verwerkersrol">
             <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Het VorzaIQ platform, inclusief design, code en AI-modellen, is eigendom van It&apos;s Peanuts AI.</Li>
-              <Li>Content die jij uploadt (CV&apos;s, vacatureteksten) blijft jouw eigendom.</Li>
-              <Li>Door content te uploaden geef je VorzaIQ een licentie om deze te verwerken voor het leveren van de diensten.</Li>
+              <Li>Voor de gegevens van kandidaten die via het platform bij een werkgever terechtkomen, is de werkgever zelf verwerkingsverantwoordelijke in de zin van de AVG.</Li>
+              <Li>Voor zover VorzaIQ persoonsgegevens verwerkt in opdracht van de werkgever, treedt VorzaIQ op als verwerker. Op verzoek sluiten wij hiervoor een verwerkersovereenkomst; deze maakt onderdeel uit van deze voorwaarden.</Li>
+              <Li>Op de verwerking van persoonsgegevens door VorzaIQ als verantwoordelijke is ons <a href="/privacy" style={{ color: "#7C3AED" }}>privacybeleid</a> van toepassing.</Li>
             </ul>
           </Section>
 
-          <Section title="8. Aansprakelijkheid">
+          <Section title="9. Beschikbaarheid en onderhoud">
+            Wij streven naar een zo hoog mogelijke beschikbaarheid van het platform, maar garanderen
+            geen ononderbroken werking. Gepland onderhoud kondigen wij waar mogelijk vooraf aan.
+          </Section>
+
+          <Section title="10. Intellectuele eigendom">
+            Alle rechten op het platform, de software, de AI-modellen en de content van VorzaIQ berusten
+            bij VorzaIQ of haar licentiegevers. Werkgevers behouden de rechten op hun eigen vacatureteksten
+            en bedrijfsmateriaal; kandidaten behouden de rechten op hun eigen CV.
+          </Section>
+
+          <Section title="11. Aansprakelijkheid">
             <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>VorzaIQ streeft naar maximale beschikbaarheid maar garandeert geen 100% uptime.</Li>
-              <Li>Wij zijn niet aansprakelijk voor beslissingen die worden genomen op basis van AI-resultaten.</Li>
-              <Li>Onze totale aansprakelijkheid is beperkt tot het bedrag dat je in de afgelopen 12 maanden aan VorzaIQ hebt betaald.</Li>
-              <Li>VorzaIQ is niet aansprakelijk voor indirecte schade, gevolgschade of gederfde winst.</Li>
+              <Li>VorzaIQ spant zich in om accurate matchresultaten en gespreksverslagen te leveren, maar garandeert niet dat deze foutloos of volledig zijn.</Li>
+              <Li>VorzaIQ is niet aansprakelijk voor aannamebeslissingen van werkgevers of voor de inhoud van vacatures en CV&apos;s die door gebruikers zijn geplaatst.</Li>
+              <Li>De totale aansprakelijkheid van VorzaIQ is per gebeurtenis beperkt tot het bedrag dat de werkgever in de drie maanden voorafgaand aan de gebeurtenis aan VorzaIQ heeft betaald. Deze beperking geldt niet bij opzet of bewuste roekeloosheid van VorzaIQ, of voor zover de wet beperking niet toestaat.</Li>
+              <Li>Voor kandidaten is het gebruik van het platform kosteloos; aansprakelijkheid jegens kandidaten is beperkt tot hetgeen dwingend recht voorschrijft.</Li>
             </ul>
           </Section>
 
-          <Section title="9. Privacy">
-            Wij verwerken persoonsgegevens conform de AVG (GDPR). Zie ons{" "}
-            <a href="/privacy" style={{ color: "#7C3AED" }}>privacybeleid</a> voor volledige informatie
-            over hoe wij omgaan met jouw gegevens.
+          <Section title="12. Wijzigingen van deze voorwaarden">
+            Wij kunnen deze voorwaarden wijzigen. Wijzigingen worden minimaal 30 dagen voor
+            inwerkingtreding aangekondigd via e-mail of het platform. Ben je het niet eens met een
+            wijziging, dan kun je het abonnement per de ingangsdatum opzeggen.
           </Section>
 
-          <Section title="10. Beëindiging">
-            <ul style={{ marginTop: 8, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-              <Li>Je kunt je account op elk moment verwijderen via je profielinstellingen.</Li>
-              <Li>VorzaIQ kan je account opschorten of beëindigen bij overtreding van deze voorwaarden.</Li>
-              <Li>Bij beëindiging worden je gegevens verwijderd conform ons privacybeleid.</Li>
-            </ul>
-          </Section>
-
-          <Section title="11. Wijzigingen">
-            VorzaIQ kan deze voorwaarden wijzigen. Bij ingrijpende wijzigingen informeren wij
-            geregistreerde gebruikers per e-mail. Voortgezet gebruik na wijziging geldt als
-            acceptatie van de nieuwe voorwaarden.
-          </Section>
-
-          <Section title="12. Toepasselijk recht">
+          <Section title="13. Toepasselijk recht en geschillen">
             Op deze voorwaarden is Nederlands recht van toepassing. Geschillen worden voorgelegd
-            aan de bevoegde rechter in Nederland.
-          </Section>
-
-          <Section title="13. Contact">
-            Vragen over deze voorwaarden? Neem contact op via{" "}
-            <a href="mailto:info@vorzaiq.com" style={{ color: "#7C3AED" }}>info@vorzaiq.com</a>.
+            aan de bevoegde rechter in het arrondissement waar VorzaIQ is gevestigd, tenzij dwingend
+            recht anders bepaalt.
           </Section>
 
         </div>
