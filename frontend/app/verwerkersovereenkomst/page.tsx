@@ -104,16 +104,22 @@ const subprocessors = [
     safeguard: "EU-US Data Privacy Framework en/of standaardcontractbepalingen; verwerkersovereenkomst met verbod op modeltraining",
   },
   {
-    name: "[HOSTINGPARTIJ INVULLEN, bijv. Hetzner]",
-    service: "Hosting en opslag",
-    location: "Europese Unie",
+    name: "Hetzner Online GmbH",
+    service: "Hosting, opslag en database",
+    location: "Neurenberg, Duitsland (EU)",
     safeguard: "Niet van toepassing (verwerking binnen EER)",
   },
   {
-    name: "[DATABASEPARTIJ INVULLEN indien van toepassing, bijv. Supabase — vermeld de regio]",
-    service: "Database en authenticatie",
-    location: "[Regio invullen]",
-    safeguard: "[Invullen: n.v.t. bij EU-regio, anders SCC’s/DPF]",
+    name: "Cloudflare, Inc.",
+    service: "Netwerkverkeer, CDN en beveiliging (proxy)",
+    location: "Wereldwijd (EU-datacenters primair)",
+    safeguard: "Standaardcontractbepalingen / EU-US Data Privacy Framework",
+  },
+  {
+    name: "Resend, Inc.",
+    service: "Verzending van e-mailnotificaties (o.a. sollicitatiebevestigingen)",
+    location: "Ierland, EU (eu-west-1)",
+    safeguard: "Niet van toepassing (verwerking binnen EER)",
   },
 ];
 
