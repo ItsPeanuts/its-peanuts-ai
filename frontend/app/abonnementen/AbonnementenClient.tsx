@@ -341,9 +341,9 @@ function AbonnementenContent() {
                   background: row.highlight ? "#f5f3ff" : "#fff",
                 }}
               >
-                <div style={{ fontWeight: 700, color: row.highlight ? "#7C3AED" : "#374151", fontSize: 14 }}>
-                  {row.label}
-                  {row.highlight && <span style={{ marginLeft: 8, fontSize: 11, background: "#ede9fe", color: "#7C3AED", padding: "2px 8px", borderRadius: 100, fontWeight: 700 }}>{S.youBadge}</span>}
+                <div style={{ fontWeight: 700, color: row.highlight ? "#7C3AED" : "#374151", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>{row.label}</span>
+                  {row.highlight && <span style={{ fontSize: 11, background: "#ede9fe", color: "#7C3AED", padding: "2px 8px", borderRadius: 100, fontWeight: 700 }}>{S.youBadge}</span>}
                 </div>
                 <div style={{ fontWeight: 800, color: row.highlight ? "#7C3AED" : "#111827", fontSize: 15 }}>{row.cost}</div>
                 <div style={{ fontSize: 13, color: "#6b7280" }}>{row.unit}</div>
@@ -351,6 +351,9 @@ function AbonnementenContent() {
               </div>
             ))}
           </div>
+          <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 12, lineHeight: 1.5 }}>
+            {S.compFootnote}
+          </p>
         </div>
 
         {/* FAQ */}

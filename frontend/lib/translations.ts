@@ -107,6 +107,7 @@ export type TranslationSet = {
     compCost: string;
     compUnit: string;
     compAiLabel: string;
+    compFootnote: string;
     youBadge: string;
     compRows: Array<{ label: string; cost: string; unit: string }>;
     faqTitle: string;
@@ -328,18 +329,19 @@ const nl: TranslationSet = {
     compPlatform: "Platform",
     compCost: "Kosten",
     compUnit: "Eenheid",
-    compAiLabel: "AI-matching",
+    compAiLabel: "AI pre-screening gesprekken",
+    compFootnote: "Indeed en LinkedIn hanteren een pay-per-click-model zonder vaste prijzen; de werkelijke kosten zijn afhankelijk van budget, functie en concurrentie. Bron: nl.indeed.com/personeel/kosten en business.linkedin.com/talent-solutions/post-jobs/pricing, geraadpleegd juli 2026.",
     youBadge: "Jij",
     compRows: [
-      { label: "Indeed gesponsord", cost: "€200 – €400", unit: "per vacature" },
-      { label: "LinkedIn Jobs", cost: "€210 – €300", unit: "per maand (1 vacature)" },
-      { label: "VorzaIQ Starter", cost: "€49", unit: "per maand incl. AI-matching" },
+      { label: "Indeed gesponsord", cost: "Variabel", unit: "pay-per-click, budget per vacature" },
+      { label: "LinkedIn Jobs", cost: "Variabel", unit: "pay-per-click, zelf ingesteld budget" },
+      { label: "VorzaIQ Starter", cost: "€49", unit: "vast per maand" },
     ],
     faqTitle: "Veelgestelde vragen",
     faqs: [
       {
         q: "Kan ik op elk moment opzeggen?",
-        a: "Ja, je kunt maandelijks opzeggen. Je start met 1 vacature gratis voor 30 dagen — daarna kies je een betaald plan.",
+        a: "Ja, je kunt maandelijks opzeggen. Nieuwe werkgevers krijgen de eerste maand Growth gratis; zeg je binnen die maand op, dan wordt er niets afgeschreven. Na de gratis maand loopt het abonnement door voor €149 per maand, maandelijks opzegbaar.",
       },
       {
         q: "Wat is AI-matching precies?",
@@ -424,7 +426,7 @@ const nl: TranslationSet = {
       { title: "1. Wie wij zijn", content: "Deze voorwaarden zijn van toepassing op het gebruik van het platform VorzaIQ (vorzaiq.com), aangeboden door:\n\nVorzaIQ\nZeeland, Nederland\nKVK-nummer: 78546338\nE-mail: info@vorzaiq.com" },
       { title: "2. De dienst", content: "VorzaIQ is een AI-gedreven recruitmentplatform. Werkgevers kunnen vacatures plaatsen en kandidaten laten voorscreenen door onze AI-recruiter \"Lisa\". Kandidaten kunnen kosteloos een profiel aanmaken, hun CV matchen met vacatures en solliciteren." },
       { title: "3. Accounts", content: "", items: ["Je bent zelf verantwoordelijk voor de juistheid van de gegevens in je account en voor het vertrouwelijk houden van je inloggegevens.", "Je mag het platform niet gebruiken voor onrechtmatige doeleinden, waaronder het plaatsen van misleidende vacatures of discriminerende functie-eisen.", "Wij mogen accounts opschorten of beëindigen bij misbruik of schending van deze voorwaarden."] },
-      { title: "4. Abonnementen en tarieven (werkgevers)", content: "", items: ["VorzaIQ biedt de abonnementen Starter, Growth en Scale, en daarnaast de mogelijkheid om per vacature te betalen. De actuele tarieven staan op vorzaiq.com/abonnementen.", "Abonnementen worden aangegaan per maand en worden telkens stilzwijgend met één maand verlengd, tenzij tijdig opgezegd.", "Opzeggen kan op elk moment via je accountinstellingen of per e-mail, met inachtneming van een opzegtermijn van maximaal één maand.", "Prijswijzigingen worden minimaal 30 dagen van tevoren aangekondigd. Bij een prijsverhoging heb je het recht om per de ingangsdatum op te zeggen.", "Bij een gratis proefperiode gaat het betaalde abonnement pas in na afloop van de proefperiode. Wij sturen uiterlijk drie dagen voor het einde van de proefperiode een herinnering per e-mail. Je kunt tijdens de proefperiode kosteloos opzeggen; er wordt dan niets in rekening gebracht."] },
+      { title: "4. Abonnementen en tarieven (werkgevers)", content: "", items: ["VorzaIQ biedt de abonnementen Starter, Growth en Scale, en daarnaast de mogelijkheid om per vacature te betalen. De actuele tarieven staan op vorzaiq.com/abonnementen.", "Abonnementen worden aangegaan per maand en worden telkens stilzwijgend met één maand verlengd, tenzij tijdig opgezegd.", "Kies je voor jaarlijkse betaling, dan wordt het abonnement aangegaan voor twaalf maanden tegen het op de website vermelde jaartarief. Na afloop van de eerste twaalf maanden wordt het abonnement stilzwijgend verlengd voor onbepaalde tijd en is het maandelijks opzegbaar.", "Bij tussentijdse opzegging van een jaarabonnement gedurende de eerste twaalf maanden vindt geen restitutie plaats van het reeds betaalde jaartarief, tenzij dwingend recht anders bepaalt.", "Opzeggen kan op elk moment via je accountinstellingen of per e-mail, met inachtneming van een opzegtermijn van maximaal één maand.", "Prijswijzigingen worden minimaal 30 dagen van tevoren aangekondigd. Bij een prijsverhoging heb je het recht om per de ingangsdatum op te zeggen.", "Bij een gratis proefperiode gaat het betaalde abonnement pas in na afloop van de proefperiode. Wij sturen uiterlijk drie dagen voor het einde van de proefperiode een herinnering per e-mail. Je kunt tijdens de proefperiode kosteloos opzeggen; er wordt dan niets in rekening gebracht."] },
       { title: "5. Herroepingsrecht", content: "Sluit je een abonnement af als consument of als natuurlijk persoon die niet hoofdzakelijk handelt in de uitoefening van een beroep of bedrijf, dan heb je het recht om de overeenkomst binnen 14 dagen na het sluiten daarvan zonder opgave van redenen te ontbinden. Als je verzoekt om de dienst direct te laten ingaan, ben je bij herroeping een evenredige vergoeding verschuldigd voor de periode waarin de dienst al is geleverd.\n\nVoor zakelijke afnemers (rechtspersonen en ondernemers die handelen in de uitoefening van hun bedrijf) geldt geen herroepingsrecht." },
       { title: "6. Betaling", content: "Betaling verloopt via onze betaaldienstverlener. Facturen worden digitaal verstrekt. Bij uitblijvende betaling kunnen wij de toegang tot het platform opschorten nadat een betalingsherinnering is verstuurd." },
       { title: "7. Gebruik van AI", content: "", items: ["De screeningsgesprekken op VorzaIQ worden gevoerd door een AI-systeem. Dit wordt voorafgaand aan elk gesprek duidelijk aan de kandidaat gemeld.", "AI-uitkomsten (matchscores, gespreksverslagen, samenvattingen) zijn hulpmiddelen ter ondersteuning van het wervingsproces. Zij vormen geen zelfstandig aannamebesluit.", "De werkgever is verplicht om beslissingen over kandidaten altijd door een mens te laten nemen en de AI-uitkomsten daarbij kritisch te beoordelen. De werkgever mag kandidaten niet uitsluitend op basis van een geautomatiseerde uitkomst afwijzen.", "De werkgever staat ervoor in dat functie-eisen en selectiecriteria niet in strijd zijn met gelijkebehandelingswetgeving."] },
@@ -604,18 +606,19 @@ const en: TranslationSet = {
     compPlatform: "Platform",
     compCost: "Cost",
     compUnit: "Unit",
-    compAiLabel: "AI matching",
+    compAiLabel: "AI pre-screening interviews",
+    compFootnote: "Indeed and LinkedIn use a pay-per-click model without fixed prices; actual costs depend on budget, role, and competition. Source: nl.indeed.com/personeel/kosten and business.linkedin.com/talent-solutions/post-jobs/pricing, accessed July 2026.",
     youBadge: "You",
     compRows: [
-      { label: "Indeed sponsored", cost: "€200 – €400", unit: "per job posting" },
-      { label: "LinkedIn Jobs", cost: "€210 – €300", unit: "per month (1 job)" },
-      { label: "VorzaIQ Starter", cost: "€49", unit: "per month incl. AI matching" },
+      { label: "Indeed sponsored", cost: "Variable", unit: "pay-per-click, budget per job" },
+      { label: "LinkedIn Jobs", cost: "Variable", unit: "pay-per-click, self-set budget" },
+      { label: "VorzaIQ Starter", cost: "€49", unit: "fixed per month" },
     ],
     faqTitle: "Frequently asked questions",
     faqs: [
       {
         q: "Can I cancel at any time?",
-        a: "Yes, you can cancel monthly. You start with 1 free job posting for 30 days — then choose a paid plan.",
+        a: "Yes, you can cancel monthly. New employers get the first month of Growth free; cancel within that month and nothing is charged. After the free month, the subscription continues at €149 per month, cancellable monthly.",
       },
       {
         q: "What exactly is AI matching?",
@@ -700,7 +703,7 @@ const en: TranslationSet = {
       { title: "1. Who we are", content: "These terms apply to the use of the VorzaIQ platform (vorzaiq.com), offered by:\n\nVorzaIQ\nZeeland, The Netherlands\nChamber of Commerce: 78546338\nEmail: info@vorzaiq.com" },
       { title: "2. The service", content: "VorzaIQ is an AI-powered recruitment platform. Employers can post vacancies and have candidates pre-screened by our AI recruiter \"Lisa\". Candidates can create a profile for free, match their CV with vacancies, and apply." },
       { title: "3. Accounts", content: "", items: ["You are responsible for the accuracy of your account information and for keeping your login credentials confidential.", "You may not use the platform for unlawful purposes, including posting misleading vacancies or discriminatory job requirements.", "We may suspend or terminate accounts in case of misuse or violation of these terms."] },
-      { title: "4. Subscriptions and pricing (employers)", content: "", items: ["VorzaIQ offers the Starter, Growth, and Scale plans, as well as pay-per-vacancy. Current pricing is available at vorzaiq.com/abonnementen.", "Subscriptions are entered into on a monthly basis and are tacitly renewed each month unless cancelled in time.", "Cancellation is possible at any time via your account settings or by email, with a notice period of no more than one month.", "Price changes will be announced at least 30 days in advance. In case of a price increase, you have the right to cancel as of the effective date.", "With a free trial period, the paid subscription only starts after the trial period ends. We will send a reminder by email no later than three days before the end of the trial period. You can cancel free of charge during the trial period; nothing will be charged."] },
+      { title: "4. Subscriptions and pricing (employers)", content: "", items: ["VorzaIQ offers the Starter, Growth, and Scale plans, as well as pay-per-vacancy. Current pricing is available at vorzaiq.com/abonnementen.", "Subscriptions are entered into on a monthly basis and are tacitly renewed each month unless cancelled in time.", "If you choose annual billing, the subscription is entered into for twelve months at the annual rate listed on the website. After the initial twelve months, the subscription is tacitly renewed for an indefinite period and can be cancelled monthly.", "In the event of early cancellation of an annual subscription during the first twelve months, no refund of the annual fee already paid will be made, unless mandatory law dictates otherwise.", "Cancellation is possible at any time via your account settings or by email, with a notice period of no more than one month.", "Price changes will be announced at least 30 days in advance. In case of a price increase, you have the right to cancel as of the effective date.", "With a free trial period, the paid subscription only starts after the trial period ends. We will send a reminder by email no later than three days before the end of the trial period. You can cancel free of charge during the trial period; nothing will be charged."] },
       { title: "5. Right of withdrawal", content: "If you take out a subscription as a consumer, you have the right to cancel the agreement within 14 days without giving reasons. If you request the service to start immediately, you owe a proportionate fee for the period in which the service was already provided.\n\nFor business customers, no right of withdrawal applies." },
       { title: "6. Payment", content: "Payment is processed through our payment service provider. Invoices are provided digitally. In case of non-payment, we may suspend access to the platform after sending a payment reminder." },
       { title: "7. Use of AI", content: "", items: ["The screening interviews on VorzaIQ are conducted by an AI system. This is clearly communicated to the candidate before each interview.", "AI outcomes (match scores, interview reports, summaries) are tools to support the recruitment process. They do not constitute an independent hiring decision.", "The employer is required to always have decisions about candidates made by a human and to critically evaluate the AI outcomes. The employer may not reject candidates solely based on an automated outcome.", "The employer warrants that job requirements and selection criteria do not violate equal treatment legislation."] },
@@ -880,12 +883,13 @@ const de: TranslationSet = {
     compPlatform: "Plattform",
     compCost: "Kosten",
     compUnit: "Einheit",
-    compAiLabel: "KI-Matching",
+    compAiLabel: "AI pre-screening interviews",
+    compFootnote: "Indeed and LinkedIn use a pay-per-click model without fixed prices; actual costs depend on budget, role, and competition. Source: nl.indeed.com/personeel/kosten and business.linkedin.com/talent-solutions/post-jobs/pricing, accessed July 2026.",
     youBadge: "Du",
     compRows: [
-      { label: "Indeed gesponsert", cost: "€200 – €400", unit: "pro Stellenanzeige" },
-      { label: "LinkedIn Jobs", cost: "€210 – €300", unit: "pro Monat (1 Stelle)" },
-      { label: "VorzaIQ Starter", cost: "€49", unit: "pro Monat inkl. KI-Matching" },
+      { label: "Indeed gesponsert", cost: "Variabel", unit: "pay-per-click, Budget pro Stelle" },
+      { label: "LinkedIn Jobs", cost: "Variabel", unit: "pay-per-click, eigenes Budget" },
+      { label: "VorzaIQ Starter", cost: "€49", unit: "fest pro Monat" },
     ],
     faqTitle: "Häufig gestellte Fragen",
     faqs: [
@@ -1114,12 +1118,13 @@ const fr: TranslationSet = {
     compPlatform: "Plateforme",
     compCost: "Coût",
     compUnit: "Unité",
-    compAiLabel: "Correspondance IA",
+    compAiLabel: "AI pre-screening interviews",
+    compFootnote: "Indeed and LinkedIn use a pay-per-click model without fixed prices; actual costs depend on budget, role, and competition. Source: nl.indeed.com/personeel/kosten and business.linkedin.com/talent-solutions/post-jobs/pricing, accessed July 2026.",
     youBadge: "Vous",
     compRows: [
-      { label: "Indeed sponsorisé", cost: "€200 – €400", unit: "par offre" },
-      { label: "LinkedIn Jobs", cost: "€210 – €300", unit: "par mois (1 offre)" },
-      { label: "VorzaIQ Starter", cost: "€49", unit: "par mois avec IA" },
+      { label: "Indeed sponsorisé", cost: "Variable", unit: "pay-per-click, budget par offre" },
+      { label: "LinkedIn Jobs", cost: "Variable", unit: "pay-per-click, budget choisi" },
+      { label: "VorzaIQ Starter", cost: "€49", unit: "fixe par mois" },
     ],
     faqTitle: "Questions fréquentes",
     faqs: [
@@ -1348,12 +1353,13 @@ const es: TranslationSet = {
     compPlatform: "Plataforma",
     compCost: "Coste",
     compUnit: "Unidad",
-    compAiLabel: "Coincidencia IA",
+    compAiLabel: "AI pre-screening interviews",
+    compFootnote: "Indeed and LinkedIn use a pay-per-click model without fixed prices; actual costs depend on budget, role, and competition. Source: nl.indeed.com/personeel/kosten and business.linkedin.com/talent-solutions/post-jobs/pricing, accessed July 2026.",
     youBadge: "Tú",
     compRows: [
-      { label: "Indeed patrocinado", cost: "€200 – €400", unit: "por oferta" },
-      { label: "LinkedIn Jobs", cost: "€210 – €300", unit: "por mes (1 oferta)" },
-      { label: "VorzaIQ Starter", cost: "€49", unit: "por mes con IA" },
+      { label: "Indeed patrocinado", cost: "Variable", unit: "pay-per-click, presupuesto por oferta" },
+      { label: "LinkedIn Jobs", cost: "Variable", unit: "pay-per-click, presupuesto propio" },
+      { label: "VorzaIQ Starter", cost: "€49", unit: "fijo por mes" },
     ],
     faqTitle: "Preguntas frecuentes",
     faqs: [
