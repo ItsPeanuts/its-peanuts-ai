@@ -174,6 +174,17 @@ export type TranslationSet = {
     intakeQuestions: string;
     settings: string;
   };
+  terms: {
+    title: string;
+    lastUpdated: string;
+    sections: Array<{ title: string; content: string; items?: string[] }>;
+  };
+  privacy: {
+    title: string;
+    lastUpdated: string;
+    sections: Array<{ title: string; content: string; items?: string[] }>;
+    dataTable?: Array<{ purpose: string; basis: string }>;
+  };
 };
 
 // ─── Nederlands ──────────────────────────────────────────────────────────────
@@ -405,6 +416,50 @@ const nl: TranslationSet = {
     logout: "Uitloggen",
     intakeQuestions: "Intakevragen",
     settings: "Instellingen",
+  },
+  terms: {
+    title: "Algemene Voorwaarden",
+    lastUpdated: "Laatst bijgewerkt: juli 2026",
+    sections: [
+      { title: "1. Wie wij zijn", content: "Deze voorwaarden zijn van toepassing op het gebruik van het platform VorzaIQ (vorzaiq.com), aangeboden door:\n\nVorzaIQ\nZeeland, Nederland\nKVK-nummer: 78546338\nE-mail: info@vorzaiq.com" },
+      { title: "2. De dienst", content: "VorzaIQ is een AI-gedreven recruitmentplatform. Werkgevers kunnen vacatures plaatsen en kandidaten laten voorscreenen door onze AI-recruiter \"Lisa\". Kandidaten kunnen kosteloos een profiel aanmaken, hun CV matchen met vacatures en solliciteren." },
+      { title: "3. Accounts", content: "", items: ["Je bent zelf verantwoordelijk voor de juistheid van de gegevens in je account en voor het vertrouwelijk houden van je inloggegevens.", "Je mag het platform niet gebruiken voor onrechtmatige doeleinden, waaronder het plaatsen van misleidende vacatures of discriminerende functie-eisen.", "Wij mogen accounts opschorten of beëindigen bij misbruik of schending van deze voorwaarden."] },
+      { title: "4. Abonnementen en tarieven (werkgevers)", content: "", items: ["VorzaIQ biedt de abonnementen Starter, Growth en Scale, en daarnaast de mogelijkheid om per vacature te betalen. De actuele tarieven staan op vorzaiq.com/abonnementen.", "Abonnementen worden aangegaan per maand en worden telkens stilzwijgend met één maand verlengd, tenzij tijdig opgezegd.", "Opzeggen kan op elk moment via je accountinstellingen of per e-mail, met inachtneming van een opzegtermijn van maximaal één maand.", "Prijswijzigingen worden minimaal 30 dagen van tevoren aangekondigd. Bij een prijsverhoging heb je het recht om per de ingangsdatum op te zeggen."] },
+      { title: "5. Herroepingsrecht", content: "Sluit je een abonnement af als consument of als natuurlijk persoon die niet hoofdzakelijk handelt in de uitoefening van een beroep of bedrijf, dan heb je het recht om de overeenkomst binnen 14 dagen na het sluiten daarvan zonder opgave van redenen te ontbinden. Als je verzoekt om de dienst direct te laten ingaan, ben je bij herroeping een evenredige vergoeding verschuldigd voor de periode waarin de dienst al is geleverd.\n\nVoor zakelijke afnemers (rechtspersonen en ondernemers die handelen in de uitoefening van hun bedrijf) geldt geen herroepingsrecht." },
+      { title: "6. Betaling", content: "Betaling verloopt via onze betaaldienstverlener. Facturen worden digitaal verstrekt. Bij uitblijvende betaling kunnen wij de toegang tot het platform opschorten nadat een betalingsherinnering is verstuurd." },
+      { title: "7. Gebruik van AI", content: "", items: ["De screeningsgesprekken op VorzaIQ worden gevoerd door een AI-systeem. Dit wordt voorafgaand aan elk gesprek duidelijk aan de kandidaat gemeld.", "AI-uitkomsten (matchscores, gespreksverslagen, samenvattingen) zijn hulpmiddelen ter ondersteuning van het wervingsproces. Zij vormen geen zelfstandig aannamebesluit.", "De werkgever is verplicht om beslissingen over kandidaten altijd door een mens te laten nemen en de AI-uitkomsten daarbij kritisch te beoordelen. De werkgever mag kandidaten niet uitsluitend op basis van een geautomatiseerde uitkomst afwijzen.", "De werkgever staat ervoor in dat functie-eisen en selectiecriteria niet in strijd zijn met gelijkebehandelingswetgeving."] },
+      { title: "8. Persoonsgegevens en verwerkersrol", content: "", items: ["Voor de gegevens van kandidaten die via het platform bij een werkgever terechtkomen, is de werkgever zelf verwerkingsverantwoordelijke in de zin van de AVG.", "Voor zover VorzaIQ persoonsgegevens verwerkt in opdracht van de werkgever, treedt VorzaIQ op als verwerker. Op verzoek sluiten wij hiervoor een verwerkersovereenkomst.", "Op de verwerking van persoonsgegevens door VorzaIQ als verantwoordelijke is ons privacybeleid van toepassing."] },
+      { title: "9. Beschikbaarheid en onderhoud", content: "Wij streven naar een zo hoog mogelijke beschikbaarheid van het platform, maar garanderen geen ononderbroken werking. Gepland onderhoud kondigen wij waar mogelijk vooraf aan." },
+      { title: "10. Intellectuele eigendom", content: "Alle rechten op het platform, de software, de AI-modellen en de content van VorzaIQ berusten bij VorzaIQ of haar licentiegevers. Werkgevers behouden de rechten op hun eigen vacatureteksten en bedrijfsmateriaal; kandidaten behouden de rechten op hun eigen CV." },
+      { title: "11. Aansprakelijkheid", content: "", items: ["VorzaIQ spant zich in om accurate matchresultaten en gespreksverslagen te leveren, maar garandeert niet dat deze foutloos of volledig zijn.", "VorzaIQ is niet aansprakelijk voor aannamebeslissingen van werkgevers of voor de inhoud van vacatures en CV's die door gebruikers zijn geplaatst.", "De totale aansprakelijkheid van VorzaIQ is per gebeurtenis beperkt tot het bedrag dat de werkgever in de drie maanden voorafgaand aan de gebeurtenis aan VorzaIQ heeft betaald.", "Voor kandidaten is het gebruik van het platform kosteloos; aansprakelijkheid jegens kandidaten is beperkt tot hetgeen dwingend recht voorschrijft."] },
+      { title: "12. Wijzigingen van deze voorwaarden", content: "Wij kunnen deze voorwaarden wijzigen. Wijzigingen worden minimaal 30 dagen voor inwerkingtreding aangekondigd via e-mail of het platform. Ben je het niet eens met een wijziging, dan kun je het abonnement per de ingangsdatum opzeggen." },
+      { title: "13. Toepasselijk recht en geschillen", content: "Op deze voorwaarden is Nederlands recht van toepassing. Geschillen worden voorgelegd aan de bevoegde rechter in het arrondissement waar VorzaIQ is gevestigd, tenzij dwingend recht anders bepaalt." },
+    ],
+  },
+  privacy: {
+    title: "Privacybeleid",
+    lastUpdated: "Laatst bijgewerkt: juli 2026",
+    dataTable: [
+      { purpose: "Het matchen van kandidaten met vacatures", basis: "Uitvoering van de overeenkomst" },
+      { purpose: "Het voeren van AI-screeningsgesprekken", basis: "Uitvoering van de overeenkomst" },
+      { purpose: "Het delen van je profiel en gespreksresultaten met de werkgever bij wie je solliciteert", basis: "Uitvoering van de overeenkomst" },
+      { purpose: "Facturatie en administratie", basis: "Wettelijke verplichting" },
+      { purpose: "Beveiliging van het platform", basis: "Gerechtvaardigd belang" },
+      { purpose: "Service-e-mails over je account of sollicitatie", basis: "Uitvoering van de overeenkomst" },
+    ],
+    sections: [
+      { title: "1. Wie zijn wij", content: "VorzaIQ is een AI-gedreven recruitmentplatform dat werkgevers en kandidaten met elkaar verbindt.\n\nVerwerkingsverantwoordelijke:\nVorzaIQ\nZeeland, Nederland\nKVK-nummer: 78546338\nE-mail: privacy@vorzaiq.com\n\nVoor alle vragen over dit privacybeleid of de verwerking van je persoonsgegevens kun je contact opnemen via bovenstaand e-mailadres." },
+      { title: "2. Welke gegevens wij verwerken", content: "Van kandidaten:", items: ["Naam, e-mailadres en telefoonnummer", "CV en de daarin opgenomen gegevens (werkervaring, opleiding, vaardigheden)", "Antwoorden die je geeft tijdens het screeningsgesprek met onze AI-recruiter Lisa", "Matchresultaten tussen jouw profiel en vacatures"] },
+      { title: "3. Bijzondere persoonsgegevens", content: "Wij vragen niet om bijzondere persoonsgegevens (zoals gegevens over gezondheid, religie, etnische afkomst of politieke voorkeur) en verzoeken je deze niet in je CV of gesprekken op te nemen. Een pasfoto in je CV is niet nodig en raden wij af. Mocht je toch bijzondere gegevens delen, dan worden deze niet gebruikt in de matching of beoordeling." },
+      { title: "4. Waarvoor wij je gegevens gebruiken", content: "Wij verkopen je gegevens nooit aan derden en gebruiken ze niet voor advertentiedoeleinden." },
+      { title: "5. Geautomatiseerde verwerking en profilering", content: "VorzaIQ maakt gebruik van AI om je CV te analyseren, screeningsgesprekken te voeren en een matchscore te berekenen tussen jouw profiel en een vacature. Dit is een vorm van profilering in de zin van de AVG.", items: ["De AI-matchscore en het gespreksverslag zijn een hulpmiddel voor de werkgever. De uiteindelijke beslissing wordt altijd genomen door een mens bij de werkgever, niet door de AI.", "De matchscore is gebaseerd op de aansluiting tussen je werkervaring, opleiding, vaardigheden en de functie-eisen in de vacature.", "Je hebt het recht om je standpunt kenbaar te maken, de uitkomst te betwisten en menselijke tussenkomst te vragen via privacy@vorzaiq.com of rechtstreeks met de werkgever.", "Wanneer je een gesprek voert met Lisa, praat je met een AI-systeem. Dit wordt altijd duidelijk aangegeven."] },
+      { title: "6. Met wie wij gegevens delen", content: "Werkgevers: wanneer je solliciteert op een vacature, delen wij je profiel, CV en de resultaten van het screeningsgesprek met de betreffende werkgever.\n\nVerwerkers: wij schakelen dienstverleners in die gegevens namens ons verwerken.", items: ["AI-dienstverleners (o.a. OpenAI) — met verwerkersovereenkomst, jouw gegevens worden niet gebruikt om modellen te trainen.", "Hostingpartijen binnen de EU voor de opslag van gegevens.", "Betaaldienstverleners voor de afhandeling van abonnementsbetalingen (alleen werkgeversgegevens)."] },
+      { title: "7. Hoe lang wij gegevens bewaren", content: "", items: ["Kandidaatprofielen: zolang je account actief is. Na verwijdering binnen 30 dagen gewist; back-ups binnen 90 dagen overschreven.", "Sollicitatiegegevens: de werkgever hanteert eigen bewaartermijnen (richtlijn: 4 weken na afronding, of tot 1 jaar met toestemming).", "Facturatiegegevens van werkgevers: 7 jaar, conform de fiscale bewaarplicht.", "Serverlogs: maximaal 90 dagen."] },
+      { title: "8. Jouw rechten", content: "Je hebt op grond van de AVG recht op:", items: ["Inzage in de gegevens die wij van je verwerken", "Rectificatie van onjuiste gegevens", "Verwijdering van je gegevens", "Beperking van de verwerking", "Overdraagbaarheid van je gegevens (dataportabiliteit)", "Bezwaar tegen verwerking op basis van gerechtvaardigd belang", "Menselijke tussenkomst bij geautomatiseerde verwerking (zie artikel 5)"] },
+      { title: "9. Cookies en lokale opslag", content: "VorzaIQ gebruikt geen tracking- of advertentiecookies. Wij gebruiken uitsluitend functionele lokale opslag (localStorage) die noodzakelijk is om ingelogd te blijven en het platform te laten werken. Hiervoor is geen toestemming vereist." },
+      { title: "10. Beveiliging", content: "Wij nemen passende technische en organisatorische maatregelen om je gegevens te beschermen, waaronder versleutelde verbindingen (TLS), versleutelde opslag, toegangsbeperking en logging." },
+      { title: "11. Wijzigingen", content: "Wij kunnen dit privacybeleid aanpassen. Bij belangrijke wijzigingen informeren wij accounthouders per e-mail. De meest actuele versie staat altijd op vorzaiq.com/privacy." },
+    ],
   },
 };
 
@@ -638,6 +693,50 @@ const en: TranslationSet = {
     intakeQuestions: "Intake questions",
     settings: "Settings",
   },
+  terms: {
+    title: "Terms and Conditions",
+    lastUpdated: "Last updated: July 2026",
+    sections: [
+      { title: "1. Who we are", content: "These terms apply to the use of the VorzaIQ platform (vorzaiq.com), offered by:\n\nVorzaIQ\nZeeland, The Netherlands\nChamber of Commerce: 78546338\nEmail: info@vorzaiq.com" },
+      { title: "2. The service", content: "VorzaIQ is an AI-powered recruitment platform. Employers can post vacancies and have candidates pre-screened by our AI recruiter \"Lisa\". Candidates can create a profile for free, match their CV with vacancies, and apply." },
+      { title: "3. Accounts", content: "", items: ["You are responsible for the accuracy of your account information and for keeping your login credentials confidential.", "You may not use the platform for unlawful purposes, including posting misleading vacancies or discriminatory job requirements.", "We may suspend or terminate accounts in case of misuse or violation of these terms."] },
+      { title: "4. Subscriptions and pricing (employers)", content: "", items: ["VorzaIQ offers the Starter, Growth, and Scale plans, as well as pay-per-vacancy. Current pricing is available at vorzaiq.com/abonnementen.", "Subscriptions are entered into on a monthly basis and are tacitly renewed each month unless cancelled in time.", "Cancellation is possible at any time via your account settings or by email, with a notice period of no more than one month.", "Price changes will be announced at least 30 days in advance. In case of a price increase, you have the right to cancel as of the effective date."] },
+      { title: "5. Right of withdrawal", content: "If you take out a subscription as a consumer, you have the right to cancel the agreement within 14 days without giving reasons. If you request the service to start immediately, you owe a proportionate fee for the period in which the service was already provided.\n\nFor business customers, no right of withdrawal applies." },
+      { title: "6. Payment", content: "Payment is processed through our payment service provider. Invoices are provided digitally. In case of non-payment, we may suspend access to the platform after sending a payment reminder." },
+      { title: "7. Use of AI", content: "", items: ["The screening interviews on VorzaIQ are conducted by an AI system. This is clearly communicated to the candidate before each interview.", "AI outcomes (match scores, interview reports, summaries) are tools to support the recruitment process. They do not constitute an independent hiring decision.", "The employer is required to always have decisions about candidates made by a human and to critically evaluate the AI outcomes. The employer may not reject candidates solely based on an automated outcome.", "The employer warrants that job requirements and selection criteria do not violate equal treatment legislation."] },
+      { title: "8. Personal data and processor role", content: "", items: ["For candidate data that reaches an employer through the platform, the employer is the data controller under the GDPR.", "Insofar as VorzaIQ processes personal data on behalf of the employer, VorzaIQ acts as a data processor. A data processing agreement can be concluded upon request.", "Our privacy policy applies to the processing of personal data by VorzaIQ as controller."] },
+      { title: "9. Availability and maintenance", content: "We strive for the highest possible availability of the platform but do not guarantee uninterrupted operation. We announce planned maintenance in advance where possible." },
+      { title: "10. Intellectual property", content: "All rights to the platform, software, AI models, and content of VorzaIQ belong to VorzaIQ or its licensors. Employers retain the rights to their own vacancy texts and company materials; candidates retain the rights to their own CV." },
+      { title: "11. Liability", content: "", items: ["VorzaIQ endeavours to provide accurate match results and interview reports but does not guarantee that these are error-free or complete.", "VorzaIQ is not liable for hiring decisions made by employers or for the content of vacancies and CVs posted by users.", "VorzaIQ's total liability per event is limited to the amount the employer paid to VorzaIQ in the three months prior to the event.", "For candidates, use of the platform is free of charge; liability towards candidates is limited to what mandatory law prescribes."] },
+      { title: "12. Changes to these terms", content: "We may amend these terms. Changes will be announced at least 30 days before they take effect via email or the platform. If you disagree with a change, you may cancel your subscription as of the effective date." },
+      { title: "13. Applicable law and disputes", content: "These terms are governed by Dutch law. Disputes will be submitted to the competent court in the district where VorzaIQ is established, unless mandatory law dictates otherwise." },
+    ],
+  },
+  privacy: {
+    title: "Privacy Policy",
+    lastUpdated: "Last updated: July 2026",
+    dataTable: [
+      { purpose: "Matching candidates with vacancies", basis: "Performance of contract" },
+      { purpose: "Conducting AI screening interviews", basis: "Performance of contract" },
+      { purpose: "Sharing your profile and interview results with the employer you applied to", basis: "Performance of contract" },
+      { purpose: "Invoicing and administration", basis: "Legal obligation" },
+      { purpose: "Platform security", basis: "Legitimate interest" },
+      { purpose: "Service emails about your account or application", basis: "Performance of contract" },
+    ],
+    sections: [
+      { title: "1. Who we are", content: "VorzaIQ is an AI-powered recruitment platform that connects employers and candidates.\n\nData controller:\nVorzaIQ\nZeeland, The Netherlands\nChamber of Commerce: 78546338\nEmail: privacy@vorzaiq.com\n\nFor all questions about this privacy policy or the processing of your personal data, please contact us at the above email address." },
+      { title: "2. What data we process", content: "From candidates:", items: ["Name, email address, and phone number", "CV and the information contained therein (work experience, education, skills)", "Answers you give during the screening interview with our AI recruiter Lisa", "Match results between your profile and vacancies"] },
+      { title: "3. Special personal data", content: "We do not ask for special personal data (such as data about health, religion, ethnicity, or political preference) and request that you do not include these in your CV or interviews. A passport photo in your CV is not necessary and we advise against it. If you do share special data, it will not be used in matching or assessment." },
+      { title: "4. Why we use your data", content: "We never sell your data to third parties and do not use it for advertising purposes." },
+      { title: "5. Automated processing and profiling", content: "VorzaIQ uses AI to analyse your CV, conduct screening interviews, and calculate a match score between your profile and a vacancy. This is a form of profiling under the GDPR.", items: ["The AI match score and interview report are a tool for the employer. The final decision is always made by a human at the employer, not by the AI.", "The match score is based on the alignment between your work experience, education, skills, and the job requirements.", "You have the right to express your point of view, contest the outcome, and request human intervention via privacy@vorzaiq.com or directly with the employer.", "When you have a conversation with Lisa, you are talking to an AI system. This is always clearly indicated."] },
+      { title: "6. Who we share data with", content: "Employers: when you apply for a vacancy, we share your profile, CV, and screening interview results with the relevant employer.\n\nProcessors: we engage service providers who process data on our behalf.", items: ["AI service providers (incl. OpenAI) — with a data processing agreement; your data is not used to train their models.", "Hosting parties within the EU for data storage.", "Payment service providers for subscription payments (employer data only)."] },
+      { title: "7. How long we retain data", content: "", items: ["Candidate profiles: as long as your account is active. After deletion, your data is erased within 30 days; backups are overwritten within 90 days.", "Application data: the employer maintains their own retention periods (guideline: 4 weeks after completion, or up to 1 year with consent).", "Employer invoicing data: 7 years, in accordance with tax retention obligations.", "Server logs: maximum 90 days."] },
+      { title: "8. Your rights", content: "Under the GDPR, you have the right to:", items: ["Access the data we process about you", "Rectification of incorrect data", "Erasure of your data", "Restriction of processing", "Data portability", "Object to processing based on legitimate interest", "Human intervention in automated processing (see article 5)"] },
+      { title: "9. Cookies and local storage", content: "VorzaIQ does not use tracking or advertising cookies. We only use functional local storage (localStorage) necessary to keep you logged in and for the platform to work. No consent is required for this." },
+      { title: "10. Security", content: "We take appropriate technical and organisational measures to protect your data, including encrypted connections (TLS), encrypted storage, access restriction, and logging." },
+      { title: "11. Changes", content: "We may update this privacy policy. For significant changes, we will inform account holders by email. The most current version is always available at vorzaiq.com/privacy." },
+    ],
+  },
 };
 
 // ─── Deutsch ──────────────────────────────────────────────────────────────────
@@ -870,6 +969,8 @@ const de: TranslationSet = {
     intakeQuestions: "Intake-Fragen",
     settings: "Einstellungen",
   },
+  terms: en.terms,
+  privacy: en.privacy,
 };
 
 // ─── Français ─────────────────────────────────────────────────────────────────
@@ -1102,6 +1203,8 @@ const fr: TranslationSet = {
     intakeQuestions: "Questions d'intake",
     settings: "Paramètres",
   },
+  terms: en.terms,
+  privacy: en.privacy,
 };
 
 // ─── Español ──────────────────────────────────────────────────────────────────
@@ -1334,6 +1437,8 @@ const es: TranslationSet = {
     intakeQuestions: "Preguntas de intake",
     settings: "Configuración",
   },
+  terms: en.terms,
+  privacy: en.privacy,
 };
 
 export const translations: Record<Lang, TranslationSet> = { nl, en, de, fr, es };
