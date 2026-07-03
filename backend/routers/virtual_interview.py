@@ -42,7 +42,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 import requests as http
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -86,6 +86,13 @@ DID_BASE = "https://api.d-id.com"
 ANAM_API_KEY = os.getenv("ANAM_API_KEY", "")
 ANAM_AVATAR_ID = os.getenv("ANAM_AVATAR_ID", "bdaaedfa-00f2-417a-8239-8bb89adec682")  # Astrid desk
 LISA_MONTHLY_LIMIT = int(os.getenv("LISA_MONTHLY_LIMIT", "75"))
+
+_LANG_NAMES = {"nl": "Dutch", "en": "English"}
+
+def _get_language(request: Request) -> str:
+    header = request.headers.get("accept-language", "nl")
+    lang = header.split(",")[0].strip().split("-")[0].lower()
+    return lang if lang in _LANG_NAMES else "nl"
 
 
 def _did_headers() -> dict:
@@ -273,8 +280,9 @@ def _did_send_ice(stream_id: str, session_id: str, candidate: str, sdp_mid: str,
         raise HTTPException(status_code=502, detail=f"D-ID ICE mislukt: {resp.text}")
 
 
-def _did_speak(stream_id: str, session_id: str, text: str) -> None:
+def _did_speak(stream_id: str, session_id: str, text: str, language: str = "nl") -> None:
     """Laat de D-ID avatar een tekst uitspreken."""
+    voice_id = "en-US-JennyNeural" if language == "en" else "nl-NL-ColetteNeural"
     resp = http.post(
         f"{DID_BASE}/talks/streams/{stream_id}/videos",
         json={
@@ -283,7 +291,7 @@ def _did_speak(stream_id: str, session_id: str, text: str) -> None:
                 "input": text,
                 "provider": {
                     "type": "microsoft",
-                    "voice_id": "nl-NL-ColetteNeural",
+                    "voice_id": voice_id,
                 },
             },
             "session_id": session_id,
@@ -342,7 +350,32 @@ def _get_context(app_id: int, db: Session) -> dict:
     }
 
 
-def _build_avatar_system_prompt(ctx: dict) -> str:
+def _build_avatar_system_prompt(ctx: dict, language: str = "nl") -> str:
+    is_en = language == "en"
+
+    if is_en:
+        return f"""You are Lisa, an enthusiastic HR recruiter at VorzaIQ.
+
+You are conducting a spoken video interview with {ctx['candidate_name']} for the position {ctx['vacancy_title']}.
+You are warm, curious and direct. Talk as if you're sitting across from someone — energetic and friendly.
+
+SPEECH RULES (follow strictly):
+- Maximum 2 sentences per turn, NEVER more
+- First respond in one sentence to what the candidate said (short, human: "Interesting!", "Good point.", "Nice!")
+- Then ask exactly 1 follow-up question
+- No lists, bullets, numbers or brackets
+- Write as you speak: fluent, informal but professional
+
+CONTEXT (internal — do not mention directly):
+- Position: {ctx['vacancy_title']}
+- Candidate strengths: {ctx['strengths'] or 'not known'}
+- Areas of attention: {ctx['gaps'] or 'no specific gaps'}
+- CV summary: {ctx['cv_text'][:300] if ctx['cv_text'] else 'not available'}
+- Suggested questions: {ctx['suggested_questions'] or 'use your own judgement'}
+
+GOAL: ask exactly {MAX_QUESTIONS} targeted questions, end warmly and briefly.
+Always speak English."""
+
     return f"""Je bent Lisa, enthousiaste HR-recruiter bij VorzaIQ.
 
 Je voert een gesproken video-interview met {ctx['candidate_name']} voor de positie {ctx['vacancy_title']}.
@@ -363,7 +396,8 @@ CONTEXT (intern — niet letterlijk noemen):
 - CV samenvatting: {ctx['cv_text'][:300] if ctx['cv_text'] else 'niet beschikbaar'}
 - Suggesties voor vragen: {ctx['suggested_questions'] or 'gebruik je eigen oordeel'}
 
-DOEL: stel precies {MAX_QUESTIONS} gerichte vragen, eindig warm en kort."""
+DOEL: stel precies {MAX_QUESTIONS} gerichte vragen, eindig warm en kort.
+Spreek altijd Nederlands."""
 
 
 def _call_ai(system_prompt: str, history: list) -> str:
@@ -575,6 +609,7 @@ def submit_ice_candidate(
 def speak(
     app_id: int,
     payload: SpeakIn,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -583,6 +618,7 @@ def speak(
     Wordt gebruikt voor de intro en na elke AI-gegenereerde vraag.
     Sla de tekst ook op in het transcript.
     """
+    language = _get_language(request)
     vi_session = (
         db.query(models.VirtualInterviewSession)
         .filter(models.VirtualInterviewSession.application_id == app_id)
@@ -590,9 +626,8 @@ def speak(
     )
     if not vi_session or not vi_session.did_stream_id:
         raise HTTPException(status_code=404, detail="Geen actieve interview sessie")
-    # TTS modus: browser doet de spraak, alleen transcript opslaan
     if vi_session.did_stream_id != TTS_FALLBACK_STREAM_ID:
-        _did_speak(vi_session.did_stream_id, vi_session.did_session_id or "", payload.text)
+        _did_speak(vi_session.did_stream_id, vi_session.did_session_id or "", payload.text, language)
     _append_transcript(vi_session, "recruiter", payload.text, db)
     return {"ok": True}
 
@@ -601,6 +636,7 @@ def speak(
 def submit_answer(
     app_id: int,
     payload: AnswerIn,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -609,6 +645,7 @@ def submit_answer(
     AI genereert de volgende vraag of het sluitingsbericht.
     Geeft de volgende spreektekst + ended-flag terug.
     """
+    language = _get_language(request)
     app = db.query(models.Application).filter(models.Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
@@ -631,7 +668,7 @@ def submit_answer(
     recruiter_turns = sum(1 for t in transcript if t["role"] == "recruiter")
 
     ctx = _get_context(app_id, db)
-    system_prompt = _build_avatar_system_prompt(ctx)
+    system_prompt = _build_avatar_system_prompt(ctx, language)
     history = [
         {"role": "assistant" if t["role"] == "recruiter" else "user", "content": t["content"]}
         for t in transcript
@@ -889,6 +926,7 @@ class V2CompleteIn(BaseModel):
 @router.post("/session/{app_id}/realtime-token")
 def create_realtime_token(
     app_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -946,9 +984,37 @@ def create_realtime_token(
         raise HTTPException(status_code=503, detail="OPENAI_API_KEY niet geconfigureerd")
 
     # Haal context op voor Lisa's systeem-prompt
+    language = _get_language(request)
     ctx = _get_context(app_id, db)
 
-    system_prompt = f"""Je bent Lisa, een enthousiaste en empathische HR-recruiter bij VorzaIQ.
+    if language == "en":
+        system_prompt = f"""You are Lisa, an enthusiastic and empathetic HR recruiter at VorzaIQ.
+
+You are conducting a spoken video interview with {ctx['candidate_name']} for the position of {ctx['vacancy_title']}.
+You are warm, curious and direct. Talk as if you're sitting across from someone — energetic but relaxed.
+
+SPEECH RULES:
+- Maximum 2 sentences per turn — short and punchy
+- First respond in one sentence to what the candidate said ("Interesting!", "I understand.")
+- Then ask exactly one targeted follow-up question
+- No lists, no bullets — talk as you talk
+- You may interrupt the candidate if you want to clarify something
+
+CONTEXT:
+- Position: {ctx['vacancy_title']}
+- Candidate strengths: {ctx['strengths'] or 'unknown'}
+- Areas of attention: {ctx['gaps'] or 'unknown'}
+- CV summary: {(ctx.get('cv_text') or '')[:300]}
+
+STRUCTURE (4-6 questions, free conversation):
+1. Introduce yourself and warmly welcome {ctx['candidate_name']}
+2. Ask 4 to 6 targeted questions — follow the conversation, not a script
+3. If an answer is vague, dig deeper — this is your chance to get depth
+4. Close warmly: thank the candidate and explain the next step
+
+Always speak English."""
+    else:
+        system_prompt = f"""Je bent Lisa, een enthousiaste en empathische HR-recruiter bij VorzaIQ.
 
 Je voert een gesproken video-interview met {ctx['candidate_name']} voor de positie van {ctx['vacancy_title']}.
 Je bent warm, nieuwsgierig en direct. Praat alsof je echt tegenover iemand zit — energiek maar ontspannen.
@@ -973,7 +1039,7 @@ STRUCTUUR (4-6 vragen, volledig vrij gesprek):
 3. Als een antwoord vaag is, vraag door — dit is jouw kans om diepgang te krijgen
 4. Sluit warm af: bedank de kandidaat en vertel wat de volgende stap is
 
-Spreek Nederlands. Geen Engels tenzij de kandidaat dat doet."""
+Spreek altijd Nederlands."""
 
     # Maak of hergebruik VirtualInterviewSession
     vi_session = (

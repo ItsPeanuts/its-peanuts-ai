@@ -486,11 +486,11 @@ export default function VideoInterviewPage() {
       const [realtimeRes, anamRes] = await Promise.all([
         fetch(`${BASE}/virtual-interview/session/${appId}/realtime-token`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, "Accept-Language": localStorage.getItem("lang") || "nl" },
         }),
         fetch(`${BASE}/virtual-interview/session/${appId}/anam-token`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}`, "Accept-Language": localStorage.getItem("lang") || "nl" },
         }).catch(() => null), // Anam is optioneel — interview werkt ook zonder avatar
       ]);
 
@@ -539,6 +539,7 @@ export default function VideoInterviewPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Accept-Language": localStorage.getItem("lang") || "nl",
         },
         body: JSON.stringify({ transcript: messagesRef.current }),
       });

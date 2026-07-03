@@ -64,7 +64,8 @@ export default function RecruiterChatPage({ params }: { params: { id: string } }
 
     function connect() {
       if (cancelledRef.current) return;
-      const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}`);
+      const lang = typeof window !== "undefined" ? localStorage.getItem("lang") || "nl" : "nl";
+      const ws = new WebSocket(`${WS_BASE}/ws/chat/${appId}?token=${token}&lang=${lang}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

@@ -129,7 +129,7 @@ def _auth_user(token: str, db: Session) -> models.User | None:
 
 
 @router.websocket("/ws/chat/{app_id}")
-async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
+async def ws_chat(ws: WebSocket, app_id: int, token: str = "", lang: str = "nl"):
     """
     WebSocket Lisa chat.
 
@@ -183,7 +183,7 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
         if not history_msgs:
             try:
                 ctx = _get_application_context(app_id, db)
-                system_prompt = _build_system_prompt(ctx)
+                system_prompt = _build_system_prompt(ctx, lang)
                 opening_instruction = (
                     f"Stel jezelf voor als Lisa en bedank {ctx['candidate_name']} kort voor de sollicitatie "
                     f"op {ctx['vacancy_title']}. Vertel dat je een paar vragen hebt. "
@@ -228,7 +228,7 @@ async def ws_chat(ws: WebSocket, app_id: int, token: str = ""):
                 # Genereer Lisa's antwoord
                 recruiter_count = _count_recruiter_messages(app_id, db)
                 ctx = _get_application_context(app_id, db)
-                system_prompt = _build_system_prompt(ctx)
+                system_prompt = _build_system_prompt(ctx, lang)
                 conv_history = _get_conversation_history(app_id, db)
 
                 intake_qs_ws = ctx.get("intake_questions", [])

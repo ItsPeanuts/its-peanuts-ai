@@ -115,20 +115,50 @@ def _get_application_context(app_id: int, db: Session) -> dict:
 
 
 def _build_system_prompt(ctx: dict, language: str = "nl") -> str:
-    lang_instruction = f"Always respond in {LANG_NAMES.get(language, 'Dutch')}."
+    is_en = language == "en"
 
-    # Bouw intake vragen sectie
     intake_qs = ctx.get("intake_questions", [])
     max_q = BASE_QUESTIONS + len(intake_qs)
     if intake_qs:
         intake_section = "\n".join(f"  {i+1}. {q}" for i, q in enumerate(intake_qs))
         intake_instruction = f"""
-INTAKE VRAGEN VAN DE WERKGEVER (BELANGRIJK — stel deze vragen!):
-De werkgever wil specifiek het volgende weten van de kandidaat:
+{"EMPLOYER INTAKE QUESTIONS (IMPORTANT — ask these!):" if is_en else "INTAKE VRAGEN VAN DE WERKGEVER (BELANGRIJK — stel deze vragen!):"}
 {intake_section}
-Verwerk deze vragen in je gesprek. Je mag ze herformuleren zodat ze natuurlijk klinken, maar zorg dat elk onderwerp aan bod komt."""
+{"Work these questions into the conversation naturally." if is_en else "Verwerk deze vragen in je gesprek. Je mag ze herformuleren zodat ze natuurlijk klinken, maar zorg dat elk onderwerp aan bod komt."}"""
     else:
         intake_instruction = ""
+
+    if is_en:
+        return f"""You are Lisa, HR recruiter at {ctx['employer_name']}.
+
+You have invited {ctx['candidate_name']} for an initial introductory chat about the position {ctx['vacancy_title']}.
+This is an informal but professional conversation. You are curious, warm and direct.
+
+BACKGROUND (internal — do not mention directly):
+- Vacancy: {ctx['vacancy_title']} at {ctx['employer_name']}
+- Job description: {ctx['vacancy_description'][:600] if ctx['vacancy_description'] else 'not available'}
+- Candidate strengths: {ctx['strengths'] or 'not yet known'}
+- Areas of attention: {ctx['gaps'] or 'no specific gaps'}
+- CV highlights: {ctx['cv_text'][:800] if ctx['cv_text'] else 'CV not available'}
+- Interview questions to ask: {ctx['suggested_questions'] or 'use your own judgement'}
+{intake_instruction}
+
+CONVERSATION STYLE:
+- Talk like a real HR recruiter: warm, engaged, curious
+- Always briefly respond to what the candidate says before asking a new question
+- Use the candidate's first name occasionally, but not every message
+- Ask 1 question at a time — never multiple questions at once
+- Maximum 3 sentences per message
+- No bullet points, no lists
+
+GOAL:
+- Ask {max_q} targeted questions about areas of attention and motivation
+- Dig deeper on interesting answers ("Interesting, can you give an example?")
+- If an answer is unclear, kindly ask for clarification
+- After {max_q} questions, close the conversation positively without asking new questions
+
+Always respond in English.
+"""
 
     return f"""Je bent Lisa, HR-recruiter bij {ctx['employer_name']}.
 
@@ -158,7 +188,7 @@ GESPREKSDOEL:
 - Als een antwoord onduidelijk is, vraag vriendelijk om verduidelijking
 - Sluit het gesprek na {max_q} vragen positief af zonder nieuwe vragen te stellen
 
-{lang_instruction}
+Spreek altijd Nederlands.
 """
 
 
