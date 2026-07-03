@@ -415,17 +415,33 @@ def _call_ai(system_prompt: str, history: list) -> str:
         return f"Er ging iets mis: {str(e)}"
 
 
-def _score_transcript(ctx: dict, transcript: list) -> tuple[int, str]:
+def _score_transcript(ctx: dict, transcript: list, language: str = "nl") -> tuple[int, str]:
     """Analyseer het volledige transcript en geef een score (0-100) + samenvatting."""
     if not _ai_client:
-        return 50, "AI niet beschikbaar voor scoring."
+        return 50, "AI niet beschikbaar voor scoring." if language != "en" else "AI not available for scoring."
 
     convo = "\n".join(
         f"{'Lisa' if t['role'] == 'recruiter' else ctx['candidate_name']}: {t['content']}"
         for t in transcript
     )
 
-    prompt = f"""Analyseer dit video interview transcript voor de functie {ctx['vacancy_title']}.
+    if language == "en":
+        prompt = f"""Analyse this video interview transcript for the position {ctx['vacancy_title']}.
+
+Candidate: {ctx['candidate_name']}
+CV strengths: {ctx['strengths'] or 'unknown'}
+Areas of attention: {ctx['gaps'] or 'unknown'}
+
+Transcript:
+{convo}
+
+Provide a JSON response with:
+- score: integer 0-100 (how suitable is the candidate based on their answers)
+- summary: 2-3 sentence summary in English
+
+Respond ONLY with valid JSON, no text beside it."""
+    else:
+        prompt = f"""Analyseer dit video interview transcript voor de functie {ctx['vacancy_title']}.
 
 Kandidaat: {ctx['candidate_name']}
 CV sterktes: {ctx['strengths'] or 'onbekend'}
@@ -699,6 +715,7 @@ def submit_answer(
 @router.post("/session/{app_id}/complete", response_model=CompleteOut)
 def complete_interview(
     app_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -724,11 +741,12 @@ def complete_interview(
     if not vi_session:
         raise HTTPException(status_code=404, detail="Geen interview sessie gevonden")
 
+    language = _get_language(request)
     transcript = _get_transcript(vi_session)
     ctx = _get_context(app_id, db)
 
     # Score berekenen
-    score, summary = _score_transcript(ctx, transcript)
+    score, summary = _score_transcript(ctx, transcript, language)
 
     # Sla score op
     vi_session.score = score
@@ -1163,6 +1181,7 @@ def create_anam_token(
 def complete_v2_interview(
     app_id: int,
     payload: V2CompleteIn,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -1172,6 +1191,7 @@ def complete_v2_interview(
 
     Transcript formaat: [{role: "recruiter"|"candidate", content: str}, ...]
     """
+    language = _get_language(request)
     app = db.query(models.Application).filter(models.Application.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Sollicitatie niet gevonden")
@@ -1187,7 +1207,7 @@ def complete_v2_interview(
         raise HTTPException(status_code=404, detail="Geen interview sessie gevonden")
 
     ctx = _get_context(app_id, db)
-    score, summary = _score_transcript(ctx, payload.transcript)
+    score, summary = _score_transcript(ctx, payload.transcript, language)
 
     vi_session.score = score
     vi_session.score_summary = summary
