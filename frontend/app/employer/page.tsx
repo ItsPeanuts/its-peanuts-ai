@@ -9,7 +9,7 @@ import {
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
   getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy, deleteVacancy,
-  getTeamMembers, addTeamMember, removeTeamMember,
+  getTeamMembers, addTeamMember, removeTeamMember, getApplicantCV,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession, TeamMember, AddTeamMemberResponse,
 } from "@/lib/api";
@@ -90,6 +90,9 @@ export default function EmployerPage() {
   const [chatLoading, setChatLoading] = useState<Record<number, boolean>>({});
   const [chatOpen, setChatOpen] = useState<Record<number, boolean>>({});
   const [aiOpen, setAiOpen] = useState<Record<number, boolean>>({});
+  const [cvOpen, setCvOpen] = useState<Record<number, boolean>>({});
+  const [cvData, setCvData] = useState<Record<number, { candidate_name: string; filename: string | null; extracted_text: string }>>({});
+  const [cvLoading, setCvLoading] = useState<Record<number, boolean>>({});
 
   // Interview modal state
   const [interviewModal, setInterviewModal] = useState<ApplicationWithCandidate | null>(null);
@@ -434,6 +437,22 @@ export default function EmployerPage() {
         setChatMessages((prev) => ({ ...prev, [appId]: [] }));
       } finally {
         setChatLoading((prev) => ({ ...prev, [appId]: false }));
+      }
+    }
+  }
+
+  async function toggleCV(appId: number) {
+    const nowOpen = !cvOpen[appId];
+    setCvOpen((prev) => ({ ...prev, [appId]: nowOpen }));
+    if (nowOpen && !cvData[appId]) {
+      setCvLoading((prev) => ({ ...prev, [appId]: true }));
+      try {
+        const data = await getApplicantCV(token!, appId);
+        setCvData((prev) => ({ ...prev, [appId]: data }));
+      } catch {
+        setCvData((prev) => ({ ...prev, [appId]: { candidate_name: "", filename: null, extracted_text: "CV niet beschikbaar." } }));
+      } finally {
+        setCvLoading((prev) => ({ ...prev, [appId]: false }));
       }
     }
   }
@@ -1389,6 +1408,40 @@ export default function EmployerPage() {
                                         <div className="text-xs text-gray-700 mt-1">{qa.answer}</div>
                                       </div>
                                     ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* CV bekijken */}
+                          <div className="mt-2">
+                            <button
+                              onClick={() => toggleCV(app.id)}
+                              className="text-xs font-medium cursor-pointer hover:opacity-80 flex items-center gap-1.5"
+                              style={{ color: "#059669", background: "none", border: "none", padding: 0 }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                              Bekijk CV {cvOpen[app.id] ? "▴" : "▾"}
+                            </button>
+                            {cvOpen[app.id] && (
+                              <div className="mt-2 border border-green-100 rounded-xl overflow-hidden">
+                                {cvLoading[app.id] ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">{T.common.loading}</div>
+                                ) : cvData[app.id]?.extracted_text === "CV niet beschikbaar." ? (
+                                  <div className="px-4 py-3 text-xs text-gray-400">
+                                    Geen CV beschikbaar voor deze kandidaat.
+                                  </div>
+                                ) : (
+                                  <div className="p-3 bg-green-50 space-y-2">
+                                    {cvData[app.id]?.filename && (
+                                      <div className="text-xs font-semibold text-green-700">{cvData[app.id].filename}</div>
+                                    )}
+                                    <div className="max-h-72 overflow-y-auto bg-white rounded-lg p-3 text-xs text-gray-700 leading-relaxed whitespace-pre-wrap border border-green-100">
+                                      {cvData[app.id]?.extracted_text}
+                                    </div>
                                   </div>
                                 )}
                               </div>

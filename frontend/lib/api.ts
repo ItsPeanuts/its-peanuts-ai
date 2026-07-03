@@ -517,6 +517,18 @@ export async function getVideoInterviewSession(
   return data as VideoInterviewSession;
 }
 
+export async function getApplicantCV(
+  token: string,
+  applicationId: number,
+): Promise<{ candidate_name: string; filename: string | null; extracted_text: string }> {
+  const res = await fetch(`${BASE}/employer/applications/${applicationId}/cv`, {
+    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw new Error(data?.detail || data?.raw || "CV ophalen mislukt");
+  return data;
+}
+
 export async function updateApplicationStatus(
   token: string,
   applicationId: number,

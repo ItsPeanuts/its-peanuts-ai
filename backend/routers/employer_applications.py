@@ -63,6 +63,40 @@ def list_applications(
     return result
 
 
+@router.get("/applications/{application_id}/cv")
+def get_applicant_cv(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "employer")
+
+    app = (
+        db.query(models.Application)
+        .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
+        .filter(models.Application.id == application_id)
+        .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    cv = (
+        db.query(models.CandidateCV)
+        .filter(models.CandidateCV.candidate_id == app.candidate_id)
+        .order_by(models.CandidateCV.id.desc())
+        .first()
+    )
+    if not cv or not cv.extracted_text:
+        raise HTTPException(status_code=404, detail="CV niet gevonden")
+
+    return {
+        "candidate_name": (db.query(models.User).filter(models.User.id == app.candidate_id).first() or type("", (), {"full_name": "Onbekend"})).full_name,
+        "filename": cv.source_filename,
+        "extracted_text": cv.extracted_text,
+    }
+
+
 @router.patch("/applications/{application_id}/status", response_model=schemas.ApplicationOut)
 def update_status(
     application_id: int,
