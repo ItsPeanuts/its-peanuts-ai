@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 const URL = "https://www.vorzaiq.com/privacy";
 
 export const metadata: Metadata = {
-  title: "Privacybeleid — VorzaIQ",
+  title: "Privacybeleid",
   description: "Hoe VorzaIQ omgaat met jouw persoonlijke gegevens.",
   openGraph: { url: URL },
   alternates: { canonical: URL },

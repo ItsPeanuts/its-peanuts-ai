@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "Bekijk de plannen van VorzaIQ. AI-recruiter Lisa interviewt je kandidaten automatisch en kandidaten matchen hun CV in één klik tegen jouw vacatures.",
   alternates: { canonical: "https://www.vorzaiq.com/abonnementen" },
   openGraph: {
-    title: "Abonnementen — Vind sneller personeel met AI | VorzaIQ",
+    title: "Abonnementen — Vind sneller personeel met AI",
     description:
       "AI-recruiter Lisa doet de eerste interviews. Kandidaten matchen met 1 knop.",
     url: "https://www.vorzaiq.com/abonnementen",
