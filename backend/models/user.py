@@ -46,6 +46,8 @@ class User(Base):
     terms_accepted_at = Column(DateTime(timezone=True), nullable=True, default=None)
     terms_version = Column(String(20), nullable=True, default=None)
 
+    preferred_language = Column(String(5), nullable=True, default=None)
+
     city = Column(String(255), nullable=True, default=None)
     lat = Column(Float, nullable=True, default=None)
     lng = Column(Float, nullable=True, default=None)

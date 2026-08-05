@@ -42,12 +42,14 @@ def register_candidate(request: Request, payload: schemas.CandidateRegister, db:
     if exists:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    lang = (payload.preferred_language or "").strip().lower()
     user = models.User(
         email=email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
         role="candidate",
         plan=None,
+        preferred_language=lang if lang in ("nl", "en") else None,
         terms_accepted_at=datetime.now(timezone.utc),
         terms_version=CURRENT_TERMS_VERSION,
     )

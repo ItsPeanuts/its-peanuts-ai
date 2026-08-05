@@ -48,6 +48,7 @@ export async function me(token: string) {
     logo_key?: string | null;
     city?: string | null;
     job_alerts?: boolean;
+    preferred_language?: string | null;
   };
 }
 
@@ -392,11 +393,11 @@ export async function updateCVText(token: string, cvId: number, extractedText: s
   return data as CandidateCVOut;
 }
 
-export async function register(email: string, password: string, fullName: string, termsAccepted: boolean = false) {
+export async function register(email: string, password: string, fullName: string, termsAccepted: boolean = false, preferredLanguage?: string) {
   const res = await fetch(`${BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json", accept: "application/json", "Accept-Language": getLang() },
-    body: JSON.stringify({ email, password, full_name: fullName, terms_accepted: termsAccepted }),
+    body: JSON.stringify({ email, password, full_name: fullName, terms_accepted: termsAccepted, preferred_language: preferredLanguage }),
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Registratie mislukt");

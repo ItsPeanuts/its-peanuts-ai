@@ -14,6 +14,7 @@ class CandidateRegister(BaseModel):
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=1)
     terms_accepted: bool = False
+    preferred_language: Optional[str] = None
 
 
 class EmployerRegister(BaseModel):
@@ -61,6 +62,7 @@ class UserOut(BaseModel):
     org_name: Optional[str] = None
     city: Optional[str] = None
     job_alerts: bool = True
+    preferred_language: Optional[str] = None
 
 
 class EmployerProfileUpdate(BaseModel):
