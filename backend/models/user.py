@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy import Boolean, Column, Float, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base
@@ -45,6 +45,11 @@ class User(Base):
 
     terms_accepted_at = Column(DateTime(timezone=True), nullable=True, default=None)
     terms_version = Column(String(20), nullable=True, default=None)
+
+    city = Column(String(255), nullable=True, default=None)
+    lat = Column(Float, nullable=True, default=None)
+    lng = Column(Float, nullable=True, default=None)
+    job_alerts = Column(Boolean, nullable=False, default=True, server_default="1")
 
     vacancies    = relationship("Vacancy", back_populates="employer", cascade="all, delete-orphan")
     organisation = relationship("Organisation", back_populates="users")

@@ -46,6 +46,8 @@ export async function me(token: string) {
     plan?: string | null;
     trial_ends_at?: string | null;
     logo_key?: string | null;
+    city?: string | null;
+    job_alerts?: boolean;
   };
 }
 
@@ -72,11 +74,11 @@ export async function deleteLogo(token: string) {
   return data;
 }
 
-export async function updateProfile(token: string, fullName: string) {
+export async function updateProfile(token: string, updates: { full_name?: string; city?: string; job_alerts?: boolean }) {
   const res = await fetch(`${BASE}/auth/profile`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Accept-Language": getLang() },
-    body: JSON.stringify({ full_name: fullName }),
+    body: JSON.stringify(updates),
   });
   const data = await parseJson(res);
   if (!res.ok) throw new Error(data?.detail || data?.raw || "Opslaan mislukt");

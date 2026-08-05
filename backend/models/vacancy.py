@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, func, ForeignKey
+from sqlalchemy import Column, Float, Integer, String, Text, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base
@@ -41,6 +41,9 @@ class Vacancy(Base):
     # Taal van de vacaturetekst
     language = Column(String(5), nullable=True)
     # "nl" | "en"
+
+    lat = Column(Float, nullable=True, default=None)
+    lng = Column(Float, nullable=True, default=None)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

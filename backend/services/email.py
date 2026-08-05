@@ -1944,3 +1944,64 @@ def send_interview_date_choice(
         subject=subject_map.get(language, subject_map["nl"]),
         html=html,
     )
+
+
+# ── Kandidaat: job alert — nieuwe vacature past bij jouw CV ──────────────────
+
+def send_job_alert_email(
+    candidate_email: str,
+    candidate_name: str,
+    vacancy_title: str,
+    vacancy_location: str,
+    employer_name: str,
+    match_score: int,
+    distance_km: float,
+    vacancy_id: int,
+) -> None:
+    score_color = "#059669" if match_score >= 70 else "#d97706" if match_score >= 50 else "#6b7280"
+    vacancy_url = f"{FRONTEND_URL}/vacatures/{vacancy_id}"
+    optout_url = f"{FRONTEND_URL}/candidate/profiel"
+
+    subject = f"Nieuwe vacature in jouw regio: {vacancy_title}"
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
+    <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:28px 32px;text-align:center">
+      <h1 style="color:#fff;margin:0;font-size:22px">Nieuwe vacature voor jou</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px">
+        Hoi {candidate_name},
+      </p>
+      <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px">
+        Er is een nieuwe vacature geplaatst die goed aansluit bij jouw CV:
+      </p>
+
+      <div style="background:#f5f3ff;border-radius:12px;padding:20px;margin:0 0 20px">
+        <div style="font-size:18px;font-weight:700;color:#1f2937;margin:0 0 8px">{vacancy_title}</div>
+        <div style="font-size:14px;color:#6b7280;margin:0 0 4px">📍 {vacancy_location} — {distance_km} km bij jou vandaan</div>
+        <div style="font-size:14px;color:#6b7280">🏢 {employer_name}</div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:#6b7280">Match:</span>
+          <span style="font-size:15px;font-weight:700;color:{score_color}">{match_score}%</span>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin:24px 0">
+        <a href="{vacancy_url}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;text-decoration:none;padding:12px 32px;border-radius:10px;font-weight:600;font-size:15px">
+          Bekijk vacature & solliciteer
+        </a>
+      </div>
+
+      <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:24px 0 0;text-align:center">
+        Je ontvangt deze e-mail omdat je job alerts hebt ingeschakeld op VorzaIQ.<br>
+        <a href="{optout_url}" style="color:#7c3aed;text-decoration:underline">Uitschrijven voor job alerts</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+    _send(to=candidate_email, subject=subject, html=html)

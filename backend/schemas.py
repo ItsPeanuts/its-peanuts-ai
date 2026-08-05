@@ -59,10 +59,14 @@ class UserOut(BaseModel):
     logo_key: Optional[str] = None
     org_id: Optional[int] = None
     org_name: Optional[str] = None
+    city: Optional[str] = None
+    job_alerts: bool = True
 
 
 class EmployerProfileUpdate(BaseModel):
     full_name: Optional[str] = None
+    city: Optional[str] = None
+    job_alerts: Optional[bool] = None
 
 
 class Token(BaseModel):

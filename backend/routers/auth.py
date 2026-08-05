@@ -224,9 +224,20 @@ def update_profile(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Bijwerk je profielnaam."""
+    """Bijwerk profiel (naam, woonplaats, job alerts)."""
     if payload.full_name is not None:
         current_user.full_name = payload.full_name.strip()
+    if payload.city is not None:
+        current_user.city = payload.city.strip() or None
+        current_user.lat = None
+        current_user.lng = None
+        if current_user.city:
+            from backend.services.geocoding import geocode
+            coords = geocode(current_user.city)
+            if coords:
+                current_user.lat, current_user.lng = coords
+    if payload.job_alerts is not None:
+        current_user.job_alerts = payload.job_alerts
     db.commit()
     db.refresh(current_user)
     return current_user

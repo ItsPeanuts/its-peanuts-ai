@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   me, getCandidateCVs, uploadCV, getMyApplications,
-  getCVFullText, updateCVText, deleteAccount, changePassword,
+  getCVFullText, updateCVText, deleteAccount, changePassword, updateProfile,
   CandidateCVOut, ApplicationWithDetails,
 } from "@/lib/api";
 import { clearSession, getToken, getRole } from "@/lib/session";
@@ -39,7 +39,7 @@ export default function ProfielPage() {
   const { T } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [user, setUser]             = useState<{ full_name: string; email: string } | null>(null);
+  const [user, setUser]             = useState<{ full_name: string; email: string; city?: string; job_alerts?: boolean } | null>(null);
   const [cvs, setCvs]               = useState<CandidateCVOut[]>([]);
   const [applications, setApps]     = useState<ApplicationWithDetails[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -61,6 +61,12 @@ export default function ProfielPage() {
   const [pwLoading, setPwLoading]           = useState(false);
   const [pwMsg, setPwMsg]                   = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
+  // Woonplaats & job alerts
+  const [city, setCity]               = useState("");
+  const [jobAlerts, setJobAlerts]     = useState(true);
+  const [citySaving, setCitySaving]   = useState(false);
+  const [cityMsg, setCityMsg]         = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
   // Account verwijderen
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading]         = useState(false);
@@ -76,6 +82,8 @@ export default function ProfielPage() {
           getMyApplications(token),
         ]);
         setUser(u);
+        setCity(u.city || "");
+        setJobAlerts(u.job_alerts !== false);
         setCvs(cvList);
         setApps(apps);
       } catch {
@@ -168,6 +176,21 @@ export default function ProfielPage() {
       setShowDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);
+    }
+  }
+
+  async function handleSaveCity() {
+    if (!token) return;
+    setCitySaving(true);
+    setCityMsg(null);
+    try {
+      await updateProfile(token, { city: city.trim(), job_alerts: jobAlerts });
+      setCityMsg({ type: "ok", text: "Opgeslagen!" });
+      setTimeout(() => setCityMsg(null), 3000);
+    } catch (err: unknown) {
+      setCityMsg({ type: "err", text: (err as Error)?.message || "Opslaan mislukt" });
+    } finally {
+      setCitySaving(false);
     }
   }
 
@@ -480,6 +503,53 @@ export default function ProfielPage() {
               </button>
             </form>
           )}
+        </div>
+
+        {/* Woonplaats & vacaturemeldingen */}
+        <div style={{ marginTop: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "20px 24px" }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#111827", marginBottom: 2 }}>Woonplaats & vacaturemeldingen</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>Ontvang een e-mail als er een vacature bij jou in de buurt online komt die past bij je CV.</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>Woonplaats</label>
+              <input
+                type="text"
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                placeholder="Bijv. Rotterdam"
+                style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }}
+              />
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <div
+                onClick={() => setJobAlerts(v => !v)}
+                style={{
+                  width: 40, height: 22, borderRadius: 12, position: "relative", cursor: "pointer",
+                  background: jobAlerts ? "#7C3AED" : "#d1d5db", transition: "background 0.2s",
+                }}
+              >
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 2,
+                  left: jobAlerts ? 20 : 2, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>Vacaturemeldingen ontvangen per e-mail</span>
+            </label>
+            {cityMsg && (
+              <div style={{ fontSize: 12, borderRadius: 8, padding: "8px 12px", color: cityMsg.type === "ok" ? "#059669" : "#dc2626", background: cityMsg.type === "ok" ? "#d1fae5" : "#fee2e2" }}>
+                {cityMsg.text}
+              </div>
+            )}
+            <button
+              onClick={handleSaveCity}
+              disabled={citySaving}
+              style={{ alignSelf: "flex-start", padding: "9px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: citySaving ? "#e5e7eb" : "#7C3AED", color: citySaving ? "#9ca3af" : "#fff", border: "none", cursor: citySaving ? "not-allowed" : "pointer" }}
+            >
+              {citySaving ? "Opslaan..." : "Opslaan"}
+            </button>
+          </div>
         </div>
 
         {/* Danger zone */}

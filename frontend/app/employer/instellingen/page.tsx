@@ -60,7 +60,7 @@ export default function InstellingenPage() {
     if (!token || !fullName.trim()) return;
     setNameSaving(true); setNameErr(""); setNameMsg("");
     try {
-      await updateProfile(token, fullName.trim());
+      await updateProfile(token, { full_name: fullName.trim() });
       setNameMsg("Naam opgeslagen!");
       setTimeout(() => setNameMsg(""), 3000);
     } catch (err: unknown) {

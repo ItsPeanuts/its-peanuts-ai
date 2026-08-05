@@ -1,3 +1,4 @@
+import threading
 from typing import List
 from datetime import datetime, timezone
 
@@ -5,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.db import get_db
+from backend.db import get_db, SessionLocal
 from backend import models, schemas
 from backend.routers.auth import get_current_user, require_role
 
@@ -197,7 +198,21 @@ def update_vacancy_status(
     if vacancy.employer_id not in _employer_ids(db, current_user):
         raise HTTPException(status_code=403, detail="Geen toegang tot deze vacature")
 
+    old_status = vacancy.status
     vacancy.status = payload.status
     db.commit()
     db.refresh(vacancy)
+
+    if payload.status == "actief" and old_status != "actief":
+        def _run_alerts(vacancy_id: int) -> None:
+            from backend.services.job_alerts import send_job_alerts_for_vacancy
+            alert_db = SessionLocal()
+            try:
+                v = alert_db.query(models.Vacancy).filter(models.Vacancy.id == vacancy_id).first()
+                if v:
+                    send_job_alerts_for_vacancy(v, alert_db)
+            finally:
+                alert_db.close()
+        threading.Thread(target=_run_alerts, args=(vacancy.id,), daemon=True).start()
+
     return vacancy
