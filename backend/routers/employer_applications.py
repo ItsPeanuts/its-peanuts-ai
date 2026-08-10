@@ -149,11 +149,11 @@ def download_applicant_cv(
         pdf.ln(1)
 
     buf = io.BytesIO(pdf.output())
-    safe_name = name.replace(" ", "_")
+    ascii_name = name.encode("ascii", "ignore").decode().replace(" ", "_") or "Kandidaat"
     return StreamingResponse(
         buf,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="CV_{safe_name}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="CV_{ascii_name}.pdf"'},
     )
 
 
