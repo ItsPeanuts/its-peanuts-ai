@@ -532,6 +532,23 @@ export async function getApplicantCV(
   return data;
 }
 
+export async function downloadApplicantCV(token: string, applicationId: number) {
+  const res = await fetch(`${BASE}/employer/applications/${applicationId}/cv/download`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("CV downloaden mislukt");
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `CV_${applicationId}.pdf`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function updateApplicationStatus(
   token: string,
   applicationId: number,

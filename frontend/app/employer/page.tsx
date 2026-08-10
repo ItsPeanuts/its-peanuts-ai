@@ -9,7 +9,7 @@ import {
   getChatMessages, scheduleInterview, syncCandidateToCRM,
   listIntakeQuestions, createIntakeQuestion, deleteIntakeQuestion, getApplicationAnswers,
   getVideoInterviewSession, createPromotionCheckout, updateVacancyStatus, updateVacancy, deleteVacancy,
-  getTeamMembers, addTeamMember, removeTeamMember, getApplicantCV,
+  getTeamMembers, addTeamMember, removeTeamMember, getApplicantCV, downloadApplicantCV,
   ApplicationWithCandidate, ChatMessage, InterviewSession, IntakeQuestionOut, IntakeAnswerOut,
   VideoInterviewSession, TeamMember, AddTeamMemberResponse,
 } from "@/lib/api";
@@ -1436,9 +1436,19 @@ export default function EmployerPage() {
                                   </div>
                                 ) : (
                                   <div className="p-3 bg-green-50 space-y-2">
-                                    {cvData[app.id]?.filename && (
-                                      <div className="text-xs font-semibold text-green-700">{cvData[app.id].filename}</div>
-                                    )}
+                                    <div className="flex items-center justify-between">
+                                      {cvData[app.id]?.filename && (
+                                        <div className="text-xs font-semibold text-green-700">{cvData[app.id].filename}</div>
+                                      )}
+                                      <button
+                                        onClick={() => token && downloadApplicantCV(token, app.id)}
+                                        className="flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-lg hover:opacity-80 transition"
+                                        style={{ color: "#059669", background: "#d1fae5", border: "none", cursor: "pointer" }}
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        Download PDF
+                                      </button>
+                                    </div>
                                     <div className="max-h-72 overflow-y-auto bg-white rounded-lg p-3 text-xs text-gray-700 leading-relaxed whitespace-pre-wrap border border-green-100">
                                       {cvData[app.id]?.extracted_text}
                                     </div>

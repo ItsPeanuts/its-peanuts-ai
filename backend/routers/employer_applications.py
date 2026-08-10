@@ -1,6 +1,8 @@
+import io
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
@@ -95,6 +97,62 @@ def get_applicant_cv(
         "filename": cv.source_filename,
         "extracted_text": cv.extracted_text,
     }
+
+
+@router.get("/applications/{application_id}/cv/download")
+def download_applicant_cv(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    require_role(current_user, "employer")
+
+    app = (
+        db.query(models.Application)
+        .join(models.Vacancy, models.Application.vacancy_id == models.Vacancy.id)
+        .filter(models.Application.id == application_id)
+        .filter(models.Vacancy.employer_id.in_(_employer_ids(db, current_user)))
+        .first()
+    )
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    cv = (
+        db.query(models.CandidateCV)
+        .filter(models.CandidateCV.candidate_id == app.candidate_id)
+        .order_by(models.CandidateCV.id.desc())
+        .first()
+    )
+    if not cv or not cv.extracted_text:
+        raise HTTPException(status_code=404, detail="CV niet gevonden")
+
+    candidate = db.query(models.User).filter(models.User.id == app.candidate_id).first()
+    name = candidate.full_name if candidate else "Kandidaat"
+
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 12, name, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(0, 6, f"CV - VorzaIQ", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(6)
+    pdf.set_font("Helvetica", "", 11)
+    for line in cv.extracted_text.split("\n"):
+        pdf.multi_cell(0, 6, line)
+        pdf.ln(1)
+
+    buf = io.BytesIO(pdf.output())
+    safe_name = name.replace(" ", "_")
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="CV_{safe_name}.pdf"'},
+    )
 
 
 @router.patch("/applications/{application_id}/status", response_model=schemas.ApplicationOut)
