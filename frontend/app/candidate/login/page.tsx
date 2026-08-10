@@ -250,9 +250,9 @@ function CandidateLoginContent() {
               </p>
             )}
             <p className="text-sm text-gray-500">
-              Geen account nodig?{" "}
+              {tab === "register" && regLang === "en" ? "No account needed? " : "Geen account nodig? "}
               <Link href="/vacatures" className="text-purple-600 font-semibold no-underline hover:text-purple-700">
-                Bekijk vacatures
+                {tab === "register" && regLang === "en" ? "Browse jobs" : "Bekijk vacatures"}
               </Link>
             </p>
           </div>
@@ -261,9 +261,9 @@ function CandidateLoginContent() {
         {/* Employer link */}
         <div className="text-center mt-4">
           <p className="text-sm text-gray-400">
-            Bent u werkgever?{" "}
+            {tab === "register" && regLang === "en" ? "Are you an employer? " : "Bent u werkgever? "}
             <Link href="/employer" className="text-purple-600 font-semibold no-underline hover:text-purple-700">
-              Werkgeversportaal
+              {tab === "register" && regLang === "en" ? "Employer portal" : "Werkgeversportaal"}
             </Link>
           </p>
         </div>

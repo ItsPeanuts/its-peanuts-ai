@@ -66,6 +66,8 @@ def register_candidate(request: Request, payload: schemas.CandidateRegister, db:
 @router.post("/register-employer", response_model=schemas.UserOut)
 @limiter.limit("10/minute")
 def register_employer(request: Request, payload: schemas.EmployerRegister, db: Session = Depends(get_db)):
+    if not is_allowed_country(request):
+        raise HTTPException(status_code=403, detail="Registration is only available within the EU.")
     if not payload.terms_accepted:
         raise HTTPException(status_code=422, detail="Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid.")
 

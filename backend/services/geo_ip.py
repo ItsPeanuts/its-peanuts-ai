@@ -36,7 +36,7 @@ def get_client_ip(request) -> str:
 
 def is_allowed_country(request) -> bool:
     ip = get_client_ip(request)
-    if ip.startswith("127.") or ip.startswith("10.") or ip.startswith("192.168.") or ip == "::1":
+    if ip.startswith("127.") or ip.startswith("10.") or ip.startswith("192.168.") or ip.startswith("172.") or ip == "::1":
         return True
     country = _get_country(ip)
     if country is None:
