@@ -15,6 +15,7 @@ from backend.db import get_db
 from backend import models, schemas
 from backend.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
 from backend.services.email import send_verification_email, send_password_reset_email
+from backend.services.geo_ip import is_allowed_country
 
 LOGO_DIR = os.path.join(os.getenv("UPLOAD_DIR", "uploads"), "logos")
 LOGO_MAX_SIZE = 2 * 1024 * 1024  # 2 MB
@@ -34,6 +35,8 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post("/register", response_model=schemas.Token)
 @limiter.limit("10/minute")
 def register_candidate(request: Request, payload: schemas.CandidateRegister, db: Session = Depends(get_db)):
+    if not is_allowed_country(request):
+        raise HTTPException(status_code=403, detail="Registration is only available within the EU.")
     if not payload.terms_accepted:
         raise HTTPException(status_code=422, detail="Je moet akkoord gaan met de algemene voorwaarden en het privacybeleid.")
 

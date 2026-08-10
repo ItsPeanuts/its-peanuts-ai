@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.security import OAuth2PasswordBearer
 from openai import OpenAI
 from sqlalchemy.orm import Session
@@ -13,6 +13,7 @@ from jose import jwt, JWTError
 
 from backend import models, schemas
 from backend.db import get_db
+from backend.services.geo_ip import is_allowed_country
 from backend.security import create_access_token, hash_password, SECRET_KEY, ALGORITHM
 from backend.services.text_extract import extract_text
 from backend.services.email import send_application_confirmation, send_new_applicant_notification, send_claim_notification
@@ -173,6 +174,7 @@ CURRENT_TERMS_VERSION = "2026-07b"
 
 @router.post("/{vacancy_id}/apply", response_model=schemas.ApplyResponse)
 async def apply_to_vacancy(
+    request: Request,
     vacancy_id: int,
     full_name: str = Form(...),
     email: str = Form(...),
@@ -182,6 +184,8 @@ async def apply_to_vacancy(
     terms_accepted: str = Form(default="false"),
     db: Session = Depends(get_db),
 ):
+    if not is_allowed_country(request):
+        raise HTTPException(status_code=403, detail="Applications are only accepted from within the EU.")
     if terms_accepted.lower() not in ("true", "1", "yes"):
         raise HTTPException(
             status_code=422,
@@ -357,6 +361,7 @@ async def apply_to_vacancy(
 
 @router.post("/{vacancy_id}/apply-authenticated", response_model=schemas.ApplyResponse)
 async def apply_authenticated(
+    request: Request,
     vacancy_id: int,
     motivation_letter: str = Form(default=""),
     intake_answers_json: str = Form(default="[]"),
@@ -364,6 +369,8 @@ async def apply_authenticated(
     current_user: models.User = Depends(_get_optional_user),
 ):
     """Solliciteren als ingelogde kandidaat — gebruikt bestaand account + meest recente CV."""
+    if not is_allowed_country(request):
+        raise HTTPException(status_code=403, detail="Applications are only accepted from within the EU.")
     if not current_user:
         raise HTTPException(status_code=401, detail="Niet ingelogd")
     if current_user.role not in ("candidate", "admin"):
