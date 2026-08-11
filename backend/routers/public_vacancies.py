@@ -55,8 +55,10 @@ def _cv_is_eu_based(cv_text: str) -> bool:
             max_tokens=20,
             messages=[
                 {"role": "system", "content": (
-                    "You determine if a CV/resume belongs to someone currently living in the EU/EEA/UK/Switzerland. "
-                    "Look at phone numbers, addresses, cities, and country mentions. "
+                    "You determine if a CV/resume belongs to someone currently LIVING in the EU/EEA/UK/Switzerland. "
+                    "Focus on their CURRENT address, current city, and current phone number (e.g. +31, +32, +49 are EU). "
+                    "Ignore birthplace, nationality, or country of origin — someone born in India but living in Rotterdam is EU. "
+                    "Only reply 'NON-EU' if their current residence is clearly outside the EU (e.g. address in India, phone +91, 'willing to relocate to EU'). "
                     "Reply ONLY 'EU' or 'NON-EU'. If uncertain, reply 'EU'."
                 )},
                 {"role": "user", "content": cv_text[:2000]},
