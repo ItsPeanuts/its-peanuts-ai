@@ -55,6 +55,13 @@ async def upload_cv(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
 
+    from backend.routers.public_vacancies import _cv_is_eu_based
+    if extracted and not _cv_is_eu_based(extracted):
+        raise HTTPException(
+            status_code=403,
+            detail="This platform is only available for candidates based in the EU.",
+        )
+
     cv = models.CandidateCV(
         candidate_id=current_user.id,
         source_filename=file.filename,

@@ -34,6 +34,39 @@ def _get_optional_user(token: str | None = Depends(oauth2_optional), db: Session
 
 router = APIRouter(prefix="/vacancies", tags=["public-vacancies"])
 
+_EU_COUNTRIES = {
+    "Netherlands", "Belgium", "Germany", "France", "Luxembourg", "Austria",
+    "Switzerland", "United Kingdom", "Ireland", "Denmark", "Sweden", "Norway",
+    "Finland", "Italy", "Spain", "Portugal", "Poland", "Czech Republic",
+    "Czechia", "Slovakia", "Hungary", "Romania", "Bulgaria", "Croatia",
+    "Slovenia", "Estonia", "Latvia", "Lithuania", "Malta", "Cyprus", "Greece",
+    "Iceland", "Liechtenstein",
+}
+
+
+def _cv_is_eu_based(cv_text: str) -> bool:
+    if not cv_text or len(cv_text) < 50:
+        return True
+    client = OpenAI()
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0,
+            max_tokens=20,
+            messages=[
+                {"role": "system", "content": (
+                    "You determine if a CV/resume belongs to someone currently living in the EU/EEA/UK/Switzerland. "
+                    "Look at phone numbers, addresses, cities, and country mentions. "
+                    "Reply ONLY 'EU' or 'NON-EU'. If uncertain, reply 'EU'."
+                )},
+                {"role": "user", "content": cv_text[:2000]},
+            ],
+        )
+        answer = (resp.choices[0].message.content or "").strip().upper()
+        return "NON" not in answer
+    except Exception:
+        return True
+
 
 def _maybe_send_claim_mail(vacancy_id: int, vacancy_title: str, db: Session) -> None:
     """Stuur eenmalig een claim-mail als deze vacature gescraped is en nog niet geclaimd."""
@@ -235,6 +268,14 @@ async def apply_to_vacancy(
         except Exception:
             cv_text = ""
 
+    if cv_text and not _cv_is_eu_based(cv_text):
+        db.delete(candidate)
+        db.commit()
+        raise HTTPException(
+            status_code=403,
+            detail="This platform is only available for candidates based in the EU.",
+        )
+
     # Sla CV op
     cv_record = models.CandidateCV(
         candidate_id=candidate.id,
@@ -401,6 +442,12 @@ async def apply_authenticated(
         .first()
     )
     cv_text = cv_record.extracted_text if cv_record else ""
+
+    if cv_text and not _cv_is_eu_based(cv_text):
+        raise HTTPException(
+            status_code=403,
+            detail="This platform is only available for candidates based in the EU.",
+        )
 
     # Sollicitatie aanmaken
     application = models.Application(
