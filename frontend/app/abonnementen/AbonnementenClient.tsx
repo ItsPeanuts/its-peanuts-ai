@@ -374,8 +374,8 @@ function AbonnementenContent() {
         {/* Contact */}
         <div style={{ textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
           {S.contactText}{" "}
-          <a href="mailto:sales@vorzaiq.nl" style={{ color: "#7C3AED", textDecoration: "none", fontWeight: 600 }}>
-            {S.contactLink}
+          <a href="mailto:info@vorzaiq.com" style={{ color: "#7C3AED", textDecoration: "none", fontWeight: 600 }}>
+            info@vorzaiq.com
           </a>
         </div>
       </main>
