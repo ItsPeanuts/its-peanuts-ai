@@ -3,6 +3,8 @@ User-agent: *
 Allow: /
 Allow: /vacatures
 Allow: /vacatures/
+Allow: /banen
+Allow: /banen/
 
 # Privé routes — niet indexeren
 Disallow: /candidate/

@@ -92,6 +92,27 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 _client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 
+@router.get("/seo/locations")
+def seo_locations(db: Session = Depends(get_db)):
+    """Unieke locaties van actieve vacatures voor SEO-landingspagina's."""
+    from sqlalchemy import func as sqlfunc
+    rows = (
+        db.query(
+            models.Vacancy.location,
+            sqlfunc.count(models.Vacancy.id).label("count"),
+        )
+        .filter(
+            models.Vacancy.status == "actief",
+            models.Vacancy.location.isnot(None),
+            models.Vacancy.location != "",
+        )
+        .group_by(models.Vacancy.location)
+        .order_by(sqlfunc.count(models.Vacancy.id).desc())
+        .all()
+    )
+    return [{"location": r.location, "count": r[1]} for r in rows]
+
+
 @router.get("", response_model=List[schemas.PublicVacancyOut])
 def list_vacancies(
     q: Optional[str] = None,
