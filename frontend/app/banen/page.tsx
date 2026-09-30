@@ -8,12 +8,12 @@ const API_BASE =
 const SITE_URL = "https://www.vorzaiq.com";
 
 export const metadata: Metadata = {
-  title: "Vacatures per stad — Werk zoeken in Nederland | VorzaIQ",
+  title: "Vacatures per stad — Werk zoeken in Nederland",
   description:
     "Bekijk alle vacatures per stad in Nederland. Vind werk in Amsterdam, Rotterdam, Utrecht, Den Haag en meer. Solliciteer direct met AI-matching.",
   alternates: { canonical: `${SITE_URL}/banen` },
   openGraph: {
-    title: "Vacatures per stad — Werk zoeken in Nederland | VorzaIQ",
+    title: "Vacatures per stad — Werk zoeken in Nederland",
     description:
       "Bekijk alle vacatures per stad. Solliciteer direct met AI-matching.",
     url: `${SITE_URL}/banen`,

@@ -53,7 +53,7 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const location = await findLocationName(params.slug);
-  const title = `Vacatures in ${location} — Werk zoeken | VorzaIQ`;
+  const title = `Vacatures in ${location} — Werk zoeken`;
   const description = `Bekijk alle vacatures in ${location}. Vind werk en solliciteer direct met AI-matching. Openstaande functies in ${location} en omgeving.`;
   const url = `${SITE_URL}/banen/${params.slug}`;
 
