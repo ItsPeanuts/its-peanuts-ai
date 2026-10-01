@@ -60,6 +60,8 @@ FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://vorzaiq.com")
 stripe.api_key = STRIPE_SECRET_KEY
 
 PRICE_IDS: dict[tuple[str, str], str] = {
+    ("starter", "month"): os.getenv("STRIPE_PRICE_STARTER_MAAND", ""),
+    ("starter", "year"):  os.getenv("STRIPE_PRICE_STARTER_JAAR", ""),
     ("normaal", "month"): os.getenv("STRIPE_PRICE_NORMAAL_MAAND", ""),
     ("normaal", "year"):  os.getenv("STRIPE_PRICE_NORMAAL_JAAR", ""),
     ("premium", "month"): os.getenv("STRIPE_PRICE_PREMIUM_MAAND", ""),
@@ -112,8 +114,8 @@ def create_checkout_session(
             status_code=503,
             detail="Stripe is niet geconfigureerd. Stel STRIPE_SECRET_KEY in.",
         )
-    if payload.plan not in ("normaal", "premium"):
-        raise HTTPException(status_code=400, detail="Ongeldig plan (kies normaal of premium)")
+    if payload.plan not in ("starter", "normaal", "premium"):
+        raise HTTPException(status_code=400, detail="Ongeldig plan (kies starter, normaal of premium)")
     if payload.interval not in ("month", "year"):
         raise HTTPException(status_code=400, detail="Ongeldig interval (kies month of year)")
 
@@ -317,7 +319,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         if not user:
             return {"status": "ok"}
 
-        if mode == "subscription" and plan in ("normaal", "premium"):
+        if mode == "subscription" and plan in ("starter", "normaal", "premium"):
             user.plan = plan
             user.trial_ends_at = None
             db.commit()
@@ -400,7 +402,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             db.commit()
         elif status == "active":
             plan = meta.get("plan", "")
-            if plan in ("normaal", "premium"):
+            if plan in ("starter", "normaal", "premium"):
                 user.plan = plan
                 user.trial_ends_at = None
                 db.commit()

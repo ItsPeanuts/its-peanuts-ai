@@ -13,7 +13,7 @@ import { useLanguage } from "@/lib/i18n";
 const PLAN_BASES = [
   {
     id: "starter",
-    planKey: null as string | null,
+    planKey: "starter" as string | null,
     priceMonth: 49,
     priceYear: 490,
     color: "#2563eb",
