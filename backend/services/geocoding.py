@@ -12,7 +12,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-_HEADERS = {"User-Agent": "VorzaIQ/1.0 (recruitment platform; contact@vorzaiq.com)"}
+_HEADERS = {"User-Agent": "VorzaIQ/1.0 (recruitment platform; info@vorzaiq.com)"}
 _last_request_time = 0.0
 
 

@@ -40,7 +40,7 @@ def list_vacancies(
     return rows
 
 
-PLAN_VACANCY_LIMITS = {"gratis": 1, "normaal": 5}  # None = onbeperkt (premium)
+PLAN_VACANCY_LIMITS = {"gratis": 1, "starter": 1, "normaal": 5}  # None = onbeperkt (premium)
 
 
 @router.post("", response_model=schemas.VacancyOut)
@@ -81,8 +81,10 @@ def create_vacancy(
                 current_user.vacancy_credits = credits - 1
                 db.commit()
             else:
-                plan_label = "Gratis" if plan == "gratis" else "Growth"
-                upgrade_to = "Growth" if plan == "gratis" else "Scale"
+                plan_labels = {"gratis": "Gratis", "starter": "Starter", "normaal": "Growth"}
+                upgrade_tos = {"gratis": "Starter", "starter": "Growth", "normaal": "Scale"}
+                plan_label = plan_labels.get(plan, plan)
+                upgrade_to = upgrade_tos.get(plan, "Scale")
                 raise HTTPException(
                     status_code=403,
                     detail=(

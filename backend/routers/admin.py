@@ -482,7 +482,7 @@ def get_payment_analytics(
 
     total_revenue = sum(p.amount_total or 0 for p in payments)
     active_subscriptions = db.query(models.User).filter(
-        models.User.plan.in_(["normaal", "premium"])
+        models.User.plan.in_(["starter", "normaal", "premium"])
     ).count()
 
     return {
