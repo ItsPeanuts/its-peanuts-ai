@@ -19,6 +19,9 @@ export default function PublicFooter() {
             <Link href="/verwerkersovereenkomst" className="text-xs text-gray-500 hover:text-gray-300 no-underline">
               Verwerkersovereenkomst
             </Link>
+            <Link href="/actievoorwaarden" className="text-xs text-yellow-500 hover:text-yellow-300 no-underline font-semibold">
+              Winactie JBL Boombox 4
+            </Link>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
             <span>Ook van VorzaIQ:</span>
