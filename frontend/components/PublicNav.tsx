@@ -30,6 +30,9 @@ export default function PublicNav() {
           <Link href="/abonnementen" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline">
             {T.nav.employers}
           </Link>
+          <Link href="/producten" className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-primary hover:bg-primary-50 transition-colors no-underline">
+            {lang === "nl" ? "Producten" : "Products"}
+          </Link>
           <button
             onClick={() => setLang(otherLang)}
             className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors border border-gray-200"
@@ -77,6 +80,13 @@ export default function PublicNav() {
             className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 no-underline block"
           >
             {T.nav.employers}
+          </Link>
+          <Link
+            href="/producten"
+            onClick={() => setOpen(false)}
+            className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 no-underline block"
+          >
+            {lang === "nl" ? "Producten" : "Products"}
           </Link>
           <button
             onClick={() => { setLang(otherLang); setOpen(false); }}

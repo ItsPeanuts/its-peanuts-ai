@@ -186,6 +186,17 @@ export type TranslationSet = {
     sections: Array<{ title: string; content: string; items?: string[] }>;
     dataTable?: Array<{ purpose: string; basis: string }>;
   };
+  products: {
+    title: string;
+    intro: string;
+    forWho: string;
+    viewPlatform: string;
+    toLisaRecruit: string;
+    toVorzaPDF: string;
+    vorzaiq: { text: string; audience: string };
+    lisarecruit: { text: string; audience: string; trial: string };
+    vorzapdf: { text: string; audience: string; free: string };
+  };
 };
 
 // ─── Nederlands ──────────────────────────────────────────────────────────────
@@ -462,6 +473,28 @@ const nl: TranslationSet = {
       { title: "10. Beveiliging", content: "Wij nemen passende technische en organisatorische maatregelen om je gegevens te beschermen, waaronder versleutelde verbindingen (TLS), versleutelde opslag, toegangsbeperking en logging." },
       { title: "11. Wijzigingen", content: "Wij kunnen dit privacybeleid aanpassen. Bij belangrijke wijzigingen informeren wij accounthouders per e-mail. De meest actuele versie staat altijd op vorzaiq.com/privacy." },
     ],
+  },
+  products: {
+    title: "Onze producten",
+    intro: "VorzaIQ maakt slimme AI-tools voor werving en werk. Elk product heeft een eigen doel en een eigen website.",
+    forWho: "Voor wie",
+    viewPlatform: "Bekijk het platform",
+    toLisaRecruit: "Naar LisaRecruit",
+    toVorzaPDF: "Naar VorzaPDF",
+    vorzaiq: {
+      text: "Upload je CV en ontvang direct een AI-matchscore voor elke vacature. Werkgevers vinden sneller de juiste kandidaten met AI-screening.",
+      audience: "Werkzoekenden en werkgevers in Nederland.",
+    },
+    lisarecruit: {
+      text: "AI-recruiter Lisa voert het eerste gesprek met elke sollicitant, direct na de sollicitatie. Via chat op de telefoon, dag en nacht, in 6 talen. De recruiter krijgt een samenvatting en beslist altijd zelf.",
+      audience: "Uitzendbureaus en werkgevers met veel sollicitanten.",
+      trial: "14 dagen gratis proberen.",
+    },
+    vorzapdf: {
+      text: "Bewerk elke PDF door gewoon te beschrijven wat je wilt. De AI vervangt, voegt toe of verwijdert tekst, voegt afbeeldingen in en maakt samenvattingen. Daarnaast 13 vaste tools, zoals PDF naar Word, samenvoegen, splitsen en comprimeren.",
+      audience: "Iedereen die snel een PDF wil aanpassen of omzetten, particulier of zakelijk.",
+      free: "1 keer per dag gratis, geen registratie nodig.",
+    },
   },
 };
 
@@ -740,6 +773,28 @@ const en: TranslationSet = {
       { title: "11. Changes", content: "We may update this privacy policy. For significant changes, we will inform account holders by email. The most current version is always available at vorzaiq.com/privacy." },
     ],
   },
+  products: {
+    title: "Our products",
+    intro: "VorzaIQ builds smart AI tools for recruitment and work. Each product has its own purpose and its own website.",
+    forWho: "For whom",
+    viewPlatform: "View the platform",
+    toLisaRecruit: "Go to LisaRecruit",
+    toVorzaPDF: "Go to VorzaPDF",
+    vorzaiq: {
+      text: "Upload your CV and instantly receive an AI match score for every vacancy. Employers find the right candidates faster with AI screening.",
+      audience: "Job seekers and employers in the Netherlands.",
+    },
+    lisarecruit: {
+      text: "AI recruiter Lisa conducts the first interview with every applicant, right after applying. Via chat on mobile, day and night, in 6 languages. The recruiter receives a summary and always decides themselves.",
+      audience: "Staffing agencies and employers with high applicant volumes.",
+      trial: "14-day free trial.",
+    },
+    vorzapdf: {
+      text: "Edit any PDF by simply describing what you want. The AI replaces, adds or removes text, inserts images, and creates summaries. Plus 13 built-in tools such as PDF to Word, merge, split, and compress.",
+      audience: "Anyone who needs to quickly edit or convert a PDF, personal or business.",
+      free: "Free once per day, no registration required.",
+    },
+  },
 };
 
 // ─── Deutsch ──────────────────────────────────────────────────────────────────
@@ -975,6 +1030,7 @@ const de: TranslationSet = {
   },
   terms: en.terms,
   privacy: en.privacy,
+  products: en.products,
 };
 
 // ─── Français ─────────────────────────────────────────────────────────────────
@@ -1210,6 +1266,7 @@ const fr: TranslationSet = {
   },
   terms: en.terms,
   privacy: en.privacy,
+  products: en.products,
 };
 
 // ─── Español ──────────────────────────────────────────────────────────────────
@@ -1445,6 +1502,7 @@ const es: TranslationSet = {
   },
   terms: en.terms,
   privacy: en.privacy,
+  products: en.products,
 };
 
 export const translations: Record<Lang, TranslationSet> = { nl, en, de, fr, es };

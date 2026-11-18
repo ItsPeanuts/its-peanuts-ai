@@ -24,23 +24,27 @@ export default function PublicFooter() {
             </Link>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-gray-600">
-            <span>Ook van VorzaIQ:</span>
+            <span>Producten:</span>
+            <Link href="/producten" className="text-gray-400 hover:text-gray-200 no-underline font-semibold">
+              VorzaIQ
+            </Link>
+            <span className="text-gray-700">·</span>
             <a
-              href="https://vorzapdf.com?utm_source=vorzaiq&utm_medium=referral&utm_campaign=footer"
+              href="https://www.lisarecruit.com?utm_source=vorzaiq&utm_medium=referral&utm_campaign=footer"
+              target="_blank"
+              rel="noopener"
+              className="text-gray-400 hover:text-gray-200 no-underline font-semibold"
+            >
+              LisaRecruit
+            </a>
+            <span className="text-gray-700">·</span>
+            <a
+              href="https://www.vorzapdf.com?utm_source=vorzaiq&utm_medium=referral&utm_campaign=footer"
               target="_blank"
               rel="noopener"
               className="text-gray-400 hover:text-gray-200 no-underline font-semibold"
             >
               VorzaPDF
-            </a>
-            <span className="text-gray-700">·</span>
-            <a
-              href="https://lisarecruit.com?utm_source=vorzaiq&utm_medium=referral&utm_campaign=footer"
-              target="_blank"
-              rel="noopener"
-              className="text-gray-400 hover:text-gray-200 no-underline font-semibold"
-            >
-              Lisa Recruit
             </a>
           </div>
         </div>
