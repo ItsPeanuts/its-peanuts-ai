@@ -80,7 +80,7 @@ export default function ProductenClient() {
           {/* VorzaPDF */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
             <div className="h-12 flex items-center mb-5">
-              <span className="text-xl font-bold text-gray-900">VorzaPDF</span>
+              <img src="/brand/vorzapdf-logo.png" alt="VorzaPDF" className="h-8" />
             </div>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
               {p.vorzapdf.text}
