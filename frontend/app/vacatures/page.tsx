@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import VacaturesClient from "./VacaturesClient";
 
 export const metadata: Metadata = {
-  title: "Alle Vacatures",
+  title: "Vacatures in Nederland",
   description:
-    "Bekijk alle openstaande vacatures. Upload je CV één keer en ontvang automatisch AI-matches op maat.",
+    "Bekijk alle openstaande vacatures in Nederland. Upload je CV, ontvang direct een AI-matchscore en solliciteer met een klik.",
   alternates: { canonical: "https://www.vorzaiq.com/vacatures" },
   openGraph: {
-    title: "Alle Vacatures | VorzaIQ",
+    title: "Vacatures in Nederland | VorzaIQ",
     description:
-      "Bekijk alle openstaande vacatures. Upload je CV één keer en match met 1 knop.",
+      "Bekijk alle openstaande vacatures in Nederland. Upload je CV, ontvang direct een AI-matchscore en solliciteer met een klik.",
     url: "https://www.vorzaiq.com/vacatures",
   },
 };

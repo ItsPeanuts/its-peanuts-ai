@@ -24,9 +24,10 @@ export default function ProductenClient() {
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* VorzaIQ */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
-            <div className="h-12 flex items-center mb-5">
+            <div className="h-12 flex items-center mb-3">
               <img src="/vorzaiq-logo.svg" alt="VorzaIQ" className="h-8" />
             </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">VorzaIQ</h2>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
               {p.vorzaiq.text}
             </p>
@@ -46,13 +47,14 @@ export default function ProductenClient() {
 
           {/* LisaRecruit */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
-            <div className="h-12 flex items-center mb-5">
+            <div className="h-12 flex items-center mb-3">
               <img
                 src="/brand/lisarecruit-logo.svg"
                 alt="LisaRecruit"
                 className="h-8"
               />
             </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">LisaRecruit</h2>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
               {p.lisarecruit.text}
             </p>
@@ -79,9 +81,10 @@ export default function ProductenClient() {
 
           {/* VorzaPDF */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
-            <div className="h-12 flex items-center mb-5">
+            <div className="h-12 flex items-center mb-3">
               <img src="/brand/vorzapdf-logo.png" alt="VorzaPDF" className="h-8" />
             </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">VorzaPDF</h2>
             <p className="text-sm text-gray-600 leading-relaxed mb-4">
               {p.vorzapdf.text}
             </p>

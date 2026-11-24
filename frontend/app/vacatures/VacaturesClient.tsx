@@ -226,17 +226,8 @@ function VacaturesContent() {
   } : null;
 
   return (
-    <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
+    <>
       {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
-      <PublicNav />
-
-      {/* ── Header ── */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #f3f4f6", padding: "28px 0 12px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 6px" }}>{T.jobs.allVacancies || "Alle vacatures"}</h1>
-          <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>{T.jobs.allVacanciesSub || "Vind je volgende baan met AI-matching. Upload je CV één keer, krijg directe matches."}</p>
-        </div>
-      </div>
 
       {/* ── Zoekbalk ── */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "20px 0" }}>
@@ -601,15 +592,24 @@ function VacaturesContent() {
         </main>
       </div>
 
-      <PublicFooter />
-    </div>
+    </>
   );
 }
 
 export default function VacaturesClient() {
   return (
-    <Suspense fallback={<div style={{ minHeight: "100vh", background: "#f9fafb" }}><PublicNav /></div>}>
-      <VacaturesContent />
-    </Suspense>
+    <div style={{ background: "#f9fafb", minHeight: "100vh" }}>
+      <PublicNav />
+      <div style={{ background: "#fff", borderBottom: "1px solid #f3f4f6", padding: "28px 0 12px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111827", margin: "0 0 6px" }}>Vacatures in Nederland</h1>
+          <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>Vind je volgende baan met AI-matching. Upload je CV en krijg directe matches op elke vacature.</p>
+        </div>
+      </div>
+      <Suspense fallback={<div style={{ padding: "40px 24px", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>Vacatures laden...</div>}>
+        <VacaturesContent />
+      </Suspense>
+      <PublicFooter />
+    </div>
   );
 }

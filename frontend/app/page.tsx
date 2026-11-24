@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
 export const metadata: Metadata = {
-  title: "VorzaIQ — AI Recruitment Platform | Nederland",
+  title: "Vacatures in Nederland, direct gematcht op je CV",
   description:
-    "Upload je CV en ontvang direct AI-matches. Werkgevers: vind kandidaten sneller met Lisa, onze AI-recruiter.",
+    "Upload je CV en ontvang direct een AI-matchscore op elke vacature. Werkgevers: AI-recruiter Lisa screent je sollicitanten automatisch, dag en nacht.",
   alternates: { canonical: "https://www.vorzaiq.com" },
   openGraph: {
-    title: "VorzaIQ — AI Recruitment Platform | Nederland",
+    title: "VorzaIQ — Vacatures in Nederland, direct gematcht op je CV",
     description:
-      "Upload je CV en ontvang direct AI-matches. Werkgevers: vind kandidaten sneller met Lisa, onze AI-recruiter.",
+      "Upload je CV en ontvang direct een AI-matchscore op elke vacature. Werkgevers: AI-recruiter Lisa screent je sollicitanten automatisch.",
     url: "https://www.vorzaiq.com",
     type: "website",
   },

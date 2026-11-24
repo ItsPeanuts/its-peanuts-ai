@@ -117,10 +117,8 @@ function AbonnementenContent() {
   }
 
   return (
-    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
-      <EmployerNav />
-
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 80px" }}>
+    <>
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px 80px" }}>
 
         {/* Succes banner */}
         {success && (
@@ -133,7 +131,7 @@ function AbonnementenContent() {
           </div>
         )}
 
-        {/* Trial banner — alleen voor niet-ingelogde bezoekers */}
+        {/* Trial banner */}
         {!token && <div style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", borderRadius: 16, padding: "20px 28px", marginBottom: 52, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ color: "#fff" }}>
             <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 4 }}>{S.trialTitle}</div>
@@ -147,17 +145,8 @@ function AbonnementenContent() {
           </Link>
         </div>}
 
-        {/* Header */}
+        {/* Billing toggle */}
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-            {S.transparentPricing}
-          </p>
-          <h1 style={{ fontSize: 42, fontWeight: 900, color: "#111827", margin: "0 0 14px", lineHeight: 1.1 }}>
-            {S.title}
-          </h1>
-          <p style={{ fontSize: 17, color: "#6b7280", margin: "0 auto 32px", maxWidth: 520, lineHeight: 1.6 }}>
-            {S.subtitle}
-          </p>
 
           {/* Billing toggle */}
           <div style={{ display: "inline-flex", background: "#f3f4f6", borderRadius: 10, padding: 4, gap: 4 }}>
@@ -379,21 +368,34 @@ function AbonnementenContent() {
           </a>
         </div>
       </main>
-
-      <PublicFooter />
-    </div>
+    </>
   );
 }
 
 export default function AbonnementenClient() {
-  const { T } = useLanguage();
+  const { lang, T } = useLanguage();
   return (
-    <Suspense fallback={
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-        <div style={{ color: "#6b7280", fontSize: 14 }}>{T.common.loading}</div>
+    <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8fafc", minHeight: "100vh" }}>
+      <EmployerNav />
+      <div style={{ textAlign: "center", padding: "60px 24px 0" }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+          {T.subscription.transparentPricing}
+        </p>
+        <h1 style={{ fontSize: 42, fontWeight: 900, color: "#111827", margin: "0 0 14px", lineHeight: 1.1 }}>
+          {T.subscription.title}
+        </h1>
+        <p style={{ fontSize: 17, color: "#6b7280", margin: "0 auto 32px", maxWidth: 520, lineHeight: 1.6 }}>
+          {T.subscription.subtitle}
+        </p>
       </div>
-    }>
-      <AbonnementenContent />
-    </Suspense>
+      <Suspense fallback={
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
+          <div style={{ color: "#6b7280", fontSize: 14 }}>{T.common.loading}</div>
+        </div>
+      }>
+        <AbonnementenContent />
+      </Suspense>
+      <PublicFooter />
+    </div>
   );
 }
